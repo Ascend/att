@@ -351,22 +351,9 @@ class RunGenerator(object):
         return datas
 
     def _generate_kernel_table(self):
-        display_columns = {
-            'Step ID': 'Step ID',
-            'Op Name': 'Name',
-            'Op Type': 'Type',
-            'Task Type': 'Accelerator Core',
-            'Task Start Time': 'Start Time',
-            'Task Duration(us)': 'Duration(us)',
-            'Task Wait Time(us)': 'Wait Time(us)',
-            'Block Dim': 'Block Dim',
-            'Input Shapes': 'Input Shapes',
-            'Input Data Types': 'Input Data Types',
-            'Input Formats': 'Input Formats',
-            'Output Shapes': 'Output Shapes',
-            'Output Data Types': 'Output Data Types',
-            'Output Formats': 'Output Formats'
-        }
+        display_columns = ('Step ID', 'Name', 'Type', 'Accelerator Core', 'Start Time', 'Duration(us)', 'Wait Time(us)',
+                           'Block Dim', 'Input Shapes', 'Input Data Types', 'Input Formats', 'Output Shapes',
+                           'Output Data Types', 'Output Formats')
         display_idxs = []
         table = {'columns': [], 'rows': []}
         result = {
@@ -385,9 +372,9 @@ class RunGenerator(object):
             elif column == 'Task Type':
                 self.core_type_idx = idx
 
-            if display_columns.get(column) is not None:
+            if column in display_columns:
                 display_idxs.append(idx)
-                table['columns'].append({'type': 'string', 'name': display_columns[column]})
+                table['columns'].append({'type': 'string', 'name': column})
         table['rows'] = [self._handle_kernel_table_rows(display_idxs, ls) for idx, ls in
                          enumerate(datas) if idx != 0]
         return result
