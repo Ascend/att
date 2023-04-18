@@ -344,8 +344,8 @@ class RunGenerator(object):
             reader = csv.DictReader(f)
             for row in reader:
                 data = []
-                data.append(row.get('Op Name'))
-                data.append(float(row.get('Task Duration(us)')))
+                data.append(row.get('Name'))
+                data.append(float(row.get('Duration(us)')))
                 pie['rows'].append(data)
         datas = {'total': pie}
         return datas
@@ -365,11 +365,11 @@ class RunGenerator(object):
         path = self.profile_data.kernel_file_path
         datas = self._get_csv_data(path)
         for idx, column in enumerate(datas[0]):
-            if column == 'Op Name':
+            if column == 'Name':
                 self.name_idx = idx
-            elif column == 'Task Duration(us)':
+            elif column == 'Duration(us)':
                 self.duration_idx = idx
-            elif column == 'Task Type':
+            elif column == 'Type':
                 self.core_type_idx = idx
 
             if column in display_columns:
