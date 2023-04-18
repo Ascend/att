@@ -29,20 +29,17 @@ class RunLoader(object):
         workers = []
         spans_by_workers = defaultdict(list)
         for path in io.listdir(self.run_dir):
-            if io.isdir(io.join(self.run_dir, path)):
-                continue
-            match = consts.WORKER_PATTERN.match(path)
-            if not match:
-                continue
-
-            worker = match.group(1)
-            span = match.group(2)
-            if span is not None:
-                # remove the starting dot (.)
-                span = span[1:]
-                bisect.insort(spans_by_workers[worker], span)
-
-            workers.append((worker, span, path))
+            if io.isdir(io.join(self.run_dir, path)) and utils.is_worker_span_dir(path):
+                data_path = io.join(self.run_dir, path, 'ASCEND_PROFILER_OUTPUT')
+                for file in io.listdir(data_path):
+                    if utils.is_trace_path(file) or str(file) == 'kernel_details.csv':
+                        match = consts.WORKER_SPAN_PATTERN.match(path)
+                        worker = match.group(1)
+                        span = match.group(2)
+                        if span is not None:
+                            bisect.insort(spans_by_workers[worker], span)
+                        workers.append((worker, span, io.join(path, 'ASCEND_PROFILER_OUTPUT')))
+                        break
 
         span_index_map = {}
         for worker, span_array in spans_by_workers.items():
@@ -52,7 +49,7 @@ class RunLoader(object):
         for worker, span, path in workers:
             # convert the span timestamp to the index.
             span_index = None if span is None else span_index_map[(worker, span)]
-            p = Process(target=self._process_data, args=(worker, span_index, path))
+            p = Process(target=self._process_data, args=(worker, span, span_index, path))
             p.start()
         logger.info('started all processing')
 
@@ -78,14 +75,14 @@ class RunLoader(object):
         # for no daemon process, no need to join them since it will automatically join
         return run
 
-    def _process_data(self, worker, span, path):
+    def _process_data(self, worker, span_name, span, path):
         import absl.logging
         absl.logging.use_absl_handler()
 
         try:
-            logger.debug('Parse trace, run_dir=%s, worker=%s', self.run_dir, path)
+            logger.debug('Parse trace, run_dir=%s, data_dir=%s', self.run_dir, path)
             local_file = self.caches.get_remote_cache(io.join(self.run_dir, path))
-            data = RunProfileData.parse(worker, span, local_file, self.caches.cache_dir)
+            data = RunProfileData.parse(self.run_name, worker, span_name, span, local_file, self.caches.cache_dir)
             if data.trace_file_path != local_file:
                 self.caches.add_file(local_file, data.trace_file_path)
 
@@ -99,8 +96,8 @@ class RunLoader(object):
             logger.warning('tb_plugin receive keyboard interrupt signal, process %d will exit' % (os.getpid()))
             sys.exit(1)
         except Exception as ex:
-            logger.warning('Failed to parse profile data for Run %s on %s. Exception=%s',
-                           self.run_name, worker, ex, exc_info=True)
+            logger.warning('Failed to parse profile data for Run %s on %s_%s. Exception=%s',
+                           self.run_name, worker, span_name, ex, exc_info=True)
             self.queue.put((None, None))
         logger.debug('finishing process data')
 

@@ -74,10 +74,11 @@ export const Kernel: React.FC<IProps> = (props) => {
   const [kernelTable, setKernelTable] = React.useState<Graph | undefined>(
     undefined
   )
-  const [groupBy, setGroupBy] = React.useState(KernelGroupBy.Kernel)
+  const [groupBy, setGroupBy] = React.useState(KernelGroupBy.KernelNameAndOpName)
   const [searchKernelName, setSearchKernelName] = React.useState('')
   const [searchOpName, setSearchOpName] = React.useState('')
   const [sortColumn, setSortColumn] = React.useState('')
+  const [hasStep, setHasStep] = React.useState(false);
 
   const [topText, actualTop, useTop, setTopText, setUseTop] = useTopN({
     defaultUseTop: UseTop.Use,
@@ -98,6 +99,10 @@ export const Kernel: React.FC<IProps> = (props) => {
     api.defaultApi.kernelTableGet(run, worker, span, groupBy).then((resp) => {
       setSortColumn(resp.metadata.sort)
       setKernelTable(resp.data)
+      const nameColumnIdx = resp.data.columns.findIndex(
+        (c) => c.name.toLowerCase() === 'step id'
+      )
+      setHasStep(nameColumnIdx > -1)
     })
   }, [run, worker, span, groupBy])
 
@@ -118,7 +123,7 @@ export const Kernel: React.FC<IProps> = (props) => {
   const [searchedKernelTable] = useSearch(searchKernelName, 'name', kernelTable)
   const [searchedOpTable] = useSearch(
     searchOpName,
-    'operator',
+    'step id',
     searchedKernelTable
   )
 
@@ -154,7 +159,7 @@ export const Kernel: React.FC<IProps> = (props) => {
   const TensorCoresTitle = React.useMemo(
     () =>
       chartHeaderRenderer(
-        'Tensor Cores Utilization',
+        'AI Cores Utilization',
         TensorCoresPieChartTooltip
       ),
     [chartHeaderRenderer]
@@ -235,10 +240,10 @@ export const Kernel: React.FC<IProps> = (props) => {
                       onChange={onGroupByChanged}
                     >
                       <MenuItem value={KernelGroupBy.KernelNameAndOpName}>
-                        Kernel Properties + Op Name
+                        Statistic
                       </MenuItem>
                       <MenuItem value={KernelGroupBy.Kernel}>
-                        Kernel Name
+                        All
                       </MenuItem>
                     </Select>
                   </Grid>
@@ -250,20 +255,20 @@ export const Kernel: React.FC<IProps> = (props) => {
                       value={searchKernelName}
                       onChange={onSearchKernelChanged}
                       type="search"
-                      label="Search by Kernel Name"
+                      label="Search by Name"
                     />
                   </Grid>
-                  {groupBy === KernelGroupBy.KernelNameAndOpName && (
+                  {groupBy === KernelGroupBy.Kernel && hasStep &&
                     <Grid item>
                       <TextField
                         classes={{ root: classes.inputWidthOverflow }}
                         value={searchOpName}
                         onChange={onSearchOpChanged}
                         type="search"
-                        label="Search by Operator Name"
+                        label="Search by Step ID"
                       />
                     </Grid>
-                  )}
+                  }
                 </Grid>
               </Grid>
               <Grid item>

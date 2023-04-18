@@ -40,21 +40,24 @@ class RunProfileData(object):
         self.profiler_start_ts = float('inf')
         self.events: List[BaseEvent] = []
 
-        trace_body = trace_json['traceEvents']
+        trace_body = trace_json.get('traceEvents', None)
         fwd_bwd_events = []
-        for data in trace_body:
-            if data.get('cat') == 'forward_backward':
-                fwd_bwd_events.append(data)
-            else:
-                event = trace.create_event(data, self.is_pytorch_lightning)
-                if event is not None:
-                    self.profiler_start_ts = min(self.profiler_start_ts, event.ts)
-                    self.events.append(event)
+        if trace_body is not None:
+            for data in trace_body:
+                if data.get('cat') == 'forward_backward':
+                    fwd_bwd_events.append(data)
+                else:
+                    event = trace.create_event(data, self.is_pytorch_lightning)
+                    if event is not None:
+                        self.profiler_start_ts = min(self.profiler_start_ts, event.ts)
+                        self.events.append(event)
 
         self.events.sort(key=lambda e: e.ts)
         self.forward_backward_events = trace.create_association_events(fwd_bwd_events)
 
         self.trace_file_path: str = None
+        self.kernel_file_path: str = None
+        self.kernel_statistic_path: str = None
 
         # Event Parser results
         self.tid2tree: Dict[int, OperatorNode] = None
@@ -65,6 +68,7 @@ class RunProfileData(object):
         self.comm_lib = None
         self.has_runtime: bool = False
         self.has_kernel: bool = False
+        self.has_trace: bool = False
         self.has_communication: bool = False
         self.has_memcpy_or_memset: bool = False
         self.role_ranges = None
@@ -97,11 +101,25 @@ class RunProfileData(object):
         self.recommendations = []
 
     @staticmethod
-    def parse(worker, span, path, cache_dir):
-        trace_path, trace_json = RunProfileData._preprocess_file(path, cache_dir)
+    def parse(run_name, worker, span_name, span, path, cache_dir):
+        trace_json = {}
+        trace_path = path
+        has_trace = False
+        for file in io.listdir(path):
+            if utils.is_trace_path(file):
+                has_trace = True
+                trace_file = io.join(path, file)
+                trace_path, trace_json = RunProfileData._preprocess_file(trace_file, cache_dir)
+                break
 
         profile = RunProfileData.from_json(worker, span, trace_json)
         profile.trace_file_path = trace_path
+        profile.has_trace = has_trace
+
+        for file in io.listdir(path):
+            if str(file) == 'kernel_details.csv':
+                profile.has_kernel = True
+                profile.kernel_file_path = io.join(path, file)
         return profile
 
     @staticmethod
@@ -139,6 +157,7 @@ class RunProfileData(object):
                     json_reencode = True
 
         # work-around to remove the 'Record Window End' events to avoid the huge end timestamp
+        trace_json = {'traceEvents': trace_json}
         event_list = trace_json['traceEvents']
         end_index = None
         start_index = None

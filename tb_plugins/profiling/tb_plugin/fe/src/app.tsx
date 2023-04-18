@@ -55,7 +55,7 @@ export enum Views {
 const ViewNames = {
   [Views.Overview]: Views.Overview,
   [Views.Operator]: Views.Operator,
-  [Views.Kernel]: 'GPU Kernel',
+  [Views.Kernel]: 'Kernel',
   [Views.Trace]: Views.Trace,
   [Views.Distributed]: Views.Distributed,
   [Views.Memory]: Views.Memory,
