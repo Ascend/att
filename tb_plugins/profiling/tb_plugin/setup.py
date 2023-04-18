@@ -63,7 +63,7 @@ class build_fe(setuptools.Command):
 
 
 setuptools.setup(
-    name="torch_tb_profiler",
+    name="torch-tb-profiler-npu",
     version=get_version(os.path.join('torch_tb_profiler', '__init__.py')),
     description="PyTorch Profiler TensorBoard Plugin",
     long_description="PyTorch Profiler TensorBoard Plugin : \
