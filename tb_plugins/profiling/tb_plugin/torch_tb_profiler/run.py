@@ -23,6 +23,7 @@ class Run(object):
         self.name = name
         self.run_dir = run_dir
         self.profiles: Dict[Tuple[str, str], RunProfile] = {}
+        self.span_view = {}
 
     @property
     def workers(self):
@@ -40,16 +41,22 @@ class Run(object):
 
     def get_workers(self, view):
         worker_set = set()
+        temp_span_view = {}
         for profile in self.profiles.values():
             for v in profile.views:
                 if v.display_name == view:
                     worker_set.add(profile.worker)
+                    if not temp_span_view.get(profile.worker):
+                        temp_span_view[profile.worker] = [profile.span]
+                    else:
+                        temp_span_view[profile.worker].append(profile.span)
                     break
+        self.span_view = temp_span_view
         return sorted(list(worker_set))
 
     def get_spans(self, worker=None):
         if worker is not None:
-            spans = [s for w, s in self.profiles.keys() if w == worker]
+            spans = self.span_view[worker]
         else:
             spans = [s for _, s in self.profiles.keys()]
 

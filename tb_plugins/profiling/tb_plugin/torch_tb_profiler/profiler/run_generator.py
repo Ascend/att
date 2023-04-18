@@ -3,6 +3,7 @@
 # --------------------------------------------------------------------------
 from collections import OrderedDict
 from typing import Dict, Iterable, List
+import csv
 
 from .. import consts, utils
 from ..run import DistributedRunProfile, RunProfile
@@ -19,6 +20,8 @@ class RunGenerator(object):
         self.worker = worker
         self.span = span
         self.profile_data = profile_data
+        self.statistic_data = {}
+        self.accelerator_data = {}
 
     def generate_run_profile(self):
         profile_run = RunProfile(self.worker, self.span)
@@ -28,10 +31,10 @@ class RunGenerator(object):
         profile_run.has_communication = self.profile_data.has_communication
         profile_run.has_memcpy_or_memset = self.profile_data.has_memcpy_or_memset
         profile_run.profiler_start_ts = self.profile_data.profiler_start_ts
-        profile_run.views.append(consts.OVERALL_VIEW)
+        # profile_run.views.append(consts.OVERALL_VIEW)
         profile_run.overview = self._generate_overview()
 
-        profile_run.views.append(consts.OP_VIEW)
+        # profile_run.views.append(consts.OP_VIEW)
         profile_run.operation_pie_by_name = self._generate_op_pie()
         profile_run.operation_table_by_name = self._generate_op_table(self.profile_data.op_list_groupby_name)
         profile_run.operation_stack_by_name = self._generate_op_table_for_stack(False)
@@ -42,13 +45,14 @@ class RunGenerator(object):
 
         if self.profile_data.has_kernel:
             profile_run.views.append(consts.KERNEL_VIEW)
+            profile_run.kernel_table = self._generate_kernel_table()
             profile_run.kernel_op_table = self._generate_kernel_op_table()
             profile_run.kernel_pie = self._generate_kernel_pie()
-            profile_run.kernel_table = self._generate_kernel_table()
             profile_run.tc_pie = self._generate_tc_pie()
 
-        profile_run.views.append(consts.TRACE_VIEW)
-        profile_run.trace_file_path = self.profile_data.trace_file_path
+        if self.profile_data.has_trace:
+            profile_run.views.append(consts.TRACE_VIEW)
+            profile_run.trace_file_path = self.profile_data.trace_file_path
 
         profile_run.gpu_metrics = self.profile_data.gpu_metrics_parser.get_gpu_metrics()
 
@@ -316,90 +320,91 @@ class RunGenerator(object):
         table = {}
         result = {
             'metadata': {
-                'sort': 'Total Duration (us)'
+                'sort': 'Calls'
             },
             'data': table
         }
         table['columns'] = [{'type': 'string', 'name': 'Name'},
-                            {'type': 'string', 'name': 'Operator'},
-                            {'type': 'string', 'name': 'Grid'},
-                            {'type': 'string', 'name': 'Block'},
-                            {'type': 'number', 'name': 'Register Per Thread'},
-                            {'type': 'number', 'name': 'Shared Memory'},
-                            {'type': 'string', 'name': 'Kernel Uses Tensor Cores',
-                             'tooltip': consts.TOOLTIP_KERNEL_USES_TC},
-                            {'type': 'string', 'name': 'Op is Tensor Cores eligible',
-                             'tooltip': consts.TOOLTIP_KERNEL_OP_TC_ELIGIBLE}]
-        col_names = ['Calls', 'Total Duration (us)', 'Mean Duration (us)', 'Max Duration (us)', 'Min Duration (us)']
-        for column in col_names:
-            table['columns'].append({'type': 'number', 'name': column})
-        gpu_metrics_columns = self.profile_data.gpu_metrics_parser.get_gpu_metrics_columns()
-        table['columns'].extend(gpu_metrics_columns)
-
+                            {'type': 'number', 'name': 'Calls'},
+                            {'type': 'number', 'name': 'Total Durations(us)'},
+                            {'type': 'number', 'name': 'Min Durations(us)'},
+                            {'type': 'number', 'name': 'Avg Durations(us)'},
+                            {'type': 'number', 'name': 'Max Durations(us)'}]
         table['rows'] = []
-        kernel_list: List[KernelAggByNameOp] = sorted(
-            self.profile_data.kernel_list_groupby_name_op, key=lambda x: x.total_duration, reverse=True)
-        for agg_by_name_op in kernel_list:
-            kernel_op_row = [agg_by_name_op.name, agg_by_name_op.op_name,
-                             str(agg_by_name_op.grid), str(agg_by_name_op.block),
-                             str(agg_by_name_op.regs_per_thread or '0'), str(agg_by_name_op.shared_memory or '0'),
-                             'Yes' if agg_by_name_op.tc_used else 'No',
-                             'Yes' if agg_by_name_op.op_tc_eligible else 'No',
-                             agg_by_name_op.calls,
-                             agg_by_name_op.total_duration, round(agg_by_name_op.avg_duration),
-                             agg_by_name_op.max_duration, agg_by_name_op.min_duration]
-            if self.profile_data.gpu_metrics_parser.has_blocks_per_sm:
-                kernel_op_row.append(round(agg_by_name_op.avg_blocks_per_sm, 2))
-            if self.profile_data.gpu_metrics_parser.has_occupancy:
-                kernel_op_row.append(round(agg_by_name_op.avg_occupancy, 2))
-            table['rows'].append(kernel_op_row)
+        for key, value in self.statistic_data.items():
+            temp = [key]
+            for val in value.values():
+                temp.append(val)
+            table['rows'].append(temp)
         return result
 
     def _generate_kernel_pie(self):
         pie = {'columns': [{'type': 'string', 'name': 'name'}, {'type': 'number', 'name': 'value'}], 'rows': []}
-        for _id, (name, row) in enumerate(self.profile_data.kernel_stat.iterrows()):
-            pie['rows'].append([name, row['sum']])
-        data = {'total': pie}
-        return data
+        with open(self.profile_data.kernel_file_path, encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                data = []
+                data.append(row.get('Op Name'))
+                data.append(float(row.get('Task Duration(us)')))
+                pie['rows'].append(data)
+        datas = {'total': pie}
+        return datas
 
     def _generate_kernel_table(self):
-        table = {}
+        display_columns = {
+            'Step ID': 'Step ID',
+            'Op Name': 'Name',
+            'Op Type': 'Type',
+            'Task Type': 'Accelerator Core',
+            'Task Start Time': 'Start Time',
+            'Task Duration(us)': 'Duration(us)',
+            'Task Wait Time(us)': 'Wait Time(us)',
+            'Block Dim': 'Block Dim',
+            'Input Shapes': 'Input Shapes',
+            'Input Data Types': 'Input Data Types',
+            'Input Formats': 'Input Formats',
+            'Output Shapes': 'Output Shapes',
+            'Output Data Types': 'Output Data Types',
+            'Output Formats': 'Output Formats'
+        }
+        display_idxs = []
+        table = {'columns': [], 'rows': []}
         result = {
             'metadata': {
                 'sort': 'Total Duration (us)'
             },
             'data': table
         }
-        table['columns'] = [{'type': 'string', 'name': 'Name'},
-                            {'type': 'string', 'name': 'Tensor Cores Used',
-                             'tooltip': consts.TOOLTIP_KERNEL_USES_TC}]
-        columns = ['count', 'sum', 'mean', 'max', 'min']
-        round_digits = [0, 0, 0, 0, 0]
-        if self.profile_data.gpu_metrics_parser.has_blocks_per_sm:
-            columns.append('blocks_per_sm')
-            round_digits.append(2)
-        if self.profile_data.gpu_metrics_parser.has_occupancy:
-            columns.append('occupancy')
-            round_digits.append(2)
-        col_names = ['Calls', 'Total Duration (us)', 'Mean Duration (us)', 'Max Duration (us)', 'Min Duration (us)']
-        for column in col_names:
-            table['columns'].append({'type': 'number', 'name': column})
-        gpu_metrics_columns = self.profile_data.gpu_metrics_parser.get_gpu_metrics_columns()
-        table['columns'].extend(gpu_metrics_columns)
+        path = self.profile_data.kernel_file_path
+        datas = self._get_csv_data(path)
+        for idx, column in enumerate(datas[0]):
+            if column == 'Op Name':
+                self.name_idx = idx
+            elif column == 'Task Duration(us)':
+                self.duration_idx = idx
+            elif column == 'Task Type':
+                self.core_type_idx = idx
 
-        table['rows'] = []
-        for _id, (name, row) in enumerate(self.profile_data.kernel_stat.iterrows()):
-            kernel_row = [name, 'Yes' if row['tc_used'] else 'No']
-            for i, column in enumerate(columns):
-                kernel_row.append(round(row[column]) if round_digits[i] == 0
-                                  else round(row[column], round_digits[i]))
-            table['rows'].append(kernel_row)
+            if display_columns.get(column) is not None:
+                display_idxs.append(idx)
+                table['columns'].append({'type': 'string', 'name': display_columns[column]})
+        table['rows'] = [self._handle_kernel_table_rows(display_idxs, ls) for idx, ls in
+                         enumerate(datas) if idx != 0]
         return result
+
+    def _get_csv_data(self, path: str):
+        if path is None:
+            return
+        datas = []
+        with open(path, encoding='utf-8-sig') as f:
+            for row in csv.reader(f, skipinitialspace=True):
+                datas.append(row)
+        return datas
 
     def _generate_tc_pie(self):
         pie = {'columns': [{'type': 'string', 'name': 'name'}, {'type': 'number', 'name': 'value'}], 'rows': []}
-        pie['rows'].append(['Using Tensor Cores', self.profile_data.tc_used_ratio])
-        pie['rows'].append(['Not Using Tensor Cores', 1.0 - self.profile_data.tc_used_ratio])
+        for key, val in self.accelerator_data.items():
+            pie['rows'].append(['Using ' + key.replace('_', ' '), val])
         data = {'total': pie}
         return data
 
@@ -425,6 +430,36 @@ class RunGenerator(object):
             gpu_info['Compute Capability'] = '{}.{}'.format(major, minor)
 
         return gpu_info
+
+    def _handle_kernel_table_rows(self, ids, row):
+        display_row = []
+        for idx in ids:
+            display_row.append(row[idx])
+        call_name = row[self.name_idx]
+        call_duration = float(row[self.duration_idx])
+        call_type = row[self.core_type_idx]
+        if self.accelerator_data.get(call_type) is not None:
+            self.accelerator_data[call_type] += call_duration
+        else:
+            self.accelerator_data[call_type] = call_duration
+
+        if self.statistic_data.get(call_name) is not None:
+            temp = self.statistic_data[call_name]
+            temp['Max'] = max(temp['Max'], call_duration)
+            temp['Min'] = min(temp['Min'], call_duration)
+            temp['Total'] += call_duration
+            temp['Calls'] += 1
+            temp['Average'] = temp['Total'] / temp['Calls']
+        else:
+            self.statistic_data[call_name] = {
+                'Calls': 1,
+                'Core': call_type,
+                'Max': call_duration,
+                'Min': call_duration,
+                'Total': call_duration,
+                'Average': call_duration
+            }
+        return display_row
 
 
 class DistributedRunGenerator(object):
