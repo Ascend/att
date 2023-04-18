@@ -242,9 +242,8 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
                 raw_data = io.read(file_with_gpu_metrics)
             else:
                 raw_data = self._cache.read(profile.trace_file_path)
-                if profile.trace_file_path.endswith('.gz'):
-                    raw_data = gzip.decompress(raw_data)
-                raw_data = profile.append_gpu_metrics(raw_data)
+                if not profile.trace_file_path.endswith('.gz'):
+                    raw_data = gzip.compress(raw_data, 1)
 
                 # write the data to temp file
                 fp = tempfile.NamedTemporaryFile('w+b', suffix='.json.gz', dir=self._temp_dir, delete=False)
@@ -473,19 +472,32 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
 
     def _get_run_dirs(self):
         """Scan logdir, find PyTorch Profiler run directories.
-        A directory is considered to be a run if it contains 1 or more *.pt.trace.json[.gz].
+        A directory is considered to be a run if it satisfies the following two conditions:
+            1.At least one subdirectory with the name in this format: {worker_span}.
+            2.The subdirectory in condition 1 has a 'ASCEND_PROFILER_OUTPUT' subdirectory which
+            contains a 'trace_view.json(.gz)' file or a 'kernel_details.csv' file.
         E.g. there are 2 runs: run1, run2
             /run1
-                /[worker1].pt.trace.json.gz
-                /[worker2].pt.trace.json.gz
+                /[worker1]_[span1]
+                    /ASCEND_PROFILER_OUTPUT
+                        /trace_view.json
+                        /kernel_details.csv
+                /[worker2]_[span1]
+                    /ASCEND_PROFILER_OUTPUT
+                        /trace_view.json
             /run2
-                /[worker1].pt.trace.json
+                /[worker1]_[span1]
+                    /ASCEND_PROFILER_OUTPUT
+                        /kernel_details.csv
         """
-        for root, _, files in io.walk(self.logdir):
-            for file in files:
-                if utils.is_chrome_trace_file(file):
-                    yield root
-                    break
+        for root, subdirs, _ in io.walk(self.logdir):
+            for subdir in subdirs:
+                if str(subdir) == 'ASCEND_PROFILER_OUTPUT':
+                    match = consts.WORKER_SPAN_PATTERN.match(io.basename(root))
+                    if match is not None:
+                        run_name = io.abspath(io.join(root, '..'))
+                        yield run_name
+                        break
 
     def _load_run(self, run_dir):
         try:
