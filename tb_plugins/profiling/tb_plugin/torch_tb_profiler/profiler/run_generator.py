@@ -440,11 +440,10 @@ class RunGenerator(object):
         else:
             self.statistic_data[call_name] = {
                 'Calls': 1,
-                'Core': call_type,
-                'Max': call_duration,
-                'Min': call_duration,
                 'Total': call_duration,
-                'Average': call_duration
+                'Min': call_duration,
+                'Average': call_duration,
+                'Max': call_duration
             }
         return display_row
 
