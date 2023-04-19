@@ -101,7 +101,7 @@ class RunProfileData(object):
         self.recommendations = []
 
     @staticmethod
-    def parse(run_name, worker, span_name, span, path, cache_dir):
+    def parse(worker, span, path, cache_dir):
         trace_json = {}
         trace_path = path
         has_trace = False
