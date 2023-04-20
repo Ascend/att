@@ -434,9 +434,9 @@ class RunGenerator(object):
             temp = self.statistic_data[call_name]
             temp['Max'] = max(temp['Max'], call_duration)
             temp['Min'] = min(temp['Min'], call_duration)
-            temp['Total'] += call_duration
+            temp['Total'] = round(temp['Total'] + call_duration, 2)
             temp['Calls'] += 1
-            temp['Average'] = temp['Total'] / temp['Calls']
+            temp['Average'] = round(temp['Total'] / temp['Calls'], 2)
         else:
             self.statistic_data[call_name] = {
                 'Calls': 1,
