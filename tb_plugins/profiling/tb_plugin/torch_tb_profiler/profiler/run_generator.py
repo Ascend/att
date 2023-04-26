@@ -369,7 +369,7 @@ class RunGenerator(object):
                 self.name_idx = idx
             elif column == 'Duration(us)':
                 self.duration_idx = idx
-            elif column == 'Type':
+            elif column == 'Accelerator Core':
                 self.core_type_idx = idx
 
             if column in display_columns:
