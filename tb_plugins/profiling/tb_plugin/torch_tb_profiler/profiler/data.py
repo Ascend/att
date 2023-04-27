@@ -67,8 +67,8 @@ class RunProfileData(object):
         self.use_ddp: bool = False
         self.comm_lib = None
         self.has_runtime: bool = False
-        self.has_kernel: bool = False
-        self.has_trace: bool = False
+        self.has_kernel: bool = True
+        self.has_trace: bool = True
         self.has_communication: bool = False
         self.has_memcpy_or_memset: bool = False
         self.role_ranges = None
@@ -101,15 +101,24 @@ class RunProfileData(object):
         self.recommendations = []
 
     @staticmethod
-    def parse(worker, span, path, cache_dir):
+    def parse_gpu(worker, span, path, cache_dir):
+        trace_path, trace_json = RunProfileData._preprocess_file(path, cache_dir, 'GPU')
+
+        profile = RunProfileData.from_json(worker, span, trace_json)
+        profile.trace_file_path = trace_path
+        return profile
+
+    @staticmethod
+    def parse_npu(worker, span, path, cache_dir):
         trace_json = {}
         trace_path = path
         has_trace = False
+        has_kernel = False
         for file in io.listdir(path):
-            if utils.is_trace_path(file):
+            if utils.is_npu_trace_path(file):
                 has_trace = True
                 trace_file = io.join(path, file)
-                trace_path, trace_json = RunProfileData._preprocess_file(trace_file, cache_dir)
+                trace_path, trace_json = RunProfileData._preprocess_file(trace_file, cache_dir, 'Ascend')
                 break
 
         profile = RunProfileData.from_json(worker, span, trace_json)
@@ -118,8 +127,9 @@ class RunProfileData(object):
 
         for file in io.listdir(path):
             if str(file) == 'kernel_details.csv':
-                profile.has_kernel = True
+                has_kernel = True
                 profile.kernel_file_path = io.join(path, file)
+        profile.has_kernel = has_kernel
         return profile
 
     @staticmethod
@@ -131,7 +141,7 @@ class RunProfileData(object):
         return profile
 
     @staticmethod
-    def _preprocess_file(trace_path, cache_dir):
+    def _preprocess_file(trace_path, cache_dir, device_target):
         if not io.exists(trace_path):
             raise FileNotFoundError(trace_path)
 
@@ -157,7 +167,8 @@ class RunProfileData(object):
                     json_reencode = True
 
         # work-around to remove the 'Record Window End' events to avoid the huge end timestamp
-        trace_json = {'traceEvents': trace_json}
+        if device_target == 'Ascend':
+            trace_json = {'traceEvents': trace_json}
         event_list = trace_json['traceEvents']
         end_index = None
         start_index = None

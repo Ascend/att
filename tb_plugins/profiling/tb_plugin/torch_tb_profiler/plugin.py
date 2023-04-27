@@ -438,9 +438,10 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
                     # Assume no deletion on run directories, trigger async load if find a new run
                     for run_dir in run_dirs:
                         has_dir = True
-                        if run_dir not in touched:
-                            touched.add(run_dir)
-                            logger.info('Find run directory %s', run_dir)
+                        run_device = f'{run_dir["name"]}_{run_dir["device_target"]}'
+                        if run_device not in touched:
+                            touched.add(run_device)
+                            logger.info('Find run directory %s', run_dir['name'])
                             # Use threading to avoid UI stall and reduce data parsing time
                             t = threading.Thread(target=self._load_run, args=(run_dir,))
                             t.start()
@@ -472,7 +473,14 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
 
     def _get_run_dirs(self):
         """Scan logdir, find PyTorch Profiler run directories.
-        A directory is considered to be a run if it satisfies the following two conditions:
+        A directory is considered to be a gpu run if it contains 1 or more *.pt.trace.json[.gz].
+        E.g. there are 2 runs: run1, run2
+            /run1
+                /[worker1].pt.trace.json.gz
+                /[worker2].pt.trace.json.gz
+            /run2
+                /[worker1].pt.trace.json
+        A directory is considered to be an ascend run if it satisfies the following two conditions:
             1.At least one subdirectory with the name in this format: {worker_span}.
             2.The subdirectory in condition 1 has a 'ASCEND_PROFILER_OUTPUT' subdirectory which
             contains a 'trace_view.json(.gz)' file or a 'kernel_details.csv' file.
@@ -490,21 +498,26 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
                     /ASCEND_PROFILER_OUTPUT
                         /kernel_details.csv
         """
-        for root, subdirs, _ in io.walk(self.logdir):
+        for root, subdirs, files in io.walk(self.logdir):
             for subdir in subdirs:
                 if str(subdir) == 'ASCEND_PROFILER_OUTPUT':
                     match = consts.WORKER_SPAN_PATTERN.match(io.basename(root))
                     if match is not None:
                         run_name = io.abspath(io.join(root, '..'))
-                        yield run_name
+                        yield {'name': run_name, 'device_target': 'Ascend'}
                         break
+
+            for file in files:
+                if utils.is_gpu_chrome_trace_file(file):
+                    yield {'name': root, 'device_target': 'GPU'}
+                    break
 
     def _load_run(self, run_dir):
         try:
-            name = self._get_run_name(run_dir)
+            name = self._get_run_name(run_dir['name'])
             logger.info('Load run %s', name)
             # Currently, assume run data is immutable, so just load once
-            loader = RunLoader(name, run_dir, self._cache)
+            loader = RunLoader(name, run_dir['name'], self._cache, run_dir['device_target'])
             run = loader.load()
             logger.info('Run %s loaded', name)
             self._queue.put(run)

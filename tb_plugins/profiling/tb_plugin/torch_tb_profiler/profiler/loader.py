@@ -19,27 +19,45 @@ logger = utils.get_logger()
 
 
 class RunLoader(object):
-    def __init__(self, name, run_dir, caches: io.Cache):
+    def __init__(self, name, run_dir, caches: io.Cache, device_target="GPU"):
         self.run_name = name
         self.run_dir = run_dir
         self.caches = caches
         self.queue = Queue()
+        self.device_target = device_target
 
     def load(self):
         workers = []
         spans_by_workers = defaultdict(list)
-        for path in io.listdir(self.run_dir):
-            if io.isdir(io.join(self.run_dir, path)) and utils.is_worker_span_dir(path):
-                data_path = io.join(self.run_dir, path, 'ASCEND_PROFILER_OUTPUT')
-                for file in io.listdir(data_path):
-                    if utils.is_trace_path(file) or str(file) == 'kernel_details.csv':
-                        match = consts.WORKER_SPAN_PATTERN.match(path)
-                        worker = match.group(1)
-                        span = match.group(2)
-                        if span is not None:
-                            bisect.insort(spans_by_workers[worker], span)
-                        workers.append((worker, span, io.join(path, 'ASCEND_PROFILER_OUTPUT')))
-                        break
+        if self.device_target == 'Ascend':
+            for path in io.listdir(self.run_dir):
+                if io.isdir(io.join(self.run_dir, path)) and utils.is_worker_span_dir(path):
+                    data_path = io.join(self.run_dir, path, 'ASCEND_PROFILER_OUTPUT')
+                    for file in io.listdir(data_path):
+                        if utils.is_npu_trace_path(file) or str(file) == 'kernel_details.csv':
+                            match = consts.WORKER_SPAN_PATTERN.match(path)
+                            worker = match.group(1)
+                            span = match.group(2)
+                            if span is not None:
+                                bisect.insort(spans_by_workers[worker], span)
+                            workers.append((worker, span, io.join(path, 'ASCEND_PROFILER_OUTPUT')))
+                            break
+        else:
+            for path in io.listdir(self.run_dir):
+                if io.isdir(io.join(self.run_dir, path)):
+                    continue
+                match = consts.WORKER_PATTERN.match(path)
+                if not match:
+                    continue
+
+                worker = match.group(1)
+                span = match.group(2)
+                if span is not None:
+                    # remove the starting dot (.)
+                    span = span[1:]
+                    bisect.insort(spans_by_workers[worker], span)
+
+                workers.append((worker, span, path))
 
         span_index_map = {}
         for worker, span_array in spans_by_workers.items():
@@ -53,8 +71,8 @@ class RunLoader(object):
             p.start()
         logger.info('started all processing')
 
-        distributed_run = Run(self.run_name, self.run_dir)
-        run = Run(self.run_name, self.run_dir)
+        distributed_run = Run(self.run_name, self.run_dir, self.device_target)
+        run = Run(self.run_name, self.run_dir, self.device_target)
         num_items = len(workers)
         while num_items > 0:
             item: Tuple[RunProfile, DistributedRunProfileData] = self.queue.get()
@@ -82,11 +100,14 @@ class RunLoader(object):
         try:
             logger.debug('Parse trace, run_dir=%s, data_dir=%s', self.run_dir, path)
             local_file = self.caches.get_remote_cache(io.join(self.run_dir, path))
-            data = RunProfileData.parse(worker, span, local_file, self.caches.cache_dir)
+            if self.device_target == 'Ascend':
+                data = RunProfileData.parse_npu(worker, span, local_file, self.caches.cache_dir)
+            else:
+                data = RunProfileData.parse_gpu(worker, span, local_file, self.caches.cache_dir)
             if data.trace_file_path != local_file:
                 self.caches.add_file(local_file, data.trace_file_path)
 
-            generator = RunGenerator(worker, span, data)
+            generator = RunGenerator(worker, span, data, self.device_target)
             profile = generator.generate_run_profile()
             dist_data = DistributedRunProfileData(data)
 
@@ -96,8 +117,12 @@ class RunLoader(object):
             logger.warning('tb_plugin receive keyboard interrupt signal, process %d will exit' % (os.getpid()))
             sys.exit(1)
         except Exception as ex:
-            logger.warning('Failed to parse profile data for Run %s on %s_%s. Exception=%s',
-                           self.run_name, worker, span_name, ex, exc_info=True)
+            if self.device_target == 'Ascend':
+                worker_name = f'{worker}_{span_name}'
+            else:
+                worker_name = worker
+            logger.warning('Failed to parse profile data for Run %s on %s. Exception=%s',
+                           self.run_name, worker_name, ex, exc_info=True)
             self.queue.put((None, None))
         logger.debug('finishing process data')
 

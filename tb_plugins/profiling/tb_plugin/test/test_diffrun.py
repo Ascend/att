@@ -9,7 +9,7 @@ from torch_tb_profiler.utils import timing
 
 
 def load_profile(worker, span, path):
-    return RunProfileData.parse(worker, span, path, '.')
+    return RunProfileData.parse_gpu(worker, span, path, '.')
 
 
 class TestDiffRun(unittest.TestCase):
