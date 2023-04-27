@@ -29,7 +29,8 @@ import { DataLoading } from './DataLoading'
 import { makeChartHeaderRenderer, useTooltipCommonStyles } from './helpers'
 import {
   GPUKernelTotalTimeTooltip,
-  TensorCoresPieChartTooltip
+  TensorCoresPieChartTooltip,
+  TensorCoresPieChartTooltipAscend
 } from './TooltipDescriptions'
 
 export interface IProps {
@@ -74,11 +75,12 @@ export const Kernel: React.FC<IProps> = (props) => {
   const [kernelTable, setKernelTable] = React.useState<Graph | undefined>(
     undefined
   )
-  const [groupBy, setGroupBy] = React.useState(KernelGroupBy.KernelNameAndOpName)
+  const [groupBy, setGroupBy] = React.useState(KernelGroupBy.Kernel)
   const [searchKernelName, setSearchKernelName] = React.useState('')
   const [searchOpName, setSearchOpName] = React.useState('')
   const [sortColumn, setSortColumn] = React.useState('')
-  const [hasStep, setHasStep] = React.useState(false);
+  const [hasStep, setHasStep] = React.useState(false)
+  const [deviceTarget, setDeviceTarget] = React.useState('GPU')
 
   const [topText, actualTop, useTop, setTopText, setUseTop] = useTopN({
     defaultUseTop: UseTop.Use,
@@ -111,6 +113,8 @@ export const Kernel: React.FC<IProps> = (props) => {
       .kernelGet(run, worker, span, KernelGroupBy.Kernel)
       .then((resp) => {
         setKernelGraph(resp.total)
+        setDeviceTarget(resp.device_target)
+        setGroupBy(resp.device_target === 'Ascend' ? KernelGroupBy.KernelNameAndOpName : KernelGroupBy.Kernel)
       })
   }, [run, worker, span])
 
@@ -123,7 +127,7 @@ export const Kernel: React.FC<IProps> = (props) => {
   const [searchedKernelTable] = useSearch(searchKernelName, 'name', kernelTable)
   const [searchedOpTable] = useSearch(
     searchOpName,
-    'step id',
+    deviceTarget === 'Ascend' ? 'step id' : 'operator',
     searchedKernelTable
   )
 
@@ -157,12 +161,17 @@ export const Kernel: React.FC<IProps> = (props) => {
   )
 
   const TensorCoresTitle = React.useMemo(
-    () =>
+    () => deviceTarget === 'Ascend' ?
       chartHeaderRenderer(
         'AI Cores Utilization',
+        TensorCoresPieChartTooltipAscend
+      )
+      :
+      chartHeaderRenderer(
+        'Tensor Cores Utilization',
         TensorCoresPieChartTooltip
       ),
-    [chartHeaderRenderer]
+    [chartHeaderRenderer, deviceTarget]
   )
 
   return (
@@ -240,10 +249,10 @@ export const Kernel: React.FC<IProps> = (props) => {
                       onChange={onGroupByChanged}
                     >
                       <MenuItem value={KernelGroupBy.KernelNameAndOpName}>
-                        Statistic
+                        {deviceTarget === 'Ascend' ? 'Statistic' : 'Kernel Properties + Op Name'}
                       </MenuItem>
                       <MenuItem value={KernelGroupBy.Kernel}>
-                        All
+                        {deviceTarget === 'Ascend' ? 'All' : 'Kernel Name'}
                       </MenuItem>
                     </Select>
                   </Grid>
@@ -258,16 +267,28 @@ export const Kernel: React.FC<IProps> = (props) => {
                       label="Search by Name"
                     />
                   </Grid>
-                  {groupBy === KernelGroupBy.Kernel && hasStep &&
-                    <Grid item>
-                      <TextField
-                        classes={{ root: classes.inputWidthOverflow }}
-                        value={searchOpName}
-                        onChange={onSearchOpChanged}
-                        type="search"
-                        label="Search by Step ID"
-                      />
-                    </Grid>
+                  {deviceTarget === 'Ascend' ?
+                    (groupBy === KernelGroupBy.Kernel && hasStep &&
+                      <Grid item>
+                        <TextField
+                          classes={{ root: classes.inputWidthOverflow }}
+                          value={searchOpName}
+                          onChange={onSearchOpChanged}
+                          type="search"
+                          label="Search by Step ID"
+                        />
+                      </Grid>)
+                    :
+                    (groupBy === KernelGroupBy.KernelNameAndOpName &&
+                      <Grid item>
+                        <TextField
+                          classes={{ root: classes.inputWidthOverflow }}
+                          value={searchOpName}
+                          onChange={onSearchOpChanged}
+                          type="search"
+                          label="Search by Operator Name"
+                        />
+                      </Grid>)
                   }
                 </Grid>
               </Grid>

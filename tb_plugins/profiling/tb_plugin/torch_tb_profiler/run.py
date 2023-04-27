@@ -19,11 +19,12 @@ class Run(object):
     May contain profiling results from multiple workers. E.g. distributed scenario.
     """
 
-    def __init__(self, name, run_dir):
+    def __init__(self, name, run_dir, device_target='GPU'):
         self.name = name
         self.run_dir = run_dir
         self.profiles: Dict[Tuple[str, str], RunProfile] = {}
         self.span_view = {}
+        self.device_target = device_target
 
     @property
     def workers(self):

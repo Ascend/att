@@ -21,7 +21,9 @@ export const HostTotalTimeTooltip = `The accumulated time spent on Host, includi
 
 export const GPUKernelTotalTimeTooltip = `The accumulated time of all calls of this kernel.`
 
-export const TensorCoresPieChartTooltip = `The accumulated time of all kernels using or not using AI Cores.`
+export const TensorCoresPieChartTooltip = `The accumulated time of all kernels using or not using Tensor Cores.`
+
+export const TensorCoresPieChartTooltipAscend = `The accumulated time of all kernels using or not using AI Cores.`
 
 export const DistributedGpuInfoTableTooltip = `Information about GPU hardware used during the run.`
 

@@ -29,7 +29,7 @@ def get_logger():
     return logger
 
 
-def is_chrome_trace_file(path):
+def is_gpu_chrome_trace_file(path):
     return consts.WORKER_PATTERN.match(path)
 
 
@@ -37,7 +37,7 @@ def is_worker_span_dir(path):
     return consts.WORKER_SPAN_PATTERN.match(path)
 
 
-def is_trace_path(path):
+def is_npu_trace_path(path):
     return consts.TRACE_PATTERN.match(path)
 
 

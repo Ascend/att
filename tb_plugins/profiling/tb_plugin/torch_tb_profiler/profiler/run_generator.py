@@ -16,12 +16,13 @@ logger = utils.get_logger()
 
 
 class RunGenerator(object):
-    def __init__(self, worker, span, profile_data: RunProfileData):
+    def __init__(self, worker, span, profile_data: RunProfileData, device_target="GPU"):
         self.worker = worker
         self.span = span
         self.profile_data = profile_data
         self.statistic_data = {}
         self.accelerator_data = {}
+        self.device_target = device_target
 
     def generate_run_profile(self):
         profile_run = RunProfile(self.worker, self.span)
@@ -45,10 +46,16 @@ class RunGenerator(object):
 
         if self.profile_data.has_kernel:
             profile_run.views.append(consts.KERNEL_VIEW)
-            profile_run.kernel_table = self._generate_kernel_table()
-            profile_run.kernel_op_table = self._generate_kernel_op_table()
-            profile_run.kernel_pie = self._generate_kernel_pie()
-            profile_run.tc_pie = self._generate_tc_pie()
+            if self.device_target == 'Ascend':
+                profile_run.kernel_table = self._generate_kernel_table_npu()
+                profile_run.kernel_op_table = self._generate_kernel_op_table_npu()
+                profile_run.kernel_pie = self._generate_kernel_pie_npu()
+                profile_run.tc_pie = self._generate_tc_pie_npu()
+            else:
+                profile_run.kernel_table = self._generate_kernel_table_gpu()
+                profile_run.kernel_op_table = self._generate_kernel_op_table_gpu()
+                profile_run.kernel_pie = self._generate_kernel_pie_gpu()
+                profile_run.tc_pie = self._generate_tc_pie_gpu()
 
         if self.profile_data.has_trace:
             profile_run.views.append(consts.TRACE_VIEW)
@@ -316,7 +323,98 @@ class RunGenerator(object):
             result[k] = self._generate_op_table(v, group_by_input_shape, True)
         return result
 
-    def _generate_kernel_op_table(self):
+    def _generate_kernel_op_table_gpu(self):
+        table = {}
+        result = {
+            'metadata': {
+                'sort': 'Total Duration (us)'
+            },
+            'data': table
+        }
+        table['columns'] = [{'type': 'string', 'name': 'Name'},
+                            {'type': 'string', 'name': 'Operator'},
+                            {'type': 'string', 'name': 'Grid'},
+                            {'type': 'string', 'name': 'Block'},
+                            {'type': 'number', 'name': 'Register Per Thread'},
+                            {'type': 'number', 'name': 'Shared Memory'},
+                            {'type': 'string', 'name': 'Kernel Uses Tensor Cores',
+                             'tooltip': consts.TOOLTIP_KERNEL_USES_TC},
+                            {'type': 'string', 'name': 'Op is Tensor Cores eligible',
+                             'tooltip': consts.TOOLTIP_KERNEL_OP_TC_ELIGIBLE}]
+        col_names = ['Calls', 'Total Duration (us)', 'Mean Duration (us)', 'Max Duration (us)', 'Min Duration (us)']
+        for column in col_names:
+            table['columns'].append({'type': 'number', 'name': column})
+        gpu_metrics_columns = self.profile_data.gpu_metrics_parser.get_gpu_metrics_columns()
+        table['columns'].extend(gpu_metrics_columns)
+
+        table['rows'] = []
+        kernel_list: List[KernelAggByNameOp] = sorted(
+            self.profile_data.kernel_list_groupby_name_op, key=lambda x: x.total_duration, reverse=True)
+        for agg_by_name_op in kernel_list:
+            kernel_op_row = [agg_by_name_op.name, agg_by_name_op.op_name,
+                             str(agg_by_name_op.grid), str(agg_by_name_op.block),
+                             str(agg_by_name_op.regs_per_thread or '0'), str(agg_by_name_op.shared_memory or '0'),
+                             'Yes' if agg_by_name_op.tc_used else 'No',
+                             'Yes' if agg_by_name_op.op_tc_eligible else 'No',
+                             agg_by_name_op.calls,
+                             agg_by_name_op.total_duration, round(agg_by_name_op.avg_duration),
+                             agg_by_name_op.max_duration, agg_by_name_op.min_duration]
+            if self.profile_data.gpu_metrics_parser.has_blocks_per_sm:
+                kernel_op_row.append(round(agg_by_name_op.avg_blocks_per_sm, 2))
+            if self.profile_data.gpu_metrics_parser.has_occupancy:
+                kernel_op_row.append(round(agg_by_name_op.avg_occupancy, 2))
+            table['rows'].append(kernel_op_row)
+        return result
+
+    def _generate_kernel_pie_gpu(self):
+        pie = {'columns': [{'type': 'string', 'name': 'name'}, {'type': 'number', 'name': 'value'}], 'rows': []}
+        for _id, (name, row) in enumerate(self.profile_data.kernel_stat.iterrows()):
+            pie['rows'].append([name, row['sum']])
+        data = {'total': pie, 'device_target': self.device_target}
+        return data
+
+    def _generate_kernel_table_gpu(self):
+        table = {}
+        result = {
+            'metadata': {
+                'sort': 'Total Duration (us)'
+            },
+            'data': table
+        }
+        table['columns'] = [{'type': 'string', 'name': 'Name'},
+                            {'type': 'string', 'name': 'Tensor Cores Used',
+                             'tooltip': consts.TOOLTIP_KERNEL_USES_TC}]
+        columns = ['count', 'sum', 'mean', 'max', 'min']
+        round_digits = [0, 0, 0, 0, 0]
+        if self.profile_data.gpu_metrics_parser.has_blocks_per_sm:
+            columns.append('blocks_per_sm')
+            round_digits.append(2)
+        if self.profile_data.gpu_metrics_parser.has_occupancy:
+            columns.append('occupancy')
+            round_digits.append(2)
+        col_names = ['Calls', 'Total Duration (us)', 'Mean Duration (us)', 'Max Duration (us)', 'Min Duration (us)']
+        for column in col_names:
+            table['columns'].append({'type': 'number', 'name': column})
+        gpu_metrics_columns = self.profile_data.gpu_metrics_parser.get_gpu_metrics_columns()
+        table['columns'].extend(gpu_metrics_columns)
+
+        table['rows'] = []
+        for _id, (name, row) in enumerate(self.profile_data.kernel_stat.iterrows()):
+            kernel_row = [name, 'Yes' if row['tc_used'] else 'No']
+            for i, column in enumerate(columns):
+                kernel_row.append(round(row[column]) if round_digits[i] == 0
+                                  else round(row[column], round_digits[i]))
+            table['rows'].append(kernel_row)
+        return result
+
+    def _generate_tc_pie_gpu(self):
+        pie = {'columns': [{'type': 'string', 'name': 'name'}, {'type': 'number', 'name': 'value'}], 'rows': []}
+        pie['rows'].append(['Using Tensor Cores', self.profile_data.tc_used_ratio])
+        pie['rows'].append(['Not Using Tensor Cores', 1.0 - self.profile_data.tc_used_ratio])
+        data = {'total': pie}
+        return data
+
+    def _generate_kernel_op_table_npu(self):
         table = {}
         result = {
             'metadata': {
@@ -338,7 +436,7 @@ class RunGenerator(object):
             table['rows'].append(temp)
         return result
 
-    def _generate_kernel_pie(self):
+    def _generate_kernel_pie_npu(self):
         pie = {'columns': [{'type': 'string', 'name': 'name'}, {'type': 'number', 'name': 'value'}], 'rows': []}
         with open(self.profile_data.kernel_file_path, encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -347,10 +445,10 @@ class RunGenerator(object):
                 data.append(row.get('Name'))
                 data.append(float(row.get('Duration(us)')))
                 pie['rows'].append(data)
-        datas = {'total': pie}
+        datas = {'total': pie, 'device_target': self.device_target}
         return datas
 
-    def _generate_kernel_table(self):
+    def _generate_kernel_table_npu(self):
         display_columns = ('Step ID', 'Name', 'Type', 'Accelerator Core', 'Start Time', 'Duration(us)', 'Wait Time(us)',
                            'Block Dim', 'Input Shapes', 'Input Data Types', 'Input Formats', 'Output Shapes',
                            'Output Data Types', 'Output Formats')
@@ -388,7 +486,7 @@ class RunGenerator(object):
                 datas.append(row)
         return datas
 
-    def _generate_tc_pie(self):
+    def _generate_tc_pie_npu(self):
         pie = {'columns': [{'type': 'string', 'name': 'name'}, {'type': 'number', 'name': 'value'}], 'rows': []}
         for key, val in self.accelerator_data.items():
             pie['rows'].append(['Using ' + key.replace('_', ' '), val])

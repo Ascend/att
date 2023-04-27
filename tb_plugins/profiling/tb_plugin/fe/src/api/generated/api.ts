@@ -465,7 +465,8 @@ export interface KernelGraph {
    * @type {Graph}
    * @memberof KernelGraph
    */
-  total: Graph
+  total: Graph,
+  device_target: string
 }
 /**
  *
