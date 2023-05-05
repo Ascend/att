@@ -465,13 +465,23 @@ class RunGenerator(object):
         for idx, column in enumerate(datas[0]):
             if column == 'Name':
                 self.name_idx = idx
-            elif column == 'Duration(us)':
+            if column == 'Duration(us)':
                 self.duration_idx = idx
-            elif column == 'Accelerator Core':
+            if column == 'Accelerator Core':
                 self.core_type_idx = idx
+            if column == 'Start Time':
+                self.start_time_idx = idx
+            if column == 'Wait Time(us)':
+                self.wait_time_idx = idx
+            if column == 'Block Dim':
+                self.block_dim = idx
 
             if column in display_columns:
                 display_idxs.append(idx)
+                if column == 'Start Time' or column == 'Duration(us)' \
+                        or column == 'Wait Time(us)' or column == 'Block Dim':
+                    table['columns'].append({'type': 'number', 'name': column})
+                    continue
                 table['columns'].append({'type': 'string', 'name': column})
         table['rows'] = [self._handle_kernel_table_rows(display_idxs, ls) for idx, ls in
                          enumerate(datas) if idx != 0]
@@ -519,7 +529,11 @@ class RunGenerator(object):
     def _handle_kernel_table_rows(self, ids, row):
         display_row = []
         for idx in ids:
-            display_row.append(row[idx])
+            if idx == self.start_time_idx or idx == self.duration_idx \
+                    or idx == self.wait_time_idx or idx == self.block_dim:
+                display_row.append(float(row[idx]))
+            else:
+                display_row.append(row[idx])
         call_name = row[self.name_idx]
         call_duration = float(row[self.duration_idx])
         call_type = row[self.core_type_idx]
