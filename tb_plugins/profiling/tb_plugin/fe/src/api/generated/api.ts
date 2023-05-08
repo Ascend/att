@@ -90,7 +90,7 @@ export class RequiredError extends Error {
  * @export
  * @interface CallStackTableData
  */
-export interface CallStackTableData extends Array<CallStackTableDataInner> {}
+export interface CallStackTableData extends Array<CallStackTableDataInner> { }
 /**
  *
  * @export
@@ -862,7 +862,7 @@ export interface OpStats {
  * @export
  * @interface OperationTableData
  */
-export interface OperationTableData extends Array<OperationTableDataInner> {}
+export interface OperationTableData extends Array<OperationTableDataInner> { }
 /**
  *
  * @export
@@ -1172,6 +1172,25 @@ export interface ValueAndFormat {
    * @memberof ValueAndFormat
    */
   f: string
+}
+/**
+ * 
+ * @exports
+ * @interface Views
+ */
+export interface Views {
+  /**
+   * 
+   * @type {string}
+   * @memberof Views
+   */
+  device_target: string
+  /**
+   * 
+   * @type {Array<string>}
+   * @memberof Views
+   */
+  views: Array<string>
 }
 /**
  * DefaultApi - fetch parameter creator
@@ -3524,7 +3543,7 @@ export const DefaultApiFp = function (configuration?: Configuration) {
     viewsGet(
       run: string,
       options?: any
-    ): (fetch?: FetchAPI, basePath?: string) => Promise<Array<string>> {
+    ): (fetch?: FetchAPI, basePath?: string) => Promise<Views> {
       const localVarFetchArgs = DefaultApiFetchParamCreator(
         configuration
       ).viewsGet(run, options)

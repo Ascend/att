@@ -23,7 +23,7 @@ export const GPUKernelTotalTimeTooltip = `The accumulated time of all calls of t
 
 export const TensorCoresPieChartTooltip = `The accumulated time of all kernels using or not using Tensor Cores.`
 
-export const TensorCoresPieChartTooltipAscend = `The accumulated time of all kernels using or not using AI Cores.`
+export const TensorCoresPieChartTooltipAscend = `The accumulated time of all kernels group by Accelerator Core.`
 
 export const DistributedGpuInfoTableTooltip = `Information about GPU hardware used during the run.`
 

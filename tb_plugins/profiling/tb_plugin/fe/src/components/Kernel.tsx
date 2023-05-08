@@ -163,7 +163,7 @@ export const Kernel: React.FC<IProps> = (props) => {
   const TensorCoresTitle = React.useMemo(
     () => deviceTarget === 'Ascend' ?
       chartHeaderRenderer(
-        'AI Cores Utilization',
+        'Accelerator Core Utilization',
         TensorCoresPieChartTooltipAscend
       )
       :
