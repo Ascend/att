@@ -57,6 +57,8 @@ class Run(object):
 
     def get_spans(self, worker=None):
         if worker is not None:
+            if self.span_view.get(worker) is None:
+                return None
             spans = self.span_view[worker]
         else:
             spans = [s for _, s in self.profiles.keys()]

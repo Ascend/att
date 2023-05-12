@@ -138,7 +138,11 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         self._validate(run=name)
         run = self._get_run(name)
         views_list = [view.display_name for view in run.views]
-        return self.respond_as_json(views_list)
+        data = {
+            'device_target': run.device_target,
+            'views': views_list
+        }
+        return self.respond_as_json(data)
 
     @wrappers.Request.application
     def workers_route(self, request: werkzeug.Request):

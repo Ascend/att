@@ -438,13 +438,11 @@ class RunGenerator(object):
 
     def _generate_kernel_pie_npu(self):
         pie = {'columns': [{'type': 'string', 'name': 'name'}, {'type': 'number', 'name': 'value'}], 'rows': []}
-        with open(self.profile_data.kernel_file_path, encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                data = []
-                data.append(row.get('Name'))
-                data.append(float(row.get('Duration(us)')))
-                pie['rows'].append(data)
+        for key, val in self.statistic_data.items():
+            data = []
+            data.append(key)
+            data.append(float(val['Total']))
+            pie['rows'].append(data)
         datas = {'total': pie, 'device_target': self.device_target}
         return datas
 
@@ -465,24 +463,17 @@ class RunGenerator(object):
         for idx, column in enumerate(datas[0]):
             if column == 'Name':
                 self.name_idx = idx
-            if column == 'Duration(us)':
+            elif column == 'Duration(us)':
                 self.duration_idx = idx
-            if column == 'Accelerator Core':
+            elif column == 'Accelerator Core':
                 self.core_type_idx = idx
-            if column == 'Start Time':
-                self.start_time_idx = idx
-            if column == 'Wait Time(us)':
-                self.wait_time_idx = idx
-            if column == 'Block Dim':
-                self.block_dim = idx
 
             if column in display_columns:
                 display_idxs.append(idx)
-                if column == 'Start Time' or column == 'Duration(us)' \
-                        or column == 'Wait Time(us)' or column == 'Block Dim':
+                if column in ('Duration(us)', 'Start Time', 'Wait Time(us)', 'Block Dim'):
                     table['columns'].append({'type': 'number', 'name': column})
-                    continue
-                table['columns'].append({'type': 'string', 'name': column})
+                else:
+                    table['columns'].append({'type': 'string', 'name': column})
         table['rows'] = [self._handle_kernel_table_rows(display_idxs, ls) for idx, ls in
                          enumerate(datas) if idx != 0]
         return result
@@ -529,11 +520,7 @@ class RunGenerator(object):
     def _handle_kernel_table_rows(self, ids, row):
         display_row = []
         for idx in ids:
-            if idx == self.start_time_idx or idx == self.duration_idx \
-                    or idx == self.wait_time_idx or idx == self.block_dim:
-                display_row.append(float(row[idx]))
-            else:
-                display_row.append(row[idx])
+            display_row.append(row[idx])
         call_name = row[self.name_idx]
         call_duration = float(row[self.duration_idx])
         call_type = row[self.core_type_idx]

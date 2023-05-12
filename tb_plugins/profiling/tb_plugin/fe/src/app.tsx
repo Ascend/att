@@ -159,6 +159,7 @@ export const App = () => {
   const [view, setView] = React.useState<Views | ''>('')
   const [loaded, setLoaded] = React.useState(false)
   const iframeRef = React.useRef<HTMLIFrameElement>(null)
+  const [deviceTarget, setDeviceTarget] = React.useState<string>('GPU')
 
   const [diffLeftWorkerOptions, setDiffLeftWorkerOptions] = React.useState<
     string[]
@@ -260,9 +261,10 @@ export const App = () => {
   React.useEffect(() => {
     if (run) {
       api.defaultApi.viewsGet(run).then((rawViews) => {
-        const views = rawViews
+        const views = rawViews.views
           .map((v) => Views[Views[v as Views]])
           .filter(Boolean)
+        setDeviceTarget(rawViews.device_target)
         setViews(views)
       })
     }
@@ -503,7 +505,9 @@ export const App = () => {
               <FormControl variant="outlined" className={classes.formControl}>
                 <Select value={view} onChange={handleViewChange}>
                   {views.map((view) => (
-                    <MenuItem value={view}>{ViewNames[view]}</MenuItem>
+                    <MenuItem value={view}>{view === Views.Kernel ? (
+                      deviceTarget === 'Ascend' ? `NPU ${ViewNames[view]}` : `GPU ${ViewNames[view]}`
+                    ) : ViewNames[view]}</MenuItem>
                   ))}
                 </Select>
               </FormControl>

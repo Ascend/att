@@ -118,7 +118,7 @@ class RunLoader(object):
             sys.exit(1)
         except Exception as ex:
             if self.device_target == 'Ascend':
-                worker_name = f'{worker}_{span_name}'
+                worker_name = f'{worker}_{span_name}_ascend_pt'
             else:
                 worker_name = worker
             logger.warning('Failed to parse profile data for Run %s on %s. Exception=%s',
