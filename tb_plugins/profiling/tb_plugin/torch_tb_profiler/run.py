@@ -139,6 +139,11 @@ class RunProfile(object):
 
         self.module_stats: Optional[List(Stats)] = None
         self.pl_module_stats: Optional[List(Stats)] = None
+        self.device_target = None
+
+        self.memory_all_curve = None
+        self.memory_div_curve = None
+        self.memory_events = None
 
     def append_gpu_metrics(self, raw_data: bytes):
         counter_json_str = ', {}'.format(', '.join(self.gpu_metrics))

@@ -275,7 +275,7 @@ export const Kernel: React.FC<IProps> = (props) => {
                           value={searchOpName}
                           onChange={onSearchOpChanged}
                           type="search"
-                          label="Search by Step ID"
+                          label="Search by Step Id"
                         />
                       </Grid>)
                     :

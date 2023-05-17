@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------------
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # --------------------------------------------------------------------------
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from typing import Dict, Iterable, List
 import csv
 
@@ -11,6 +11,7 @@ from .data import DistributedRunProfileData, RunProfileData
 from .module_op import aggegate_module_view, aggegate_pl_module_view
 from .op_agg import KernelAggByNameOp, OperatorAgg
 from .overall_parser import ProfileRole
+from ..utils import Canonicalizer
 
 logger = utils.get_logger()
 
@@ -78,6 +79,14 @@ class RunGenerator(object):
             profile_run.views.append(consts.MEMORY_VIEW)
             profile_run.memory_snapshot = self.profile_data.memory_snapshot
 
+        profile_run.device_target = self.device_target
+        if self.device_target == 'Ascend':
+            if self.profile_data.has_memory:
+                profile_run.views.append(consts.MEMORY_VIEW)
+                profile_run.memory_div_curve = None
+                profile_run.memory_all_curve = self._get_memory_all_curve()
+                profile_run.memory_events = self._get_memory_event()
+
         profile_run.module_stats = aggegate_module_view(self.profile_data.tid2tree, self.profile_data.events)
         profile_run.pl_module_stats = aggegate_pl_module_view(self.profile_data.tid2tree, self.profile_data.events)
         if profile_run.is_pytorch_lightning and profile_run.pl_module_stats:
@@ -86,6 +95,105 @@ class RunGenerator(object):
             profile_run.views.append(consts.MODULE_VIEW)
 
         return profile_run
+
+    def _get_memory_event(self):
+        display_columns = ('Operator', 'Size(KB)', 'Allocation Time(us)', 'Release Time(us)', 'Duration(us)')
+        path = self.profile_data.memory_form_path
+        display_datas = defaultdict(list)
+        devices_type = []
+        table = {
+            'metadata': {
+                'title': 'Memory Events',
+                'default_device': 'all',
+            },
+            'columns': [],
+            'rows': {}
+        }
+        datas = self._get_csv_data(path)
+        for idx, column in enumerate(datas[0]):
+            if column == 'Device Type':
+                self.device_type_form_idx = idx
+            if column in display_columns:
+                if column == 'Operator':
+                    table['columns'].append({'name': column, 'type': 'string'})
+                else:
+                    table['columns'].append({'name': column, 'type': 'number'})
+        for ls in datas[1:]:
+            device_type = ls[self.device_type_form_idx]
+            nums = [ls[1], float(ls[2]), float(ls[3])]
+            if ls[4]:
+                nums.append(float(ls[4]))
+            if ls[5]:
+                nums.append(round(float(ls[5]), 2))
+            display_datas[device_type].append(nums)
+        table['rows'] = display_datas
+        for name in display_datas:
+            devices_type.append(name)
+        table['metadata'].update({'default_device': devices_type[0]})
+        return table
+
+    def _get_memory_all_curve(self):
+        time_metric: str = 'us'
+        memory_metric: str = 'KB'
+        cano = Canonicalizer(time_metric, memory_metric)
+        pta_and_ge_data, pta_or_ge_data = self._handle_memory_data()
+        devices_type, peaks = self._get_peaks_and_devices_type()
+        result = {
+            'metadata': {
+                'default_device': devices_type[0],
+                'devices': devices_type,
+                'peaks': peaks,
+                'totals': {},
+                'first_ts': 0,
+                'time_metric': cano.time_metric,
+                'memory_metric': cano.memory_metric,
+                'time_factor': cano.time_factor,
+                'memory_factor': cano.memory_factor,
+            },
+            'columns': [
+                {'name': f'Time ({cano.time_metric})', 'type': 'number', 'tooltip': 'Time since profiler starts.'},
+                {'name': f'Allocated ({cano.memory_metric})', 'type': 'number', 'tooltip': 'Total memory in use.'},
+                {'name': f'Reserved ({cano.memory_metric})', 'type': 'number',
+                 'tooltip': 'Total reserved memory by allocator, both used and unused.'},
+            ],
+            'rows': pta_and_ge_data,
+        }
+        return result
+
+    def _get_peaks_and_devices_type(self):
+        devices_type = []
+        peaks = {}
+        pta_and_ge_data, pta_or_ge_data = self._handle_memory_data()
+        for name in pta_and_ge_data:
+            devices_type.append(name)
+            max_reserved = 0
+            for array_value in pta_and_ge_data.get(name):
+                max_reserved = max(array_value[2], max_reserved)
+            peaks[name] = 'Peak Memory Usage: {:.1f}'.format(max_reserved)
+        return devices_type, peaks
+
+    def _handle_memory_data(self):
+        pta_and_ge_data = defaultdict(list)
+        pta_or_ge_data = {}
+        path = self.profile_data.memory_line_path
+        datas = self._get_csv_data(path)
+        for idx, column in enumerate(datas[0]):
+            if column == 'Tag':
+                self.tag_type_idx = idx
+            if column == 'Device Type':
+                self.device_type_idx = idx
+            if column == 'Timestamp(us)':
+                self.time_idx = idx
+            if column == 'Total Reserved(KB)':
+                self.reserved_idx = idx
+            if column == 'Total Allocated(KB)':
+                self.allocated_idx = idx
+        for ls in datas[1:]:
+            temp: list = [float(ls[self.time_idx]), float(ls[self.reserved_idx]), float(ls[self.allocated_idx])]
+            device_type = ls[self.device_type_idx]
+            pta_and_ge_data[device_type].append(temp)
+            pta_or_ge_data.setdefault(device_type, {}).setdefault(ls[self.tag_type_idx], []).append(temp)
+        return pta_and_ge_data, pta_or_ge_data
 
     def _generate_overview(self):
         def build_part_time_str(part_cost: float, part_name: str):
@@ -447,7 +555,7 @@ class RunGenerator(object):
         return datas
 
     def _generate_kernel_table_npu(self):
-        display_columns = ('Step ID', 'Name', 'Type', 'Accelerator Core', 'Start Time', 'Duration(us)', 'Wait Time(us)',
+        display_columns = ('Step Id', 'Name', 'Type', 'Accelerator Core', 'Start Time', 'Duration(us)', 'Wait Time(us)',
                            'Block Dim', 'Input Shapes', 'Input Data Types', 'Input Formats', 'Output Shapes',
                            'Output Data Types', 'Output Formats')
         display_idxs = []
@@ -478,7 +586,8 @@ class RunGenerator(object):
                          enumerate(datas) if idx != 0]
         return result
 
-    def _get_csv_data(self, path: str):
+    @staticmethod
+    def _get_csv_data(path: str):
         if path is None:
             return
         datas = []
@@ -587,7 +696,7 @@ class DistributedRunGenerator(object):
             for used_device in data.used_devices:
                 gpu_info = RunGenerator._get_gpu_info(data.device_props, used_device)
                 if gpu_info is not None:
-                    result[node][process_id]['GPU'+str(used_device)] = gpu_info
+                    result[node][process_id]['GPU' + str(used_device)] = gpu_info
 
         if result:
             for k, v in result.items():
@@ -622,7 +731,7 @@ class DistributedRunGenerator(object):
                 ]
                 steps_to_overlap['all'][data.worker] = [
                     sum(x) for x in zip(steps_to_overlap['all'][data.worker], steps_to_overlap[step_name][data.worker])]
-            steps_to_overlap['all'][data.worker] = [x/step_number for x in steps_to_overlap['all'][data.worker]]
+            steps_to_overlap['all'][data.worker] = [x / step_number for x in steps_to_overlap['all'][data.worker]]
         for k, v in steps_to_overlap.items():
             steps_to_overlap[k] = OrderedDict(sorted(v.items()))
         result['data'] = steps_to_overlap
@@ -644,11 +753,11 @@ class DistributedRunGenerator(object):
             for step, comm_stats in data.step_comm_stats.items():
                 steps_to_wait.setdefault(step, OrderedDict())[data.worker] = [
                     comm_stats[1],
-                    comm_stats[0]-comm_stats[1]
+                    comm_stats[0] - comm_stats[1]
                 ]
                 steps_to_wait['all'][data.worker] = [
                     sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[step][data.worker])]
-            steps_to_wait['all'][data.worker] = [x/step_number for x in steps_to_wait['all'][data.worker]]
+            steps_to_wait['all'][data.worker] = [x / step_number for x in steps_to_wait['all'][data.worker]]
 
         for k, v in steps_to_wait.items():
             steps_to_wait[k] = OrderedDict(sorted(v.items()))
@@ -680,11 +789,11 @@ class DistributedRunGenerator(object):
                     op,
                     stats[0],
                     stats[1],
-                    round(stats[1]/stats[0]),
+                    round(stats[1] / stats[0]),
                     stats[2],
-                    round(stats[2]/stats[0]),
+                    round(stats[2] / stats[0]),
                     stats[3],
-                    round(stats[3]/stats[0])
+                    round(stats[3] / stats[0])
                 ]
                 table['rows'].append(row)
             workers_to_comm_ops[data.worker] = table

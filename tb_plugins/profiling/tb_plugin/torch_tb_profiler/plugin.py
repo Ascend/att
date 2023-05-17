@@ -291,17 +291,22 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
             start_ts = int(start_ts)
         if end_ts is not None:
             end_ts = int(end_ts)
-
-        return self.respond_as_json(
-            profile.get_memory_stats(start_ts=start_ts, end_ts=end_ts, memory_metric=memory_metric), True)
+        if profile.device_target == 'Ascend':
+            return None
+        else:
+            return self.respond_as_json(
+                profile.get_memory_stats(start_ts=start_ts, end_ts=end_ts, memory_metric=memory_metric), True)
 
     @wrappers.Request.application
     def memory_curve_route(self, request: werkzeug.Request):
         profile = self._get_profile_for_request(request)
         time_metric = request.args.get('time_metric', 'ms')
         memory_metric = request.args.get('memory_metric', 'MB')
-        return self.respond_as_json(
-            profile.get_memory_curve(time_metric=time_metric, memory_metric=memory_metric), True)
+        if profile.device_target == 'Ascend':
+            return self.respond_as_json(profile.memory_all_curve, True)
+        else:
+            return self.respond_as_json(
+                profile.get_memory_curve(time_metric=time_metric, memory_metric=memory_metric), True)
 
     @wrappers.Request.application
     def memory_events_route(self, request: werkzeug.Request):
@@ -315,9 +320,12 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         if end_ts is not None:
             end_ts = int(end_ts)
 
-        return self.respond_as_json(
-            profile.get_memory_events(start_ts, end_ts, time_metric=time_metric,
-                                      memory_metric=memory_metric), True)
+        if profile.device_target == 'Ascend':
+            return self.respond_as_json(profile.memory_events, True)
+        else:
+            return self.respond_as_json(
+                profile.get_memory_events(start_ts, end_ts, time_metric=time_metric,
+                                          memory_metric=memory_metric), True)
 
     @wrappers.Request.application
     def module_route(self, request: werkzeug.Request):
