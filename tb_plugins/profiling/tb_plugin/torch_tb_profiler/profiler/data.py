@@ -75,6 +75,7 @@ class RunProfileData(object):
         self.steps_costs = None
         self.steps_names = None
         self.avg_costs = None
+        self.has_memory: bool = False
 
         # GPU parser
         self.gpu_metrics_parser: GPUMetricsParser = None
@@ -100,6 +101,10 @@ class RunProfileData(object):
         # recommendation based on analysis result.
         self.recommendations = []
 
+        # npu memory data
+        self.memory_form_path: str = None
+        self.memory_line_path: str = None
+
     @staticmethod
     def parse_gpu(worker, span, path, cache_dir):
         trace_path, trace_json = RunProfileData._preprocess_file(path, cache_dir, 'GPU')
@@ -114,6 +119,8 @@ class RunProfileData(object):
         trace_path = path
         has_trace = False
         has_kernel = False
+        has_memory_line = False
+        has_memory_form = False
         for file in io.listdir(path):
             if utils.is_npu_trace_path(file):
                 has_trace = True
@@ -129,7 +136,14 @@ class RunProfileData(object):
             if str(file) == 'kernel_details.csv':
                 has_kernel = True
                 profile.kernel_file_path = io.join(path, file)
+            if str(file) == 'memory_view_line_chart.csv':
+                has_memory_line = True
+                profile.memory_line_path = io.join(path, file)
+            if str(file) == 'memory_view_form.csv':
+                has_memory_form = True
+                profile.memory_form_path = io.join(path, file)
         profile.has_kernel = has_kernel
+        profile.has_memory = has_memory_form and has_memory_line
         return profile
 
     @staticmethod
