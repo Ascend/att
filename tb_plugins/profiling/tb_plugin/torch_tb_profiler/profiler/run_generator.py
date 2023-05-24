@@ -74,18 +74,16 @@ class RunGenerator(object):
 
         profile_run.tid2tree = self.profile_data.tid2tree
         profile_run.pl_tid2tree = self.profile_data.pl_tid2tree
+        profile_run.device_target = self.device_target
 
-        if self.profile_data.memory_snapshot:
+        if self.device_target == 'Ascend' and self.profile_data.has_memory:
+            profile_run.views.append(consts.MEMORY_VIEW)
+            profile_run.memory_div_curve = None
+            profile_run.memory_all_curve = self._get_memory_all_curve()
+            profile_run.memory_events = self._get_memory_event()
+        elif self.profile_data.memory_snapshot:
             profile_run.views.append(consts.MEMORY_VIEW)
             profile_run.memory_snapshot = self.profile_data.memory_snapshot
-
-        profile_run.device_target = self.device_target
-        if self.device_target == 'Ascend':
-            if self.profile_data.has_memory:
-                profile_run.views.append(consts.MEMORY_VIEW)
-                profile_run.memory_div_curve = None
-                profile_run.memory_all_curve = self._get_memory_all_curve()
-                profile_run.memory_events = self._get_memory_event()
 
         profile_run.module_stats = aggegate_module_view(self.profile_data.tid2tree, self.profile_data.events)
         profile_run.pl_module_stats = aggegate_pl_module_view(self.profile_data.tid2tree, self.profile_data.events)

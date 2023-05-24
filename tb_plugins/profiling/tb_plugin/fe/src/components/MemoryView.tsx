@@ -64,7 +64,10 @@ export interface IProps {
   run: string
   worker: string
   span: string
+  deviceTarget: string
 }
+
+const tags = ['PTA + GE', 'Total']
 
 export const MemoryView: React.FC<IProps> = React.memo((props) => {
   interface EventSizeFilter {
@@ -75,7 +78,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
     [deviceName: string]: number
   }
 
-  const { run, worker, span } = props
+  const { run, worker, span, deviceTarget } = props
   const classes = useStyles()
 
   const [memoryStatsData, setMemoryStatsData] = React.useState<
@@ -104,6 +107,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
 
   const [devices, setDevices] = React.useState<string[]>([])
   const [device, setDevice] = React.useState('')
+  const [tag, setTag] = React.useState('Total')
   interface SelectedRange {
     start: number
     end: number
@@ -221,7 +225,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
   }
 
   React.useEffect(() => {
-    api.defaultApi
+    deviceTarget !== 'Ascend' && api.defaultApi
       .memoryGet(
         run,
         worker,
@@ -277,6 +281,10 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
       setMemoryCurveData(resp)
       // Reset the select range to null whenever run/worker/span changes
       setSelectedRange(undefined)
+      if (deviceTarget === 'Ascend') {
+        setDevice(resp.metadata.default_device)
+        setDevices(Object.keys(resp.rows))
+      }
     })
   }, [run, worker, span])
 
@@ -292,6 +300,11 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
 
   const onDeviceChanged: SelectProps['onChange'] = (event) => {
     setDevice(event.target.value as string)
+    setSelectedRange(undefined)
+  }
+
+  const onTagChanged: SelectProps['onChange'] = (event) => {
+    setTag(event.target.value as string)
     setSelectedRange(undefined)
   }
 
@@ -317,17 +330,31 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
               <DataLoading value={memoryCurveData}>
                 {(graph) => (
                   <Grid container direction="column">
-                    <Grid item>
-                      <InputLabel id="memory-curve-device">Device</InputLabel>
-                      <Select
-                        labelId="memory-curve-device"
-                        value={device}
-                        onChange={onDeviceChanged}
-                      >
-                        {devices.map((device) => (
-                          <MenuItem value={device}>{device}</MenuItem>
-                        ))}
-                      </Select>
+                    <Grid container>
+                      <Grid item sm={3}>
+                        <InputLabel id="memory-curve-device">Device</InputLabel>
+                        <Select
+                          labelId="memory-curve-device"
+                          value={device}
+                          onChange={onDeviceChanged}
+                        >
+                          {devices.map((device) => (
+                            <MenuItem value={device}>{device}</MenuItem>
+                          ))}
+                        </Select>
+                      </Grid>
+                      <Grid item>
+                        <InputLabel id="memory-curve-tag">Tag</InputLabel>
+                        <Select
+                          labelId="memory-curve-tag"
+                          value={tag}
+                          onChange={onTagChanged}
+                        >
+                          {tags.map((device) => (
+                            <MenuItem value={device}>{device}</MenuItem>
+                          ))}
+                        </Select>
+                      </Grid>
                     </Grid>
                     {showCurve() && lineChartData && (
                       <Grid item>
@@ -356,7 +383,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
             {showEvents() && (
               <>
                 <Grid container>
-                  <Grid item container sm={6} justify="space-around">
+                  <Grid item container sm={6} justifyContent="space-around">
                     <Grid item>
                       <TextField
                         classes={{ root: classes.inputWidthOverflow }}
@@ -431,32 +458,34 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
                 </Grid>
               </>
             )}
-            <>
-              <Grid item container direction="column" sm={6}>
-                <Grid item container direction="column" alignContent="center">
-                  <TextField
-                    classes={{ root: classes.inputWidthOverflow }}
-                    value={searchOperatorName}
-                    onChange={onSearchOperatorChanged}
-                    type="search"
-                    label="Search by Name"
-                  />
-                </Grid>
-              </Grid>
-              <Grid item direction="column">
-                <DataLoading value={memoryStatsData}>
-                  {(data) => (
-                    <MemoryStatsTable
-                      data={{
-                        rows: searchedTableDataRows,
-                        columns: data.columns
-                      }}
-                      sort={memoryStatsData!.metadata.sort}
+            {deviceTarget !== 'Ascend' && (
+              <>
+                <Grid item container direction="column" sm={6}>
+                  <Grid item container direction="column" alignContent="center">
+                    <TextField
+                      classes={{ root: classes.inputWidthOverflow }}
+                      value={searchOperatorName}
+                      onChange={onSearchOperatorChanged}
+                      type="search"
+                      label="Search by Name"
                     />
-                  )}
-                </DataLoading>
-              </Grid>
-            </>
+                  </Grid>
+                </Grid>
+                <Grid item direction="column">
+                  <DataLoading value={memoryStatsData}>
+                    {(data) => (
+                      <MemoryStatsTable
+                        data={{
+                          rows: searchedTableDataRows,
+                          columns: data.columns
+                        }}
+                        sort={memoryStatsData!.metadata.sort}
+                      />
+                    )}
+                  </DataLoading>
+                </Grid>
+              </>
+            )}
           </Grid>
         </CardContent>
       </Card>

@@ -291,10 +291,8 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
             start_ts = int(start_ts)
         if end_ts is not None:
             end_ts = int(end_ts)
-        if profile.device_target == 'Ascend':
-            return None
-        else:
-            return self.respond_as_json(
+
+        return self.respond_as_json(
                 profile.get_memory_stats(start_ts=start_ts, end_ts=end_ts, memory_metric=memory_metric), True)
 
     @wrappers.Request.application

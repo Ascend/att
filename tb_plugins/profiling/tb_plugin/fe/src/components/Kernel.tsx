@@ -37,6 +37,7 @@ export interface IProps {
   run: string
   worker: string
   span: string
+  deviceTarget: string
 }
 
 const useStyles = makeStyles((theme) => ({
@@ -60,7 +61,7 @@ const useStyles = makeStyles((theme) => ({
 }))
 
 export const Kernel: React.FC<IProps> = (props) => {
-  const { run, worker, span } = props
+  const { run, worker, span, deviceTarget } = props
   const classes = useStyles()
   const tooltipCommonClasses = useTooltipCommonStyles()
   const chartHeaderRenderer = React.useMemo(
@@ -80,7 +81,6 @@ export const Kernel: React.FC<IProps> = (props) => {
   const [searchOpName, setSearchOpName] = React.useState('')
   const [sortColumn, setSortColumn] = React.useState('')
   const [hasStep, setHasStep] = React.useState(false)
-  const [deviceTarget, setDeviceTarget] = React.useState('GPU')
 
   const [topText, actualTop, useTop, setTopText, setUseTop] = useTopN({
     defaultUseTop: UseTop.Use,
@@ -113,7 +113,6 @@ export const Kernel: React.FC<IProps> = (props) => {
       .kernelGet(run, worker, span, KernelGroupBy.Kernel)
       .then((resp) => {
         setKernelGraph(resp.total)
-        setDeviceTarget(resp.device_target)
         setGroupBy(resp.device_target === 'Ascend' ? KernelGroupBy.KernelNameAndOpName : KernelGroupBy.Kernel)
       })
   }, [run, worker, span])
