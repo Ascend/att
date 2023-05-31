@@ -75,3 +75,9 @@ TOOLTIP_KERNEL_USES_TC = \
     'Whether this kernel uses Tensor Cores.'
 TOOLTIP_KERNEL_OP_TC_ELIGIBLE = \
     'Whether the operator launched this kernel is eligible to use Tensor Cores.'
+TOOLTIP_OP_TC_ELIGIBLE_AICORE = \
+    'Whether this operator is eligible to use AICore.'
+TOOLTIP_OP_TC_SELF_AICORE = \
+    'Time of Device Self Duration With AICore / Device Self Duration.'
+TOOLTIP_OP_TC_TOTAL_AICORE = \
+    'Time of Device Total Duration With AICore / Device Total Duration.'
