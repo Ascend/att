@@ -33,17 +33,28 @@ class RunGenerator(object):
         profile_run.has_communication = self.profile_data.has_communication
         profile_run.has_memcpy_or_memset = self.profile_data.has_memcpy_or_memset
         profile_run.profiler_start_ts = self.profile_data.profiler_start_ts
-        # profile_run.views.append(consts.OVERALL_VIEW)
-        profile_run.overview = self._generate_overview()
 
-        # profile_run.views.append(consts.OP_VIEW)
-        profile_run.operation_pie_by_name = self._generate_op_pie()
-        profile_run.operation_table_by_name = self._generate_op_table(self.profile_data.op_list_groupby_name)
-        profile_run.operation_stack_by_name = self._generate_op_table_for_stack(False)
-        profile_run.operation_pie_by_name_input = self._generate_op_pie(True)
-        profile_run.operation_table_by_name_input = self._generate_op_table(
-            self.profile_data.op_list_groupby_name_input, True)
-        profile_run.operation_stack_by_name_input = self._generate_op_table_for_stack(True)
+        if self.device_target == 'GPU':
+            profile_run.views.append(consts.OVERALL_VIEW)
+            profile_run.overview = self._generate_overview()
+
+            profile_run.views.append(consts.OP_VIEW)
+            profile_run.operation_pie_by_name = self._generate_op_pie()
+            profile_run.operation_table_by_name = self._generate_op_table(self.profile_data.op_list_groupby_name)
+            profile_run.operation_stack_by_name = self._generate_op_table_for_stack(False)
+            profile_run.operation_pie_by_name_input = self._generate_op_pie(True)
+            profile_run.operation_table_by_name_input = self._generate_op_table(
+                self.profile_data.op_list_groupby_name_input, True)
+            profile_run.operation_stack_by_name_input = self._generate_op_table_for_stack(True)
+        else:
+            if self.profile_data.has_operator_view:
+                profile_run.views.append(consts.OP_VIEW)
+                profile_run.operation_pie_by_name = self._get_operator_pie()
+                profile_run.operation_table_by_name = self._get_operator_table_by_name()
+                profile_run.operation_stack_by_name = self._get_call_stack_by_name()
+                profile_run.operation_pie_by_name_input = self._get_operator_pie(True)
+                profile_run.operation_table_by_name_input = self._get_operator_table_by_name(True)
+                profile_run.operation_stack_by_name_input = self._get_call_stack_by_name_shapes(True)
 
         if self.profile_data.has_kernel:
             profile_run.views.append(consts.KERNEL_VIEW)
@@ -94,6 +105,173 @@ class RunGenerator(object):
 
         return profile_run
 
+    def _get_operator_details_by_name(self):
+        operator_by_name = defaultdict(list)
+        operator_by_name_and_input_shapes = defaultdict(list)
+        path = self.profile_data.operator_path
+        datas = RunGenerator._get_csv_data(path)
+        if len(datas) <= 1:
+            return operator_by_name, operator_by_name_and_input_shapes
+        for ls in datas[1:]:
+            temp: list = [ls[0], RunGenerator._trans_shape(str(ls[1])), ls[2], float(ls[3]), float(ls[4]),
+                          float(ls[5]), float(ls[6]), float(ls[7]), float(ls[8])]
+            operator_by_name[ls[0]].append(temp)
+            key = "{}###{}".format(str(ls[0]), RunGenerator._trans_shape(str(ls[1])))
+            operator_by_name_and_input_shapes[key].append(temp)
+        return operator_by_name, operator_by_name_and_input_shapes
+
+    def _get_operator_table_by_name(self, group_by_input_shape=False):
+        result = {
+            'metadata': {
+                'sort': 'device_self_duration',
+                'tooltips': {
+                    'tc_eligible': consts.TOOLTIP_OP_TC_ELIGIBLE_AICORE,
+                    'tc_self_ratio': consts.TOOLTIP_OP_TC_SELF_AICORE,
+                    'tc_total_ratio': consts.TOOLTIP_OP_TC_TOTAL_AICORE
+                }
+            },
+            'data': self._set_operator_data(True) if group_by_input_shape else self._set_operator_data()
+        }
+        return result
+
+    def _get_operator_pie(self, group_by_input_shape=False):
+        data = {}
+        tag = {'device_self_time': 'Device Self Time (us)', 'device_total_time': 'Device Total Time (us)',
+               'host_self_time': 'Host Self Time (us)', 'host_total_time': 'Host Total Time (us)'}
+        for key, value in tag.items():
+            data[key] = {
+                'title': value,
+                'columns': [{'type': 'string', 'name': 'name'}, {'type': 'number', 'name': 'value'}],
+                'rows': []
+            }
+        for value in iter(self._set_operator_data(group_by_input_shape)
+                          if group_by_input_shape else self._set_operator_data()):
+            data['device_self_time'].get('rows').append([value.get('name'), value.get('device_self_duration')])
+            data['device_total_time'].get('rows').append([value.get('name'), value.get('device_total_duration')])
+            data['host_self_time'].get('rows').append([value.get('name'), value.get('host_self_duration')])
+            data['host_total_time'].get('rows').append([value.get('name'), value.get('host_total_duration')])
+        return data
+
+    def _set_operator_data(self, group_by_input_shape=False):
+        result = []
+        if group_by_input_shape:
+            _, operator_by_name = self._get_operator_details_by_name()
+        else:
+            operator_by_name, _ = self._get_operator_details_by_name()
+        for name_key, values in operator_by_name.items():
+            if group_by_input_shape:
+                name = name_key.split("###")[0]
+                shape = name_key.split("###")[1]
+                result.append(RunGenerator._get_table_head(name, shape, None, values))
+            else:
+                result.append(RunGenerator._get_table_head(name_key, None, None, values))
+        return result
+
+    def _set_name_callstack_data(self, group_by_input_shape=False):
+        if group_by_input_shape:
+            _, operator_by_name = self._get_operator_details_by_name()
+        else:
+            operator_by_name, _ = self._get_operator_details_by_name()
+
+        result = dict()
+        for key, values in operator_by_name.items():
+            name_callstack = defaultdict(list)
+            for value in iter(values):
+                name_callstack[str(value[2])].append(value)
+            result[key] = name_callstack
+        return result
+
+    def _get_call_stack_by_name_shapes(self, group_by_input_shape: bool = False):
+        result = dict()
+        name_input_shapes_callstack_data = self._set_name_callstack_data(group_by_input_shape)
+        for name_key, values in name_input_shapes_callstack_data.items():
+            name = name_key.split("###")[0]
+            shape = name_key.split("###")[1]
+            table = {
+                'metadata': {
+                    'sort': 'device_self_duration',
+                    'tooltips': {
+                        'tc_eligible': consts.TOOLTIP_OP_TC_ELIGIBLE_AICORE,
+                        'tc_self_ratio': consts.TOOLTIP_OP_TC_SELF_AICORE,
+                        'tc_total_ratio': consts.TOOLTIP_OP_TC_TOTAL_AICORE
+                    }
+                },
+                'data': []
+            }
+            for callstack_key, value in values.items():
+                table['data'].append(RunGenerator._get_table_head(name, shape, callstack_key, value))
+            result[name_key] = table
+        return result
+
+    @staticmethod
+    def _trans_shape(shape: str):
+        result = list()
+        if ';' not in shape:
+            result.append('[' + shape.strip() + ']')
+            return '[' + ', '.join(result) + ']'
+        if len(shape.strip()) <= 1:
+            result.append('[]')
+            return '[' + ', '.join(result) + ']'
+        shape_spl = shape.split("\n")
+        for shape_div in iter(shape_spl):
+            result.append('[' + str(shape_div.replace(';', '')) + ']')
+        return '[' + ', '.join(result) + ']'
+
+    def _get_call_stack_by_name(self):
+        result = dict()
+        name_callstack_data = self._set_name_callstack_data()
+        for name_key, values in name_callstack_data.items():
+            table = {
+                'metadata': {
+                    'sort': 'device_self_duration',
+                    'tooltips': {
+                        'tc_eligible': consts.TOOLTIP_OP_TC_ELIGIBLE_AICORE,
+                        'tc_self_ratio': consts.TOOLTIP_OP_TC_SELF_AICORE,
+                        'tc_total_ratio': consts.TOOLTIP_OP_TC_TOTAL_AICORE
+                    }
+                },
+                'data': []
+            }
+            for callstack_key, value in values.items():
+                table['data'].append(RunGenerator._get_table_head(name_key, None, callstack_key, value))
+            result[name_key] = table
+        return result
+
+    @staticmethod
+    def _get_table_head(name: str, input_shape: str, call_stack: str, value: list):
+        if name is None:
+            return {}
+        temp = {'name': name, 'calls': 0, 'host_self_duration': 0,
+                'host_total_duration': 0, 'device_self_duration': 0, 'device_total_duration': 0,
+                'tc_self_ratio': 0, 'tc_total_ratio': 0, 'tc_eligible': 'Yes'}
+        if input_shape is not None:
+            temp['input_shape'] = input_shape
+            if call_stack is not None:
+                temp['call_stack'] = call_stack
+            else:
+                temp['has_call_stack'] = False
+        else:
+            if call_stack is not None:
+                temp['call_stack'] = call_stack
+            else:
+                temp['has_call_stack'] = False
+        for vl in iter(value):
+            if 'has_call_stack' in temp and vl[2]:
+                temp['has_call_stack'] = True
+            temp['calls'] += 1
+            temp['host_self_duration'] = round(temp['host_self_duration'] + vl[3], 2)
+            temp['host_total_duration'] = round(temp['host_total_duration'] + vl[4], 2)
+            temp['device_self_duration'] = round(temp['device_self_duration'] + vl[5], 2)
+            temp['device_total_duration'] = round(temp['device_total_duration'] + vl[6], 2)
+            temp['tc_self_ratio'] = round(temp['tc_self_ratio'] + vl[7], 2)
+            temp['tc_total_ratio'] = round(temp['tc_total_ratio'] + vl[8], 2)
+        temp['tc_eligible'] = 'Yes' if temp['tc_self_ratio'] > 0 or temp['tc_total_ratio'] > 0 else 'No'
+        temp['tc_self_ratio'] = 0 if temp['device_self_duration'] == 0 \
+            else round(temp['tc_self_ratio'] / temp['device_self_duration'] * 100, 2)
+        temp['tc_total_ratio'] = 0 if temp['device_total_duration'] == 0 \
+            else round(temp['tc_total_ratio'] / temp['device_total_duration'] * 100, 2)
+        return temp
+
     def _get_memory_event(self):
         display_columns = ('Operator', 'Size(KB)', 'Allocation Time(us)', 'Release Time(us)', 'Duration(us)')
         path = self.profile_data.memory_form_path
@@ -107,7 +285,7 @@ class RunGenerator(object):
             'columns': [],
             'rows': {}
         }
-        datas = self._get_csv_data(path)
+        datas = RunGenerator._get_csv_data(path)
         for idx, column in enumerate(datas[0]):
             if column == 'Device Type':
                 self.device_type_form_idx = idx
@@ -174,7 +352,7 @@ class RunGenerator(object):
         pta_and_ge_data = defaultdict(list)
         pta_or_ge_data = {}
         path = self.profile_data.memory_line_path
-        datas = self._get_csv_data(path)
+        datas = RunGenerator._get_csv_data(path)
         for idx, column in enumerate(datas[0]):
             if column == 'Tag':
                 self.tag_type_idx = idx
@@ -553,9 +731,9 @@ class RunGenerator(object):
         return datas
 
     def _generate_kernel_table_npu(self):
-        display_columns = ('Step Id', 'Name', 'Type', 'Accelerator Core', 'Start Time', 'Duration(us)', 'Wait Time(us)',
-                           'Block Dim', 'Input Shapes', 'Input Data Types', 'Input Formats', 'Output Shapes',
-                           'Output Data Types', 'Output Formats')
+        display_columns = ('Step Id', 'Name', 'Type', 'Accelerator Core', 'Start Time(us)', 'Duration(us)',
+                           'Wait Time(us)', 'Block Dim', 'Input Shapes', 'Input Data Types', 'Input Formats',
+                           'Output Shapes', 'Output Data Types', 'Output Formats')
         display_idxs = []
         table = {'columns': [], 'rows': []}
         result = {
@@ -565,7 +743,7 @@ class RunGenerator(object):
             'data': table
         }
         path = self.profile_data.kernel_file_path
-        datas = self._get_csv_data(path)
+        datas = RunGenerator._get_csv_data(path)
         for idx, column in enumerate(datas[0]):
             if column == 'Name':
                 self.name_idx = idx

@@ -76,6 +76,7 @@ class RunProfileData(object):
         self.steps_names = None
         self.avg_costs = None
         self.has_memory: bool = False
+        self.has_operator_view: bool = False
 
         # GPU parser
         self.gpu_metrics_parser: GPUMetricsParser = None
@@ -104,6 +105,9 @@ class RunProfileData(object):
         # npu memory data
         self.memory_form_path: str = None
         self.memory_line_path: str = None
+
+        # npu operator data
+        self.operator_path: str = None
 
     @staticmethod
     def parse_gpu(worker, span, path, cache_dir):
@@ -142,6 +146,9 @@ class RunProfileData(object):
             if str(file) == 'memory_view_form.csv':
                 has_memory_form = True
                 profile.memory_form_path = io.join(path, file)
+            if str(file) == 'operator_details.csv':
+                profile.has_operator_view = True
+                profile.operator_path = io.join(path, file)
         profile.has_kernel = has_kernel
         profile.has_memory = has_memory_form and has_memory_line
         return profile
