@@ -24,6 +24,8 @@ class RunGenerator(object):
         self.statistic_data = {}
         self.accelerator_data = {}
         self.device_target = device_target
+        self.pta_or_ge_data = {}
+        self.process_data = {}
 
     def generate_run_profile(self):
         profile_run = RunProfile(self.worker, self.span)
@@ -33,6 +35,7 @@ class RunGenerator(object):
         profile_run.has_communication = self.profile_data.has_communication
         profile_run.has_memcpy_or_memset = self.profile_data.has_memcpy_or_memset
         profile_run.profiler_start_ts = self.profile_data.profiler_start_ts
+        profile_run.overview = self._generate_overview()
 
         if self.device_target == 'GPU':
             profile_run.views.append(consts.OVERALL_VIEW)
@@ -90,8 +93,9 @@ class RunGenerator(object):
         if self.device_target == 'Ascend' and self.profile_data.has_memory:
             profile_run.views.append(consts.MEMORY_VIEW)
             profile_run.memory_div_curve = None
+            self.process_data, self.pta_or_ge_data, peak_memory_events = self._handle_memory_data()
             profile_run.memory_all_curve = self._get_memory_all_curve()
-            profile_run.memory_events = self._get_memory_event()
+            profile_run.memory_events = self._get_memory_event(peak_memory_events)
         elif self.profile_data.memory_snapshot:
             profile_run.views.append(consts.MEMORY_VIEW)
             profile_run.memory_snapshot = self.profile_data.memory_snapshot
@@ -272,9 +276,9 @@ class RunGenerator(object):
             else round(temp['tc_total_ratio'] / temp['device_total_duration'] * 100, 2)
         return temp
 
-    def _get_memory_event(self):
+    def _get_memory_event(self, peak_memory_events: dict):
         display_columns = ('Operator', 'Size(KB)', 'Allocation Time(us)', 'Release Time(us)', 'Duration(us)')
-        path = self.profile_data.memory_form_path
+        path = self.profile_data.memory_operator_path
         display_datas = defaultdict(list)
         devices_type = []
         table = {
@@ -292,33 +296,41 @@ class RunGenerator(object):
             if column in display_columns:
                 if column == 'Operator':
                     table['columns'].append({'name': column, 'type': 'string'})
-                else:
+                elif column == 'Size(KB)':
                     table['columns'].append({'name': column, 'type': 'number'})
+                else:
+                    # Convert time metric
+                    table['columns'].append({'name': column.replace('(us)', '(ms)'), 'type': 'number'})
         for ls in datas[1:]:
             device_type = ls[self.device_type_form_idx]
-            nums = [ls[1], float(ls[2]), float(ls[3])]
+            # convert time metric 'us' to 'ms'
+            nums = [ls[0], float(ls[1]), round((float(ls[2]) - self.profile_data.start_ts) / 1000, 3)]
+            # some operators may not have column[3] or column[4]
+            if ls[3]:
+                nums.append(round((float(ls[3]) - self.profile_data.start_ts) / 1000, 3))
             if ls[4]:
-                nums.append(float(ls[4]))
-            if ls[5]:
-                nums.append(round(float(ls[5]), 2))
+                nums.append(round(float(ls[4]) / 1000, 2))
             display_datas[device_type].append(nums)
         table['rows'] = display_datas
         for name in display_datas:
             devices_type.append(name)
         table['metadata'].update({'default_device': devices_type[0]})
-        return table
+        return {
+            'operator': table,
+            'component': peak_memory_events
+        }
 
     def _get_memory_all_curve(self):
-        time_metric: str = 'us'
-        memory_metric: str = 'KB'
+        time_metric: str = 'ms'
+        memory_metric: str = 'MB'
         cano = Canonicalizer(time_metric, memory_metric)
-        pta_and_ge_data, pta_or_ge_data = self._handle_memory_data()
-        devices_type, peaks = self._get_peaks_and_devices_type()
-        result = {
+        process_devices_type, process_peaks = RunGenerator._get_process_peaks_and_devices_type(self.process_data,
+                                                                                               memory_metric)
+        total_result = {
             'metadata': {
-                'default_device': devices_type[0],
-                'devices': devices_type,
-                'peaks': peaks,
+                'devices': process_devices_type,
+                'default_device': process_devices_type[0] if len(process_devices_type) > 0 else '',
+                'peaks': process_peaks,
                 'totals': {},
                 'first_ts': 0,
                 'time_metric': cano.time_metric,
@@ -326,50 +338,158 @@ class RunGenerator(object):
                 'time_factor': cano.time_factor,
                 'memory_factor': cano.memory_factor,
             },
-            'columns': [
-                {'name': f'Time ({cano.time_metric})', 'type': 'number', 'tooltip': 'Time since profiler starts.'},
-                {'name': f'Allocated ({cano.memory_metric})', 'type': 'number', 'tooltip': 'Total memory in use.'},
-                {'name': f'Reserved ({cano.memory_metric})', 'type': 'number',
-                 'tooltip': 'Total reserved memory by allocator, both used and unused.'},
-            ],
-            'rows': pta_and_ge_data,
+            'columns': defaultdict(list),
+            'rows': self.process_data
         }
-        return result
+        for device in process_devices_type:
+            if self.process_data.get(device).get('Allocated') is not None:
+                total_result['columns'][device].append(
+                    {'name': f'Allocated ({cano.memory_metric})', 'type': 'number', 'tooltip': 'PTA+GE memory in use.'})
+            if self.process_data.get(device).get('Reserved') is not None:
+                total_result['columns'][device].append(
+                    {'name': f'Reserved ({cano.memory_metric})', 'type': 'number',
+                     'tooltip': 'APP reserved memory by allocator, both used and unused.'})
+            if len(total_result['columns'][device]) > 0:
+                total_result['columns'][device].insert(0, {'name': f'Time ({cano.time_metric})', 'type': 'number',
+                                                           'tooltip': 'Time since profiler starts.'})
+        pta_ge_devices_type, pta_ge_peaks = RunGenerator._get_pta_ge_peaks_and_devices_type(self.pta_or_ge_data,
+                                                                                            memory_metric)
+        pta_ge_result = {
+            'metadata': {
+                'devices': pta_ge_devices_type,
+                'default_device': pta_ge_devices_type[0] if len(pta_ge_devices_type) > 0 else '',
+                'peaks': pta_ge_peaks,
+                'totals': {},
+                'first_ts': 0,
+                'time_metric': cano.time_metric,
+                'memory_metric': cano.memory_metric,
+                'time_factor': cano.time_factor,
+                'memory_factor': cano.memory_factor,
+            },
+            'columns': defaultdict(list),
+            'rows': self.pta_or_ge_data
+        }
+        for device in pta_ge_devices_type:
+            if self.pta_or_ge_data.get(device).get('PTA') is not None:
+                pta_ge_result['columns'][device] += [
+                    {'name': f'PTA Allocated ({cano.memory_metric})', 'type': 'number',
+                     'tooltip': 'PTA memory in use.'},
+                    {'name': f'PTA Reserved ({cano.memory_metric})', 'type': 'number',
+                     'tooltip': 'PTA reserved memory by allocator, both used and unused.'}]
+            if self.pta_or_ge_data.get(device).get('GE') is not None:
+                pta_ge_result['columns'][device] += [
+                    {'name': f'GE Allocated ({cano.memory_metric})', 'type': 'number', 'tooltip': 'GE memory in use.'},
+                    {'name': f'GE Reserved ({cano.memory_metric})', 'type': 'number',
+                     'tooltip': 'GE reserved memory by allocator, both used and unused.'}]
+            if len(pta_ge_result['columns'][device]) > 0:
+                pta_ge_result['columns'][device].insert(0, {'name': f'Time ({cano.time_metric})', 'type': 'number',
+                                                            'tooltip': 'Time since profiler starts.'})
+        device_types = list(set(process_devices_type + pta_ge_devices_type))
+        return {
+            'devices': device_types,
+            'default_device': device_types[0],
+            'total': total_result,
+            'ptaGe': pta_ge_result
+        }
 
-    def _get_peaks_and_devices_type(self):
+    @staticmethod
+    def _get_process_peaks_and_devices_type(process_data: dict, memory_metric: str):
         devices_type = []
         peaks = {}
-        pta_and_ge_data, pta_or_ge_data = self._handle_memory_data()
-        for name in pta_and_ge_data:
-            devices_type.append(name)
-            max_reserved = 0
-            for array_value in pta_and_ge_data.get(name):
-                max_reserved = max(array_value[2], max_reserved)
-            peaks[name] = 'Peak Memory Usage: {:.1f}'.format(max_reserved)
+        for device in process_data:
+            devices_type.append(device)
+            reserved_list = process_data.get(device).get('Allocated')
+            if reserved_list is not None:
+                max_reserved = 0
+                for array_value in reserved_list:
+                    max_reserved = max(array_value[1], max_reserved)
+                peaks[device] = f'Peak Memory Usage: {max_reserved:.1f}{memory_metric}'
         return devices_type, peaks
 
+    @staticmethod
+    def _get_pta_ge_peaks_and_devices_type(process_data: dict, memory_metric: str):
+        devices_type = []
+        peaks = {}
+        for device in process_data:
+            devices_type.append(device)
+            peaks[device] = ''
+            for component in process_data.get(device):
+                max_reserved = 0
+                for array_value in process_data.get(device).get(component):
+                    max_reserved = max(array_value[2], max_reserved)
+                peaks[device] += f'{component} Peak Memory Usage: {max_reserved:.1f}{memory_metric}\n'
+        return devices_type, peaks
+
+    @staticmethod
+    def _check_csv_columns(columns: list):
+        column_exist_count = 0
+        column_idxs = {
+            'Component': -1,
+            'Device Type': -1,
+            'Timestamp(us)': -1,
+            'Total Reserved(MB)': -1,
+            'Total Allocated(MB)': -1
+        }
+        for idx, column in enumerate(columns):
+            if column in column_idxs:
+                column_idxs[column] = idx
+                column_exist_count += 1
+        return column_idxs.values(), column_exist_count
+
     def _handle_memory_data(self):
-        pta_and_ge_data = defaultdict(list)
-        pta_or_ge_data = {}
-        path = self.profile_data.memory_line_path
+        process_data = defaultdict()
+        pta_or_ge_data = defaultdict()
+        path = self.profile_data.memory_component_path
         datas = RunGenerator._get_csv_data(path)
-        for idx, column in enumerate(datas[0]):
-            if column == 'Tag':
-                self.tag_type_idx = idx
-            if column == 'Device Type':
-                self.device_type_idx = idx
-            if column == 'Timestamp(us)':
-                self.time_idx = idx
-            if column == 'Total Reserved(KB)':
-                self.reserved_idx = idx
-            if column == 'Total Allocated(KB)':
-                self.allocated_idx = idx
-        for ls in datas[1:]:
-            temp: list = [float(ls[self.time_idx]), float(ls[self.reserved_idx]), float(ls[self.allocated_idx])]
-            device_type = ls[self.device_type_idx]
-            pta_and_ge_data[device_type].append(temp)
-            pta_or_ge_data.setdefault(device_type, {}).setdefault(ls[self.tag_type_idx], []).append(temp)
-        return pta_and_ge_data, pta_or_ge_data
+        peak_memory_events = {
+            'metadata': {
+                'title': 'Component Peak Memory',
+                'default_device': '',
+            },
+            'columns': [{'name': 'Component', 'type': 'string'},
+                        {'name': 'Peak Memory Usage(MB)', 'type': 'number'},
+                        {'name': 'Time(ms)', 'type': 'number'}]
+        }
+        peak_memory_rows = defaultdict(list)
+        (tag_type_idx, device_type_idx, time_idx, reserved_idx, allocated_idx), column_exist_count = \
+            RunGenerator._check_csv_columns(datas[0])
+        if column_exist_count < 5:
+            logger.error('Required column is missing in file "memory_record.csv"')
+        else:
+            for ls in datas[1:]:
+                time_column = round((float(ls[time_idx]) - self.profile_data.start_ts) / 1000, 3)
+                device_type = ls[device_type_idx]
+                if ls[tag_type_idx] == 'PTA+GE':
+                    process_data.setdefault(device_type, {}).setdefault('Allocated', []).append(
+                        [time_column, float(ls[allocated_idx])])
+                elif ls[tag_type_idx] == 'APP':
+                    process_data.setdefault(device_type, {}).setdefault('Reserved', []).append(
+                        [time_column, float(ls[reserved_idx])])
+                elif ls[tag_type_idx] in ('PTA', 'GE'):
+                    line_chart_data = [time_column, float(ls[allocated_idx]), float(ls[reserved_idx])]
+                    pta_or_ge_data.setdefault(device_type, {}).setdefault(ls[tag_type_idx], []).append(line_chart_data)
+                else:
+                    self._handle_peak_memory_rows(device_type_idx, ls, peak_memory_rows, reserved_idx, tag_type_idx,
+                                                  time_idx)
+
+        peak_memory_events['rows'] = peak_memory_rows
+        return process_data, pta_or_ge_data, peak_memory_events
+
+    def _handle_peak_memory_rows(self, device_type_idx, ls, peak_memory_rows, reserved_idx, tag_type_idx, time_idx):
+        # Record the peak memory usage of other components.
+        has_flag = False
+        for item in peak_memory_rows[ls[device_type_idx]]:
+            if item[0] == ls[tag_type_idx]:
+                if item[1] < ls[reserved_idx]:
+                    item[1] = ls[reserved_idx]
+                    item[2] = ls[time_idx]
+                elif item[1] == ls[reserved_idx]:
+                    item[2] = min(item[2], ls[time_idx])
+                has_flag = True
+                break
+        if not has_flag:
+            peak_memory_rows[ls[device_type_idx]].append([ls[tag_type_idx], ls[reserved_idx], round(
+                (float(ls[time_idx]) - self.profile_data.start_ts) / 1000, 3)])
 
     def _generate_overview(self):
         def build_part_time_str(part_cost: float, part_name: str):
@@ -723,9 +843,7 @@ class RunGenerator(object):
     def _generate_kernel_pie_npu(self):
         pie = {'columns': [{'type': 'string', 'name': 'name'}, {'type': 'number', 'name': 'value'}], 'rows': []}
         for key, val in self.statistic_data.items():
-            data = []
-            data.append(key)
-            data.append(float(val['Total']))
+            data = [key, float(val['Total'])]
             pie['rows'].append(data)
         datas = {'total': pie, 'device_target': self.device_target}
         return datas

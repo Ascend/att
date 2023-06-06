@@ -11,6 +11,7 @@ export function getCommonOperationColumns<
   T extends OperationTableDataInner | CallStackTableDataInner
 >(
   data: T[] | undefined,
+  deviceTarget?: string,
   defaultSort?: string,
   tooltips?: any,
   classes?: ClassNameMap<'tooltip'>
@@ -52,10 +53,10 @@ export function getCommonOperationColumns<
     },
     hasInputShape
       ? {
-          dataIndex: 'input_shape',
-          key: 'input_shape',
-          title: 'Input Shape'
-        }
+        dataIndex: 'input_shape',
+        key: 'input_shape',
+        title: 'Input Shape'
+      }
       : undefined,
     {
       dataIndex: 'calls',
@@ -65,21 +66,21 @@ export function getCommonOperationColumns<
     },
     hasDeviceSelfDuration
       ? {
-          dataIndex: 'device_self_duration',
-          key: 'device_self_duration',
-          title: 'Device Self Duration (us)',
-          sorter: deviceSelfDurationCompare,
-          // Use device_self_duration as default sort if defaultSort is unspecified
-          defaultSortOrder: defaultSort ? undefined : ('descend' as const)
-        }
+        dataIndex: 'device_self_duration',
+        key: 'device_self_duration',
+        title: 'Device Self Duration (us)',
+        sorter: deviceSelfDurationCompare,
+        // Use device_self_duration as default sort if defaultSort is unspecified
+        defaultSortOrder: defaultSort ? undefined : ('descend' as const)
+      }
       : undefined,
     hasDeviceTotalDuration
       ? {
-          dataIndex: 'device_total_duration',
-          key: 'device_total_duration',
-          title: 'Device Total Duration (us)',
-          sorter: deviceTotalDurationCompare
-        }
+        dataIndex: 'device_total_duration',
+        key: 'device_total_duration',
+        title: 'Device Total Duration (us)',
+        sorter: deviceTotalDurationCompare
+      }
       : undefined,
     {
       dataIndex: 'host_self_duration',
@@ -95,27 +96,27 @@ export function getCommonOperationColumns<
     },
     hasTcEligible
       ? {
-          dataIndex: 'tc_eligible',
-          key: 'tc_eligible',
-          title: 'Tensor Cores Eligible',
-          sorter: tcEligibleCompare
-        }
+        dataIndex: 'tc_eligible',
+        key: 'tc_eligible',
+        title: deviceTarget === 'Ascend' ? 'AI Cores Eligible' : 'Tensor Cores Eligible',
+        sorter: tcEligibleCompare
+      }
       : undefined,
     hasTcSelfRatio
       ? {
-          dataIndex: 'tc_self_ratio',
-          key: 'tc_self_ratio',
-          title: 'Tensor Cores Self(%)',
-          sorter: tcSelfRatioCompare
-        }
+        dataIndex: 'tc_self_ratio',
+        key: 'tc_self_ratio',
+        title: deviceTarget === 'Ascend' ? 'AI Cores Self(%)' : 'Tensor Cores Self(%)',
+        sorter: tcSelfRatioCompare
+      }
       : undefined,
     hasTcTotalRatio
       ? {
-          dataIndex: 'tc_total_ratio',
-          key: 'tc_total_ratio',
-          title: 'Tensor Cores Total(%)',
-          sorter: tcTotalRatioCompare
-        }
+        dataIndex: 'tc_total_ratio',
+        key: 'tc_total_ratio',
+        title: deviceTarget === 'Ascend' ? 'AI Cores Total(%)' : 'Tensor Cores Total(%)',
+        sorter: tcTotalRatioCompare
+      }
       : undefined
   ].filter(isDef)
   columns.forEach((column) => {

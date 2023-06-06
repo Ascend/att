@@ -20,6 +20,7 @@ export interface IProps {
   worker: string
   span: string
   groupBy: OperationGroupBy
+  deviceTarget: string
 }
 
 const useStyles = makeStyles((theme) => ({
@@ -40,7 +41,7 @@ const expandedRowRender = (record: TransformedCallStackDataInner) => (
 )
 
 export const CallStackTable = (props: IProps) => {
-  const { data, run, worker, span, groupBy } = props
+  const { data, run, worker, span, groupBy, deviceTarget } = props
   const { name, input_shape } = data
   const classes = useStyles(props)
 
@@ -66,7 +67,7 @@ export const CallStackTable = (props: IProps) => {
   const columns = React.useMemo(
     () =>
       transformedData &&
-      getCommonOperationColumns(transformedData, undefined, tooltips, classes),
+      getCommonOperationColumns(transformedData, deviceTarget, undefined, tooltips, classes),
     [transformedData]
   )
 

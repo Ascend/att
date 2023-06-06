@@ -16,8 +16,12 @@ import * as React from 'react'
 import * as api from '../api'
 import {
   Graph,
+  GraphAscend,
+  MemoryCurveDataAll,
   MemoryCurveData,
+  MemoryCurveDataAscend,
   MemoryEventsData,
+  MemoryEventsDataAll,
   MemoryStatsData
 } from '../api'
 import { useSearchDirectly } from '../utils/search'
@@ -67,7 +71,7 @@ export interface IProps {
   deviceTarget: string
 }
 
-const tags = ['PTA + GE', 'Total']
+const tags = ['Operator', 'Component']
 
 export const MemoryView: React.FC<IProps> = React.memo((props) => {
   interface EventSizeFilter {
@@ -98,16 +102,19 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
     return memoryCurveData && Object.keys(memoryCurveData.rows).length != 0
   }
   const [memoryCurveData, setMemoryCurveData] = React.useState<
-    MemoryCurveData | undefined
+    MemoryCurveData | MemoryCurveDataAscend | undefined
   >(undefined)
 
-  const [lineChartData, setLineChartData] = React.useState<Graph | undefined>(
+  const [lineChartData, setLineChartData] = React.useState<Graph | GraphAscend | undefined>(
     undefined
   )
 
   const [devices, setDevices] = React.useState<string[]>([])
   const [device, setDevice] = React.useState('')
-  const [tag, setTag] = React.useState('Total')
+  const [tag, setTag] = React.useState('Operator')
+  const memoryCurveDataAllRef = React.useRef<MemoryCurveDataAll | undefined>(undefined)
+  const memoryEventDataAllRef = React.useRef<MemoryEventsDataAll | undefined>(undefined)
+
   interface SelectedRange {
     start: number
     end: number
@@ -254,14 +261,18 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
         selectedRange?.endTs
       )
       .then((resp) => {
+        const tempRes = deviceTarget === 'Ascend' ? (resp as MemoryEventsDataAll).operator : resp as MemoryEventsData
+        if (deviceTarget === 'Ascend') {
+          memoryEventDataAllRef.current = resp as MemoryEventsDataAll
+        }
         let curMaxSize: MaxEventSize = {}
         let curFilterEventSize: EventSizeFilter = {}
-        for (let deviceName in resp.rows) {
+        for (let deviceName in tempRes.rows) {
           curMaxSize[deviceName] = 0
-          for (let i = 0; i < resp.rows[deviceName].length; i++) {
+          for (let i = 0; i < tempRes.rows[deviceName].length; i++) {
             curMaxSize[deviceName] = Math.max(
               curMaxSize[deviceName],
-              resp.rows[deviceName][i][1]
+              tempRes.rows[deviceName][i][1]
             )
           }
           curFilterEventSize[deviceName] = [
@@ -272,29 +283,50 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
         }
         setMaxSize(curMaxSize)
         setFilterEventSize(curFilterEventSize)
-        setMemoryEventsData(resp)
+        setMemoryEventsData(tempRes)
       })
   }, [run, worker, span, selectedRange])
 
   React.useEffect(() => {
     api.defaultApi.memoryCurveGet(run, worker, span).then((resp) => {
-      setMemoryCurveData(resp)
       // Reset the select range to null whenever run/worker/span changes
       setSelectedRange(undefined)
       if (deviceTarget === 'Ascend') {
-        setDevice(resp.metadata.default_device)
-        setDevices(Object.keys(resp.rows))
+        const allCurveData = resp as MemoryCurveDataAll
+        memoryCurveDataAllRef.current = allCurveData
+        setDevice(allCurveData.default_device)
+        setDevices(allCurveData.devices)
+      } else {
+        setMemoryCurveData(resp as MemoryCurveData)
       }
     })
   }, [run, worker, span])
 
   React.useEffect(() => {
+    if (tag === 'Operator') {
+      setMemoryCurveData(memoryCurveDataAllRef.current?.total)
+      setMemoryEventsData(memoryEventDataAllRef.current?.operator)
+    } else {
+      setMemoryCurveData(memoryCurveDataAllRef.current?.ptaGe)
+      setMemoryEventsData(memoryEventDataAllRef.current?.component)
+    }
+  }, [memoryCurveDataAllRef.current, tag])
+
+  React.useEffect(() => {
     if (memoryCurveData !== undefined) {
-      setLineChartData({
-        title: memoryCurveData.metadata.peaks[device],
-        columns: memoryCurveData.columns,
-        rows: memoryCurveData.rows[device] ?? []
-      })
+      if (deviceTarget === 'Ascend') {
+        setLineChartData({
+          title: memoryCurveData.metadata.peaks[device] ?? '',
+          columns: memoryCurveData.columns[device] ?? [],
+          rows: memoryCurveData.rows[device] ?? {}
+        })
+      } else {
+        setLineChartData({
+          title: memoryCurveData.metadata.peaks[device],
+          columns: memoryCurveData.columns,
+          rows: memoryCurveData.rows[device] ?? []
+        })
+      }
     }
   }, [memoryCurveData, device])
 
@@ -343,18 +375,20 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
                           ))}
                         </Select>
                       </Grid>
-                      <Grid item>
-                        <InputLabel id="memory-curve-tag">Tag</InputLabel>
-                        <Select
-                          labelId="memory-curve-tag"
-                          value={tag}
-                          onChange={onTagChanged}
-                        >
-                          {tags.map((device) => (
-                            <MenuItem value={device}>{device}</MenuItem>
-                          ))}
-                        </Select>
-                      </Grid>
+                      {deviceTarget === 'Ascend' &&
+                        <Grid item>
+                          <InputLabel id="memory-curve-tag">Group By</InputLabel>
+                          <Select
+                            labelId="memory-curve-tag"
+                            value={tag}
+                            onChange={onTagChanged}
+                          >
+                            {tags.map((device) => (
+                              <MenuItem value={device}>{device}</MenuItem>
+                            ))}
+                          </Select>
+                        </Grid>
+                      }
                     </Grid>
                     {showCurve() && lineChartData && (
                       <Grid item>
@@ -363,6 +397,8 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
                             hAxisTitle={`Time (${graph.metadata.time_metric})`}
                             vAxisTitle={`Memory Usage (${graph.metadata.memory_metric})`}
                             graph={lineChartData}
+                            deviceTarget={deviceTarget}
+                            tag={tag}
                             onSelectionChanged={onSelectedRangeChanged}
                             explorerOptions={{
                               actions: ['dragToZoom', 'rightClickToReset'],
@@ -382,64 +418,66 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
             </Grid>
             {showEvents() && (
               <>
-                <Grid container>
-                  <Grid item container sm={6} justifyContent="space-around">
-                    <Grid item>
-                      <TextField
-                        classes={{ root: classes.inputWidthOverflow }}
-                        value={searchEventOperatorName}
-                        onChange={onSearchEventOperatorChanged}
-                        type="search"
-                        label="Search by Name"
-                      />
-                    </Grid>
-                  </Grid>
-                  <Grid item sm={6}>
-                    <Grid container direction="row" spacing={2}>
+                {(deviceTarget !== 'Ascend' || tag === 'Operator') &&
+                  <Grid container>
+                    <Grid item container sm={6} justifyContent="space-around">
                       <Grid item>
                         <TextField
-                          className={classes.filterInput}
-                          label="Min Size(KB)"
-                          value={filterEventSize[device]?.[0] ?? 0}
-                          onChange={onFilterEventMinSizeInputChanged}
-                          inputProps={{
-                            step: getStep(maxSize[device] ?? 0, 3),
-                            min: 0,
-                            max: filterEventSize[device]?.[1] ?? 0,
-                            type: 'number',
-                            'aria-labelledby': 'input-slider'
-                          }}
-                        />
-                      </Grid>
-                      <Grid item>
-                        <Slider
-                          className={classes.filterSlider}
-                          value={filterEventSize[device] ?? [0, 0]}
-                          onChange={onFilterEventSizeChanged}
-                          aria-labelledby="input-slider"
-                          min={0}
-                          max={maxSize[device] ?? 0}
-                          step={getStep(maxSize[device] ?? 0, 5)}
-                        />
-                      </Grid>
-                      <Grid item>
-                        <TextField
-                          className={classes.filterInput}
-                          label="Max Size(KB)"
-                          value={filterEventSize[device]?.[1] ?? 0}
-                          onChange={onFilterEventMaxSizeInputChanged}
-                          inputProps={{
-                            step: getStep(maxSize[device] ?? 0, 3),
-                            min: filterEventSize[device]?.[0] ?? 0,
-                            max: maxSize[device] ?? 0,
-                            type: 'number',
-                            'aria-labelledby': 'input-slider'
-                          }}
+                          classes={{ root: classes.inputWidthOverflow }}
+                          value={searchEventOperatorName}
+                          onChange={onSearchEventOperatorChanged}
+                          type="search"
+                          label="Search by Name"
                         />
                       </Grid>
                     </Grid>
+                    <Grid item sm={6}>
+                      <Grid container direction="row" spacing={2}>
+                        <Grid item>
+                          <TextField
+                            className={classes.filterInput}
+                            label="Min Size(KB)"
+                            value={filterEventSize[device]?.[0] ?? 0}
+                            onChange={onFilterEventMinSizeInputChanged}
+                            inputProps={{
+                              step: getStep(maxSize[device] ?? 0, 3),
+                              min: 0,
+                              max: filterEventSize[device]?.[1] ?? 0,
+                              type: 'number',
+                              'aria-labelledby': 'input-slider'
+                            }}
+                          />
+                        </Grid>
+                        <Grid item>
+                          <Slider
+                            className={classes.filterSlider}
+                            value={filterEventSize[device] ?? [0, 0]}
+                            onChange={onFilterEventSizeChanged}
+                            aria-labelledby="input-slider"
+                            min={0}
+                            max={maxSize[device] ?? 0}
+                            step={getStep(maxSize[device] ?? 0, 5)}
+                          />
+                        </Grid>
+                        <Grid item>
+                          <TextField
+                            className={classes.filterInput}
+                            label="Max Size(KB)"
+                            value={filterEventSize[device]?.[1] ?? 0}
+                            onChange={onFilterEventMaxSizeInputChanged}
+                            inputProps={{
+                              step: getStep(maxSize[device] ?? 0, 3),
+                              min: filterEventSize[device]?.[0] ?? 0,
+                              max: maxSize[device] ?? 0,
+                              type: 'number',
+                              'aria-labelledby': 'input-slider'
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Grid>
                   </Grid>
-                </Grid>
+                }
                 <Grid item direction="column">
                   <DataLoading value={memoryEventsData}>
                     {(data) => {
@@ -447,7 +485,8 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
                         <AntTableChart
                           graph={{
                             columns: data.columns,
-                            rows: searchedEventsTableDataRows ?? []
+                            rows: tag === 'Component' ? (data.rows[device] ?? [])
+                              : (searchedEventsTableDataRows ?? [])
                           }}
                           initialPageSize={10}
                           onRowSelected={onRowSelected}

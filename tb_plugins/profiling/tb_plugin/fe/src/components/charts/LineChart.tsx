@@ -4,13 +4,15 @@
 
 import { makeStyles } from '@material-ui/core/styles'
 import * as React from 'react'
-import { Graph } from '../../api'
+import { Graph, GraphAscend } from '../../api'
 import { useResizeEventDependency } from '../../utils/resize'
 import { binarySearch } from '../../utils/binarysearch'
 
 interface IProps {
-  graph: Graph
+  graph: Graph | GraphAscend
   height?: number
+  deviceTarget: string
+  tag: string
   hAxisTitle?: string
   vAxisTitle?: string
   explorerOptions?: object
@@ -28,6 +30,8 @@ export const LineChart: React.FC<IProps> = (props) => {
   const {
     graph,
     height = 400,
+    deviceTarget,
+    tag,
     hAxisTitle,
     vAxisTitle,
     onSelectionChanged,
@@ -42,17 +46,6 @@ export const LineChart: React.FC<IProps> = (props) => {
   React.useLayoutEffect(() => {
     const element = graphRef.current
     if (!element) return
-
-    const data = new google.visualization.DataTable()
-    graph.columns.forEach((column) => {
-      data.addColumn({
-        type: column.type,
-        label: column.name,
-        role: column.role,
-        p: column.p
-      })
-    })
-    data.addRows(graph.rows)
 
     const options = {
       title: graph.title,
@@ -105,21 +98,118 @@ export const LineChart: React.FC<IProps> = (props) => {
       }
     }
 
-    chart.draw(data, options)
+    if (deviceTarget === 'Ascend') {
+      let data = new google.visualization.DataTable()
+      if (tag === 'Component') {
+        if (graph.columns.length === 3) {
+          graph.columns.forEach((column) => {
+            data.addColumn({
+              type: column.type,
+              label: column.name,
+              role: column.role,
+              p: column.p
+            })
+          })
+          data.addRows(graph.rows['PTA'] ?? graph.rows['GE'])
+        } else if (graph.columns.length === 5) {
+          const data2 = new google.visualization.DataTable()
+          graph.columns.forEach((column, index) => {
+            if (index === 0 || index < 3) {
+              data.addColumn({
+                type: column.type,
+                label: column.name,
+                role: column.role,
+                p: column.p
+              })
+            }
+            if (index === 0 || index >= 3) {
+              data2.addColumn({
+                type: column.type,
+                label: column.name,
+                role: column.role,
+                p: column.p
+              })
+            }
+          })
+          data.addRows(graph.rows['PTA'])
+          data2.addRows(graph.rows['GE'])
+          data = google.visualization.data.join(data, data2, 'full', [[0, 0]], [1, 2], [1, 2])
+        }
+      } else {
+        if (graph.columns.length === 2) {
+          graph.columns.forEach((column) => {
+            data.addColumn({
+              type: column.type,
+              label: column.name,
+              role: column.role,
+              p: column.p
+            })
+          })
+          data.addRows(graph.rows['Allocated'] ?? graph.rows['Reserved'])
+        } else if (graph.columns.length === 3) {
+          const data2 = new google.visualization.DataTable()
+          graph.columns.forEach((column, index) => {
+            if (index === 0 || index < 2) {
+              data.addColumn({
+                type: column.type,
+                label: column.name,
+                role: column.role,
+                p: column.p
+              })
+            }
+            if (index === 0 || index >= 2) {
+              data2.addColumn({
+                type: column.type,
+                label: column.name,
+                role: column.role,
+                p: column.p
+              })
+            }
+          })
+          data.addRows(graph.rows['Allocated'])
+          data2.addRows(graph.rows['Reserved'])
+          data = google.visualization.data.join(data, data2, 'full', [[0, 0]], [1], [1])
+        }
+      }
+
+      chart.draw(data, options)
+    } else {
+      const data = new google.visualization.DataTable()
+      graph.columns.forEach((column) => {
+        data.addColumn({
+          type: column.type,
+          label: column.name,
+          role: column.role,
+          p: column.p
+        })
+      })
+      data.addRows(graph.rows)
+      chart.draw(data, options)
+    }
+
     setChartObj(chart)
   }, [graph, height, resizeEventDependency])
 
   React.useEffect(() => {
     const compare_fn = (key: number, mid: Array<number>) =>
       key - parseFloat(mid[0].toFixed(2))
-    if (chartObj) {
+    if (chartObj && tag === 'Operator') {
       if (record) {
-        let startId = binarySearch(graph.rows, record.col2, compare_fn)
-        let endId = binarySearch(graph.rows, record.col3, compare_fn)
-        let selection = []
-        if (startId >= 0) selection.push({ row: startId, column: 1 })
-        if (endId >= 0) selection.push({ row: endId, column: 1 })
-        chartObj.setSelection(selection)
+        if (deviceTarget === 'Ascend') {
+          let startId = binarySearch(graph.rows['Allocated'], record.col2, compare_fn)
+          let endId = binarySearch(graph.rows['Allocated'], record.col3, compare_fn)
+          let selection = []
+          if (startId >= 0) selection.push({ row: startId, column: 1 })
+          if (endId >= 0) selection.push({ row: endId, column: 1 })
+          chartObj.setSelection(selection)
+        } else {
+          let startId = binarySearch(graph.rows, record.col2, compare_fn)
+          let endId = binarySearch(graph.rows, record.col3, compare_fn)
+          let selection = []
+          if (startId >= 0) selection.push({ row: startId, column: 1 })
+          if (endId >= 0) selection.push({ row: endId, column: 1 })
+          chartObj.setSelection(selection)
+        }
       } else {
         chartObj.setSelection()
       }

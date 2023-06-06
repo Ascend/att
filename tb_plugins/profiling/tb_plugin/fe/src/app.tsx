@@ -394,7 +394,7 @@ export const App = () => {
         case Views.Overview:
           return <Overview run={run} worker={worker} span={span} />
         case Views.Operator:
-          return <Operator run={run} worker={worker} span={span} />
+          return <Operator run={run} worker={worker} span={span} deviceTarget={deviceTarget} />
         case Views.Kernel:
           return <Kernel run={run} worker={worker} span={span} deviceTarget={deviceTarget} />
         case Views.Trace:

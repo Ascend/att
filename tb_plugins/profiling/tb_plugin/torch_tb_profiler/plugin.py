@@ -298,11 +298,11 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
     @wrappers.Request.application
     def memory_curve_route(self, request: werkzeug.Request):
         profile = self._get_profile_for_request(request)
-        time_metric = request.args.get('time_metric', 'ms')
-        memory_metric = request.args.get('memory_metric', 'MB')
         if profile.device_target == 'Ascend':
             return self.respond_as_json(profile.memory_all_curve, True)
         else:
+            time_metric = request.args.get('time_metric', 'ms')
+            memory_metric = request.args.get('memory_metric', 'MB')
             return self.respond_as_json(
                 profile.get_memory_curve(time_metric=time_metric, memory_metric=memory_metric), True)
 
@@ -313,14 +313,18 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         end_ts = request.args.get('end_ts', None)
         time_metric = request.args.get('time_metric', 'ms')
         memory_metric = request.args.get('memory_metric', 'KB')
-        if start_ts is not None:
-            start_ts = int(start_ts)
-        if end_ts is not None:
-            end_ts = int(end_ts)
-
         if profile.device_target == 'Ascend':
+            operator_memory_events = profile.memory_events['operator']['rows']
+            start_ts = int(start_ts) if start_ts is not None else 0
+            end_ts = int(end_ts) if end_ts is not None else float('inf')
+            for key in operator_memory_events:
+                operator_memory_events[key] = [i for i in operator_memory_events[key] if start_ts <= i[2] <= end_ts]
             return self.respond_as_json(profile.memory_events, True)
         else:
+            if start_ts is not None:
+                start_ts = int(start_ts)
+            if end_ts is not None:
+                end_ts = int(end_ts)
             return self.respond_as_json(
                 profile.get_memory_events(start_ts, end_ts, time_metric=time_metric,
                                           memory_metric=memory_metric), True)
@@ -493,7 +497,13 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         A directory is considered to be an ascend run if it satisfies the following two conditions:
             1.At least one subdirectory with the name in this format: {worker_span}.
             2.The subdirectory in condition 1 has a 'ASCEND_PROFILER_OUTPUT' subdirectory which
-            contains a 'trace_view.json(.gz)' file or a 'kernel_details.csv' file.
+            contains at least one of these 4 kind of files:
+                [
+                 'trace_view.json(.gz)',
+                 'kernel_details.csv',
+                 'operator_details.csv',
+                 'operator_memory.csv' & 'memory_record.csv'
+                ]
         E.g. there are 2 runs: run1, run2
             /run1
                 /[worker1]_[span1]
@@ -503,10 +513,12 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
                 /[worker2]_[span1]
                     /ASCEND_PROFILER_OUTPUT
                         /trace_view.json
+                        /operator_details.csv
             /run2
                 /[worker1]_[span1]
                     /ASCEND_PROFILER_OUTPUT
-                        /kernel_details.csv
+                        /memory_record.csv
+                        /operator_memory.csv
         """
         for root, subdirs, files in io.walk(self.logdir):
             for subdir in subdirs:
