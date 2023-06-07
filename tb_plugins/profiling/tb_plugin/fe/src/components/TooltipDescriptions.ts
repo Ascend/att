@@ -13,7 +13,11 @@ Other: The time not included in any of the above.`
 
 export const DeviceSelfTimeTooltip = `The accumulated time spent on GPU, not including this operator’s child operators.`
 
+export const DeviceSelfTimeTooltipAscend = `The accumulated time spent on NPU, not including this operator’s child operators.`
+
 export const DeviceTotalTimeTooltip = `The accumulated time spent on GPU, including this operator’s child operators.`
+
+export const DeviceTotalTimeTooltipAscend = `The accumulated time spent on NPU, including this operator’s child operators.`
 
 export const HostSelfTimeTooltip = `The accumulated time spent on Host, not including this operator’s child operators.`
 
