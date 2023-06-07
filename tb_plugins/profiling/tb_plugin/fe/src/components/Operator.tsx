@@ -35,7 +35,9 @@ import { makeChartHeaderRenderer, useTooltipCommonStyles } from './helpers'
 import { OperationTable } from './tables/OperationTable'
 import {
   DeviceSelfTimeTooltip,
+  DeviceSelfTimeTooltipAscend,
   DeviceTotalTimeTooltip,
+  DeviceTotalTimeTooltipAscend,
   HostSelfTimeTooltip,
   HostTotalTimeTooltip
 } from './TooltipDescriptions'
@@ -166,7 +168,7 @@ export const Operator: React.FC<IProps> = (props) => {
                 <CardHeader
                   title={chartHeaderRenderer(
                     graph.device_self_time.title,
-                    DeviceSelfTimeTooltip
+                    deviceTarget === 'Ascend' ? DeviceSelfTimeTooltipAscend : DeviceSelfTimeTooltip
                   )}
                 />
               )}
@@ -181,7 +183,7 @@ export const Operator: React.FC<IProps> = (props) => {
                 <CardHeader
                   title={chartHeaderRenderer(
                     graph.device_total_time.title,
-                    DeviceTotalTimeTooltip
+                    deviceTarget === 'Ascend' ? DeviceTotalTimeTooltipAscend : DeviceTotalTimeTooltip
                   )}
                 />
               )}

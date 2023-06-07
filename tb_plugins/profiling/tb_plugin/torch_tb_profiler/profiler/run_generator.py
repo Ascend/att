@@ -37,7 +37,7 @@ class RunGenerator(object):
         profile_run.profiler_start_ts = self.profile_data.profiler_start_ts
         profile_run.overview = self._generate_overview()
 
-        if self.device_target == 'GPU':
+        if self.device_target != 'Ascend':
             profile_run.views.append(consts.OVERALL_VIEW)
             profile_run.overview = self._generate_overview()
 
@@ -49,6 +49,17 @@ class RunGenerator(object):
             profile_run.operation_table_by_name_input = self._generate_op_table(
                 self.profile_data.op_list_groupby_name_input, True)
             profile_run.operation_stack_by_name_input = self._generate_op_table_for_stack(True)
+
+            if self.profile_data.has_kernel:
+                profile_run.views.append(consts.KERNEL_VIEW)
+                profile_run.kernel_table = self._generate_kernel_table_gpu()
+                profile_run.kernel_op_table = self._generate_kernel_op_table_gpu()
+                profile_run.kernel_pie = self._generate_kernel_pie_gpu()
+                profile_run.tc_pie = self._generate_tc_pie_gpu()
+
+            if self.profile_data.memory_snapshot:
+                profile_run.views.append(consts.MEMORY_VIEW)
+                profile_run.memory_snapshot = self.profile_data.memory_snapshot
         else:
             if self.profile_data.has_operator_view:
                 profile_run.views.append(consts.OP_VIEW)
@@ -59,18 +70,19 @@ class RunGenerator(object):
                 profile_run.operation_table_by_name_input = self._get_operator_table_by_name(True)
                 profile_run.operation_stack_by_name_input = self._get_call_stack_by_name_shapes(True)
 
-        if self.profile_data.has_kernel:
-            profile_run.views.append(consts.KERNEL_VIEW)
-            if self.device_target == 'Ascend':
+            if self.profile_data.has_kernel:
+                profile_run.views.append(consts.KERNEL_VIEW)
                 profile_run.kernel_table = self._generate_kernel_table_npu()
                 profile_run.kernel_op_table = self._generate_kernel_op_table_npu()
                 profile_run.kernel_pie = self._generate_kernel_pie_npu()
                 profile_run.tc_pie = self._generate_tc_pie_npu()
-            else:
-                profile_run.kernel_table = self._generate_kernel_table_gpu()
-                profile_run.kernel_op_table = self._generate_kernel_op_table_gpu()
-                profile_run.kernel_pie = self._generate_kernel_pie_gpu()
-                profile_run.tc_pie = self._generate_tc_pie_gpu()
+
+            if self.profile_data.has_memory:
+                profile_run.views.append(consts.MEMORY_VIEW)
+                profile_run.memory_div_curve = None
+                self.process_data, self.pta_or_ge_data, peak_memory_events = self._handle_memory_data()
+                profile_run.memory_all_curve = self._get_memory_all_curve()
+                profile_run.memory_events = self._get_memory_event(peak_memory_events)
 
         if self.profile_data.has_trace:
             profile_run.views.append(consts.TRACE_VIEW)
@@ -89,16 +101,6 @@ class RunGenerator(object):
         profile_run.tid2tree = self.profile_data.tid2tree
         profile_run.pl_tid2tree = self.profile_data.pl_tid2tree
         profile_run.device_target = self.device_target
-
-        if self.device_target == 'Ascend' and self.profile_data.has_memory:
-            profile_run.views.append(consts.MEMORY_VIEW)
-            profile_run.memory_div_curve = None
-            self.process_data, self.pta_or_ge_data, peak_memory_events = self._handle_memory_data()
-            profile_run.memory_all_curve = self._get_memory_all_curve()
-            profile_run.memory_events = self._get_memory_event(peak_memory_events)
-        elif self.profile_data.memory_snapshot:
-            profile_run.views.append(consts.MEMORY_VIEW)
-            profile_run.memory_snapshot = self.profile_data.memory_snapshot
 
         profile_run.module_stats = aggegate_module_view(self.profile_data.tid2tree, self.profile_data.events)
         profile_run.pl_module_stats = aggegate_pl_module_view(self.profile_data.tid2tree, self.profile_data.events)
