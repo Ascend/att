@@ -4,6 +4,7 @@
 import gzip
 import io as sysio
 import json
+import math
 import re
 import tempfile
 from json.decoder import JSONDecodeError
@@ -103,15 +104,16 @@ class RunProfileData(object):
         self.recommendations = []
 
         # npu memory data
-        self.memory_form_path: str = None
-        self.memory_line_path: str = None
+        self.memory_operator_path: str = None
+        self.memory_component_path: str = None
+        self.start_ts: float = 0
 
         # npu operator data
         self.operator_path: str = None
 
     @staticmethod
     def parse_gpu(worker, span, path, cache_dir):
-        trace_path, trace_json = RunProfileData._preprocess_file(path, cache_dir, 'GPU')
+        trace_path, trace_json, _ = RunProfileData._preprocess_file(path, cache_dir, 'GPU')
 
         profile = RunProfileData.from_json(worker, span, trace_json)
         profile.trace_file_path = trace_path
@@ -121,36 +123,38 @@ class RunProfileData(object):
     def parse_npu(worker, span, path, cache_dir):
         trace_json = {}
         trace_path = path
+        start_ts = 0
         has_trace = False
         has_kernel = False
-        has_memory_line = False
-        has_memory_form = False
+        has_memory_record = False
+        has_memory_operator = False
         for file in io.listdir(path):
             if utils.is_npu_trace_path(file):
                 has_trace = True
                 trace_file = io.join(path, file)
-                trace_path, trace_json = RunProfileData._preprocess_file(trace_file, cache_dir, 'Ascend')
+                trace_path, trace_json, start_ts = RunProfileData._preprocess_file(trace_file, cache_dir, 'Ascend')
                 break
 
         profile = RunProfileData.from_json(worker, span, trace_json)
         profile.trace_file_path = trace_path
         profile.has_trace = has_trace
+        profile.start_ts = 0 if math.isinf(start_ts) else start_ts
 
         for file in io.listdir(path):
             if str(file) == 'kernel_details.csv':
                 has_kernel = True
                 profile.kernel_file_path = io.join(path, file)
-            if str(file) == 'memory_view_line_chart.csv':
-                has_memory_line = True
-                profile.memory_line_path = io.join(path, file)
-            if str(file) == 'memory_view_form.csv':
-                has_memory_form = True
-                profile.memory_form_path = io.join(path, file)
+            if str(file) == 'memory_record.csv':
+                has_memory_record = True
+                profile.memory_component_path = io.join(path, file)
+            if str(file) == 'operator_memory.csv':
+                has_memory_operator = True
+                profile.memory_operator_path = io.join(path, file)
             if str(file) == 'operator_details.csv':
                 profile.has_operator_view = True
                 profile.operator_path = io.join(path, file)
         profile.has_kernel = has_kernel
-        profile.has_memory = has_memory_form and has_memory_line
+        profile.has_memory = has_memory_operator and has_memory_record
         return profile
 
     @staticmethod
@@ -193,7 +197,10 @@ class RunProfileData(object):
         event_list = trace_json['traceEvents']
         end_index = None
         start_index = None
+        start_ts = float('inf')
         for i in reversed(range(len(event_list))):
+            if event_list[i].get('ts') is not None:
+                start_ts = min(start_ts, event_list[i]['ts'])
             if event_list[i]['name'] == 'Record Window End':
                 end_index = i
             elif event_list[i]['name'].startswith('Iteration Start:'):
@@ -214,7 +221,7 @@ class RunProfileData(object):
                 fzip.write(json.dumps(trace_json))
             trace_path = fp.name
 
-        return trace_path, trace_json
+        return trace_path, trace_json, start_ts
 
     def process(self):
         with utils.timing('EventParser.parse'):

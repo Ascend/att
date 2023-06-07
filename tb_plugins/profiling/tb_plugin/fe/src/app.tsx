@@ -394,9 +394,9 @@ export const App = () => {
         case Views.Overview:
           return <Overview run={run} worker={worker} span={span} />
         case Views.Operator:
-          return <Operator run={run} worker={worker} span={span} />
+          return <Operator run={run} worker={worker} span={span} deviceTarget={deviceTarget} />
         case Views.Kernel:
-          return <Kernel run={run} worker={worker} span={span} />
+          return <Kernel run={run} worker={worker} span={span} deviceTarget={deviceTarget} />
         case Views.Trace:
           return (
             <TraceView
@@ -409,7 +409,7 @@ export const App = () => {
         case Views.Distributed:
           return <DistributedView run={run} worker={worker} span={span} />
         case Views.Memory:
-          return <MemoryView run={run} worker={worker} span={span} />
+          return <MemoryView run={run} worker={worker} span={span} deviceTarget={deviceTarget} />
         case Views.Module:
         case Views.Lightning:
           return <ModuleView run={run} worker={worker} span={span} />

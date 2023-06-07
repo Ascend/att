@@ -67,10 +67,11 @@ export interface IProps {
   run: string
   worker: string
   span: string
+  deviceTarget: string
 }
 
 export const Operator: React.FC<IProps> = (props) => {
-  const { run, worker, span } = props
+  const { run, worker, span, deviceTarget } = props
   const classes = useStyles()
   const tooltipCommonClasses = useTooltipCommonStyles()
   const chartHeaderRenderer = React.useMemo(
@@ -133,11 +134,11 @@ export const Operator: React.FC<IProps> = (props) => {
 
   React.useEffect(() => {
     api.defaultApi
-      .operationGet(run, worker, span, OperationGroupBy.Operation)
+      .operationGet(run, worker, span, groupBy)
       .then((resp) => {
         setOperatorGraph(resp)
       })
-  }, [run, worker, span])
+  }, [run, worker, span, groupBy])
 
   const onGroupByChanged: SelectProps['onChange'] = (event) => {
     setGroupBy(event.target.value as OperationGroupBy)
@@ -295,6 +296,7 @@ export const Operator: React.FC<IProps> = (props) => {
                       worker={worker}
                       sortColumn={sortColumn}
                       tooltips={tableTooltips}
+                      deviceTarget={deviceTarget}
                     />
                   )}
                 </DataLoading>

@@ -356,6 +356,31 @@ export interface Graph {
 /**
  *
  * @export
+ * @interface GraphAscend
+ */
+export interface GraphAscend {
+  /**
+   *
+   * @type {string}
+   * @memberof GraphAscend
+   */
+  title?: string
+  /**
+   *
+   * @type {Array<GraphColumn>}
+   * @memberof GraphAscend
+   */
+  columns: Array<GraphColumn>
+  /**
+   *
+   * @type {any}
+   * @memberof GraphAscend
+   */
+  rows: any
+}
+/**
+ *
+ * @export
  * @interface GraphColumn
  */
 export interface GraphColumn {
@@ -494,6 +519,37 @@ export interface KeyedColumn {
   key: string
 }
 /**
+ * 
+ * @export
+ * @interface MemoryCurveDataAll
+ */
+export interface MemoryCurveDataAll {
+  /**
+   * 
+   * @type {string}
+   * @memberof MemoryCurveDataAll
+   */
+  default_device: string
+  /**
+   * 
+   * @type {Array<string>}
+   * @memberof MemoryCurveDataAll
+   */
+  devices: Array<string>
+  /**
+   *
+   * @type {MemoryCurveDataAscend}
+   * @memberof MemoryCurveDataAll
+   */
+  total: MemoryCurveDataAscend
+  /**
+   *
+   * @type {MemoryCurveDataAscend}
+   * @memberof MemoryCurveDataAll
+   */
+  ptaGe: MemoryCurveDataAscend
+}
+/**
  *
  * @export
  * @interface MemoryCurveData
@@ -515,6 +571,31 @@ export interface MemoryCurveData {
    *
    * @type {any}
    * @memberof MemoryCurveData
+   */
+  rows: any
+}
+/**
+ *
+ * @export
+ * @interface MemoryCurveDataAscend
+ */
+export interface MemoryCurveDataAscend {
+  /**
+   *
+   * @type {MemoryCurveDataMetadata}
+   * @memberof MemoryCurveDataAscend
+   */
+  metadata: MemoryCurveDataMetadata
+  /**
+   *
+   * @type {any}
+   * @memberof MemoryCurveDataAscend
+   */
+  columns: any
+  /**
+   *
+   * @type {any}
+   * @memberof MemoryCurveDataAscend
    */
   rows: any
 }
@@ -603,6 +684,25 @@ export interface MemoryEventsData {
    * @memberof MemoryEventsData
    */
   rows: any
+}
+/**
+ * 
+ * @exports
+ * @interface MemoryEventsDataAll
+ */
+export interface MemoryEventsDataAll {
+  /**
+   * 
+   * @type {MemoryEventsData}
+   * @memberof MemoryEventsDataAll
+   */
+  operator: MemoryEventsData
+  /**
+   * 
+   * @type {MemoryEventsData}
+   * @memberof MemoryEventsDataAll
+   */
+  component: MemoryEventsData
 }
 /**
  *
@@ -3133,7 +3233,7 @@ export const DefaultApiFp = function (configuration?: Configuration) {
       worker: string,
       span: string,
       options?: any
-    ): (fetch?: FetchAPI, basePath?: string) => Promise<MemoryCurveData> {
+    ): (fetch?: FetchAPI, basePath?: string) => Promise<MemoryCurveDataAll | MemoryCurveData> {
       const localVarFetchArgs = DefaultApiFetchParamCreator(
         configuration
       ).memoryCurveGet(run, worker, span, options)
@@ -3170,7 +3270,7 @@ export const DefaultApiFp = function (configuration?: Configuration) {
       start_ts?: number,
       end_ts?: number,
       options?: any
-    ): (fetch?: FetchAPI, basePath?: string) => Promise<MemoryEventsData> {
+    ): (fetch?: FetchAPI, basePath?: string) => Promise<MemoryEventsData | MemoryEventsDataAll> {
       const localVarFetchArgs = DefaultApiFetchParamCreator(
         configuration
       ).memoryEventsGet(run, worker, span, start_ts, end_ts, options)

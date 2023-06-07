@@ -1,4 +1,3 @@
-
 # -------------------------------------------------------------------------
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # --------------------------------------------------------------------------
@@ -34,7 +33,9 @@ class RunLoader(object):
                 if io.isdir(io.join(self.run_dir, path)) and utils.is_worker_span_dir(path):
                     data_path = io.join(self.run_dir, path, 'ASCEND_PROFILER_OUTPUT')
                     for file in io.listdir(data_path):
-                        if utils.is_npu_trace_path(file) or str(file) == 'kernel_details.csv':
+                        if utils.is_npu_trace_path(file) or str(file) in (
+                                'kernel_details.csv', 'memory_record.csv', 'operator_memory.csv',
+                                'operator_details.csv'):
                             match = consts.WORKER_SPAN_PATTERN.match(path)
                             worker = match.group(1)
                             span = match.group(2)
