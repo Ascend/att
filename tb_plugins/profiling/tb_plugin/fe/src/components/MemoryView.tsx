@@ -176,6 +176,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
   const getName = React.useCallback((row: any) => row[searchIndex], [
     searchIndex
   ])
+  const getNameAscend = (row: any) => row[0]
   const [searchedTableDataRows] = useSearchDirectly(
     searchOperatorName,
     getName,
@@ -183,7 +184,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
   )
   const [searchedEventsTableDataRows] = useSearchDirectly(
     searchEventOperatorName,
-    getName,
+    deviceTarget === 'Ascend' ? getNameAscend : getName,
     filterByEventSize(
       memoryEventsData?.rows[device],
       filterEventSize[device] ?? [0, Infinity]
