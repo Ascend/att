@@ -399,7 +399,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
                             graph={lineChartData}
                             deviceTarget={deviceTarget}
                             tag={tag}
-                            onSelectionChanged={onSelectedRangeChanged}
+                            onSelectionChanged={tag !== 'Component' ? onSelectedRangeChanged : undefined}
                             explorerOptions={{
                               actions: ['dragToZoom', 'rightClickToReset'],
                               axis: 'horizontal',
