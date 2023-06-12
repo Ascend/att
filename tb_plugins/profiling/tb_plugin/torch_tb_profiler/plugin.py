@@ -206,7 +206,7 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         group_by = request.args.get('group_by')
         input_shape = request.args.get('input_shape')
         if group_by == 'OperationAndInputShape':
-            return self.respond_as_json(profile.operation_stack_by_name_input[str(op_name)+'###'+str(input_shape)])
+            return self.respond_as_json(profile.operation_stack_by_name_input[str(op_name) + '###' + str(input_shape)])
         else:
             return self.respond_as_json(profile.operation_stack_by_name[str(op_name)])
 
@@ -293,7 +293,7 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
             end_ts = int(end_ts)
 
         return self.respond_as_json(
-                profile.get_memory_stats(start_ts=start_ts, end_ts=end_ts, memory_metric=memory_metric), True)
+            profile.get_memory_stats(start_ts=start_ts, end_ts=end_ts, memory_metric=memory_metric), True)
 
     @wrappers.Request.application
     def memory_curve_route(self, request: werkzeug.Request):
@@ -315,10 +315,20 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         memory_metric = request.args.get('memory_metric', 'KB')
         if profile.device_target == 'Ascend':
             operator_memory_events = profile.memory_events['operator']['rows']
-            start_ts = int(start_ts) if start_ts is not None else 0
-            end_ts = int(end_ts) if end_ts is not None else float('inf')
+            if start_ts is not None:
+                start_ts = int(start_ts)
+            if end_ts is not None:
+                end_ts = int(end_ts)
             for key in operator_memory_events:
-                operator_memory_events[key] = [i for i in operator_memory_events[key] if start_ts <= i[2] <= end_ts]
+                if start_ts is not None and end_ts is not None:
+                    operator_memory_events[key] = [i for i in operator_memory_events[key] if
+                                                   i[2] and start_ts <= i[2] <= end_ts]
+                elif start_ts is not None:
+                    operator_memory_events[key] = [i for i in operator_memory_events[key] if
+                                                   i[2] and start_ts <= i[2]]
+                elif end_ts is not None:
+                    operator_memory_events[key] = [i for i in operator_memory_events[key] if
+                                                   i[2] and end_ts >= i[2]]
             return self.respond_as_json(profile.memory_events, True)
         else:
             if start_ts is not None:

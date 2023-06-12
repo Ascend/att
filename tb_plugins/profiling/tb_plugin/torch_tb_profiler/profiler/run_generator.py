@@ -119,8 +119,12 @@ class RunGenerator(object):
         if len(datas) <= 1:
             return operator_by_name, operator_by_name_and_input_shapes
         for ls in datas[1:]:
-            temp: list = [ls[0], RunGenerator._trans_shape(str(ls[1])), ls[2], float(ls[3]), float(ls[4]),
-                          float(ls[5]), float(ls[6]), float(ls[7]), float(ls[8])]
+            try:
+                temp: list = [ls[0], RunGenerator._trans_shape(str(ls[1])), ls[2], float(ls[3]), float(ls[4]),
+                              float(ls[5]), float(ls[6]), float(ls[7]), float(ls[8])]
+            except (ValueError, IndexError):
+                logger.error('Data in file "operator_details.csv" has wrong format.')
+                return operator_by_name, operator_by_name_and_input_shapes
             operator_by_name[ls[0]].append(temp)
             key = "{}###{}".format(str(ls[0]), RunGenerator._trans_shape(str(ls[1])))
             operator_by_name_and_input_shapes[key].append(temp)
@@ -279,7 +283,7 @@ class RunGenerator(object):
         return temp
 
     def _get_memory_event(self, peak_memory_events: dict):
-        display_columns = ('Operator', 'Size(KB)', 'Allocation Time(us)', 'Release Time(us)', 'Duration(us)')
+        display_columns = ('Name', 'Size(KB)', 'Allocation Time(us)', 'Release Time(us)', 'Duration(us)')
         path = self.profile_data.memory_operator_path
         display_datas = defaultdict(list)
         devices_type = []
@@ -296,7 +300,7 @@ class RunGenerator(object):
             if column == 'Device Type':
                 self.device_type_form_idx = idx
             if column in display_columns:
-                if column == 'Operator':
+                if column == 'Name':
                     table['columns'].append({'name': column, 'type': 'string'})
                 elif column == 'Size(KB)':
                     table['columns'].append({'name': column, 'type': 'number'})
@@ -306,12 +310,11 @@ class RunGenerator(object):
         for ls in datas[1:]:
             device_type = ls[self.device_type_form_idx]
             # convert time metric 'us' to 'ms'
-            nums = [ls[0], float(ls[1]), round((float(ls[2]) - self.profile_data.start_ts) / 1000, 3)]
-            # some operators may not have column[3] or column[4]
-            if ls[3]:
-                nums.append(round((float(ls[3]) - self.profile_data.start_ts) / 1000, 3))
-            if ls[4]:
-                nums.append(round(float(ls[4]) / 1000, 2))
+            # some operators may not have the following columns
+            nums = [ls[0] if ls[0] else '<unknown>', abs(float(ls[1])),
+                    round((float(ls[2]) - self.profile_data.start_ts) / 1000, 2) if ls[2] else None,
+                    round((float(ls[3]) - self.profile_data.start_ts) / 1000, 2) if ls[3] else None,
+                    round(float(ls[4]) / 1000, 2) if ls[4] else None]
             display_datas[device_type].append(nums)
         table['rows'] = display_datas
         for name in display_datas:
