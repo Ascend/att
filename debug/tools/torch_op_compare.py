@@ -63,15 +63,15 @@ class TorchOpNode:
 
     @property
     def name(self):
-        return self._event.get("name", NA)
+        return str(self._event.get("name", NA))
 
     @property
     def input_shape(self):
-        return self._event.get("args", {}).get("Input Dims", NA)
+        return str(self._event.get("args", {}).get("Input Dims", NA))
 
     @property
     def input_type(self):
-        return self._event.get("args", {}).get("Input type", NA)
+        return str(self._event.get("args", {}).get("Input type", NA))
 
     @property
     def parent(self):
