@@ -467,7 +467,6 @@ class RunGenerator(object):
                 if ls[tag_type_idx] == 'PTA+GE':
                     process_data.setdefault(device_type, {}).setdefault('Allocated', []).append(
                         [time_column, float(ls[allocated_idx])])
-                elif ls[tag_type_idx] == 'APP':
                     process_data.setdefault(device_type, {}).setdefault('Reserved', []).append(
                         [time_column, float(ls[reserved_idx])])
                 elif ls[tag_type_idx] in ('PTA', 'GE'):
