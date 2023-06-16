@@ -15,7 +15,7 @@ The PyTorch Profiler TensorBoard plugin provides powerful and intuitive visualiz
 ## Libkineto
 Libkineto is an in-process profiling library integrated with the PyTorch Profiler. Please refer to the [README](libkineto/README.md) file in the `libkineto` folder as well as documentation on the [new PyTorch Profiler API](https://pytorch.org/docs/master/profiler.html).
 
-## PyTorch TensorBoard Profiler
+## PyTorch TensorBoard Profiler NPU Plugin
 The goal of the PyTorch TensorBoard Profiler is to provide a seamless and intuitive end-to-end profiling experience, including straightforward collection from PyTorch and insightful visualizations and recommendations in the TensorBoard UI.
 Please refer to the [README](tb_plugin/README.md) file in the `tb_plugin` folder.
 
