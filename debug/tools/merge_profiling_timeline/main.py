@@ -15,6 +15,7 @@
 
 import json
 import os
+import re
 
 from functools import partial
 from argparse import ArgumentParser
@@ -55,6 +56,12 @@ def _path_dir_filter_func(sub_path, root_dir):
     return sub_path not in FILTER_DIRS and os.path.isdir(os.path.realpath(os.path.join(root_dir, sub_path)))
 
 
+def natural_sort(files):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    return sorted(files, key=alphanum_key)
+
+
 def get_timeline_info(input_path, prof_dirs):
     timeline_info = {}
 
@@ -91,14 +98,14 @@ def get_rank_id_from_info_json(pro_path):
     return rank_id
 
 
-def merge_timeline(timeline_info, args):
-    """merge timeline of PROF_"""
-    new_events = []
+def merge_timeline_general(timeline_info, args):
+
+    timeline_files_dict = {}
 
     node_time_diff = get_node_time_diff(args.timediff) if args.timediff else None
 
     # 合并部分profiling items
-    merge_items = args.items.split(",") if args.items else None
+    process_list = args.items.split(",") if args.items else None
 
     # 合并部分rank
     if args.rank:
@@ -107,60 +114,89 @@ def merge_timeline(timeline_info, args):
         rank_ids = list(timeline_info.keys())
 
     for rank_id in rank_ids:
-        timeline_file = timeline_info.get(rank_id)
+        timeline_files_dict[rank_id] = timeline_info.get(rank_id)
+    merge_timeline_events(timeline_files_dict, process_list, node_time_diff)
+
+
+def merge_timeline_custom(args):
+    """合并指定目录里所有timeline文件"""
+    timeline_files = natural_sort(os.listdir(args.data))
+    timeline_files_dict = {}
+    for idx, timeline_file in enumerate(timeline_files):
+        timeline_files_dict[idx] = os.path.join(args.data, timeline_file)
+    node_time_diff = get_node_time_diff(args.timediff) if args.timediff else None
+    # 合并部分profiling items
+    process_list = args.items.split(",") if args.items else None
+    merge_timeline_events(timeline_files_dict, process_list, node_time_diff)
+
+
+def merge_timeline_events(timeline_file_dict, process_list, node_time_diff=None):
+    """
+    输入需要合并的timeline文件路径及对应的rank_id/id、需要合并的process_list、校准时间差node_time_diff
+    输出合并timeline
+    """
+    new_events = []
+    for rank_id, timeline_file_path in timeline_file_dict.items():
         node = rank_id // 8
-        print("rank id: ", rank_id, "timeline file: ", timeline_file)
+        print("rank id: ", rank_id, "timeline file: ", timeline_file_path)
 
         # 获取相应的时间差异
         node_time = node_time_diff[node] if node_time_diff else None
+        try:
+            with open(timeline_file_path, 'r+') as f:
+                cur_events = json.load(f)
+        except Exception as err:
+            print("[ERROR] %s" % err)
+            return
 
-        with open(timeline_file, 'r+') as f:
-            cur_events = json.load(f)
-            proc_pid_dict = {}
-            for event in cur_events:
-                if event.get("name") == "process_name" and event.get("ph") == "M":
-                    if event.get("args"):
-                        proc_pid_dict[event["args"].get("name")] = event.get("pid")
-            process_list = merge_items if merge_items else list(proc_pid_dict.keys())
-            # 提取待合并的items的pid
-            merged_pids = set()
-            for pro in process_list:
-                pro = " ".join(pro.split("_")) if "_" in pro else pro
+        proc_pid_dict = {}
+        for event in cur_events:
+            if event.get("name") == "process_name" and event.get("ph") == "M":
+                if event.get("args"):
+                    proc_pid_dict[event["args"].get("name")] = event.get("pid")
+        process_list = process_list if process_list else list(proc_pid_dict.keys())
+        # 提取待合并的items的pid
+        merged_pids = set()
+        for pro in process_list:
+            pro = " ".join(pro.split("_")) if "_" in pro else pro
 
-                if pro not in proc_pid_dict.keys():
-                    print(f"{pro} is invalid item, valid items: {list(proc_pid_dict.keys())}")
-                    continue
-                merged_pids.add(proc_pid_dict.get(pro))
+            if pro not in proc_pid_dict.keys():
+                print(f"{pro} is invalid item, valid items: {list(proc_pid_dict.keys())}")
+                continue
+            merged_pids.add(proc_pid_dict.get(pro))
 
-            for event in cur_events:
+        for event in cur_events:
 
-                # 只合并特定数据项
-                if event.get('pid') not in merged_pids:
-                    continue
+            # 只合并特定数据项
+            if merged_pids and event.get('pid') not in merged_pids:
+                continue
 
-                # 当前节点间时间误差可用时，进行时间校准
-                if event.get("ts") and node_time:
-                    event["ts"] = event["ts"] - node_time * 1000000
+            # 当前节点间时间误差可用时，进行时间校准
+            if event.get("ts") and node_time:
+                event["ts"] = event["ts"] - node_time * 1000000
 
-                # 区分不同rank的同一进程的pid
-                if isinstance(event.get("pid"), (str, int)):
-                    event["pid"] = int(''.join(x for x in str(event.get("pid")) if x.isdigit()) +
-                                       str(rank_id * MAX_INDEX_COUNT))
+            # 区分不同rank的同一进程的pid
+            if isinstance(event.get("pid"), (str, int)):
+                # 合并GPU profiling/ after timeline pid modify
+                # event["pid"] = int(event["pid"]) if event["pid"].isdigit() else event["pid"] + str(rank_id)
+                event["pid"] = int(''.join(x for x in str(event.get("pid")) if x.isdigit()) +
+                                   str(rank_id * MAX_INDEX_COUNT))
 
-                # convert tid to int
-                if isinstance(event.get("tid"), str):
-                    event["tid"] = int(''.join(x for x in event["tid"] if x.isdigit()))
+            # convert tid to int
+            if isinstance(event.get("tid"), str):
+                event["tid"] = int(''.join(x for x in event["tid"] if x.isdigit()))
 
-                # 进程名加上rank_id区分不同rank
-                if event.get("name") == "process_name" and event.get("ph") == "M":
-                    if event.get("args") is not None and event["args"].get("name") is not None:
-                        event["args"]["name"] = event["args"]["name"] + f"_{rank_id}"
+            # 进程名加上rank_id区分不同rank
+            if event.get("name") == "process_name" and event.get("ph") == "M":
+                if event.get("args") is not None and event["args"].get("name") is not None:
+                    event["args"]["name"] = event["args"]["name"] + f"_{rank_id}"
 
-                new_events.append(event)
+            new_events.append(event)
 
-    output_path = os.path.join(args.output, f"msprof_merged_{len(rank_ids)}p.json")
+    output_path = os.path.join(args.output, f"msprof_merged_{len(timeline_file_dict)}p.json")
     with open(output_path, 'w') as f:
         json.dump(new_events, f)
+    print(f"timeline merged output path: {output_path}")
 
 
 def parse_args():
@@ -169,16 +205,13 @@ def parse_args():
     parser.add_argument("--timediff", "-t", default=None, help="JSON file for saving startup time differences")
     parser.add_argument("--output", "-o", default=None, help="save path of msprof_merged.json ")
     parser.add_argument("--rank", default=None, help="List of ranks to be merged. By default, all ranks are merged")
-    parser.add_argument("--items", default=None, help="Items to be combined in the timeline."
-                                                      " The options are ['MsprofTx', 'AscendCL', 'Runtime', 'AI CPU',"
-                                                      "'Task Scheduler', and 'HCCL'].")
+    parser.add_argument("--items", default=None, help="Specify the data items to be merged. in the timeline.")
+    parser.add_argument("--custom", action="store_true", help="Customize the timeline file to be merged.")
     arg = parser.parse_args()
     return arg
 
 
 if __name__ == "__main__":
-    import time
-    start = time.time()
     args = parse_args()
     prof_dir = get_path_dir(args.data)
 
@@ -186,6 +219,7 @@ if __name__ == "__main__":
     if not args.output:
         args.output = args.data
     print("========================== start merge timeline ====================")
-    merge_timeline(timeline_info, args)
-    end = time.time()
-    print(f"msprof.json merged finished cost time: {end - start}s")
+    if args.custom:
+        merge_timeline_custom(args)
+    else:
+        merge_timeline_general(timeline_info, args)
