@@ -63,14 +63,14 @@ class build_fe(setuptools.Command):
 
 
 setuptools.setup(
-    name="torch-tb-profiler-npu",
+    name="torch-tb-profiler-ascend",
     version=get_version(os.path.join('torch_tb_profiler', '__init__.py')),
-    description="PyTorch Profiler TensorBoard Plugin",
-    long_description="PyTorch Profiler TensorBoard Plugin : \
-        https://github.com/pytorch/kineto/tree/main/tb_plugin",
-    url="https://github.com/pytorch/kineto/tree/main/tb_plugin",
-    author="PyTorch Team",
-    author_email="packages@pytorch.org",
+    description="PyTorch Ascend Profiler TensorBoard Plugin",
+    long_description="PyTorch Ascend Profiler TensorBoard Plugin : \
+        https://gitee.com/ascend/att/tree/master/tb_plugins/profiling/tb_plugin",
+    url="https://gitee.com/ascend/att/tree/master/tb_plugins/profiling/tb_plugin",
+    author="Ascend Team",
+    author_email="pmail_mindstudio@huawei.com",
     cmdclass={
         "build_fe": build_fe
     },
