@@ -26,7 +26,7 @@ import {
 } from '../api'
 import { useSearchDirectly } from '../utils/search'
 import { AntTableChart } from './charts/AntTableChart'
-import { LineChart } from './charts/LineChart'
+import { LineChart } from './charts/NewLineChart'
 import { DataLoading } from './DataLoading'
 import { MemoryStatsTable } from './tables/MemoryStatsTable'
 
@@ -337,19 +337,62 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
   }
 
   const onTagChanged: SelectProps['onChange'] = (event) => {
+    event.target.value === 'Operator' && setSelectedRange(undefined)
     setTag(event.target.value as string)
-    setSelectedRange(undefined)
   }
 
   const onSelectedRangeChanged = (start: number, end: number) => {
-    let bias = memoryCurveData?.metadata.first_ts ?? 0
-    let scale = 1 / (memoryCurveData?.metadata.time_factor ?? 1)
-    let startTs = Math.round(start * scale + bias)
-    let endTs = Math.round(end * scale + bias)
-    if (startTs == endTs) {
+    if (start > end) {
       setSelectedRange(undefined)
       return
     }
+
+    let allDatas = deviceTarget === 'Ascend' ?
+      memoryCurveData?.rows[device]?.Allocated : memoryCurveData?.rows[device]
+    if (allDatas.length <= 1) {
+      setSelectedRange(undefined)
+      return
+    }
+
+    let startTs = 0
+    let endTs = 0
+    let realStart = 0
+    let realEnd = 0
+    let startId = 1
+    let endId = 0
+    let needLoopStart = true
+    for (let i = 1; i < allDatas.length; i++) {
+      if (startId > start && needLoopStart) {
+        needLoopStart = false
+        realStart = i - 1
+      }
+      if (allDatas[i] !== allDatas[i - 1]) {
+        if (startId <= start) {
+          startId += 1
+        }
+        endId += 1
+      }
+      if (endId > end) {
+        realEnd = i - 1
+        break
+      } else {
+        realEnd = i
+        if (needLoopStart) {
+          realStart = i
+        }
+      }
+    }
+
+    if (deviceTarget === 'Ascend') {
+      startTs = allDatas[realStart][0]
+      endTs = allDatas[realEnd][0]
+    } else {
+      let bias = memoryCurveData?.metadata.first_ts ?? 0
+      let scale = 1 / (memoryCurveData?.metadata.time_factor ?? 1)
+      startTs = Math.round(allDatas[realStart][0] * scale + bias)
+      endTs = Math.round(allDatas[realEnd][0] * scale + bias)
+    }
+
     setSelectedRange({ start, end, startTs, endTs })
   }
 
@@ -401,13 +444,6 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
                             deviceTarget={deviceTarget}
                             tag={tag}
                             onSelectionChanged={tag !== 'Component' ? onSelectedRangeChanged : undefined}
-                            explorerOptions={{
-                              actions: ['dragToZoom', 'rightClickToReset'],
-                              axis: 'horizontal',
-                              keepInBounds: true,
-                              maxZoomIn: 0.000001,
-                              maxZoomOut: 10
-                            }}
                             record={selectedRecord}
                           />
                         </div>

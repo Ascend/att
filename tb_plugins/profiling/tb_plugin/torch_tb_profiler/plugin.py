@@ -2,6 +2,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # --------------------------------------------------------------------------
 import atexit
+import copy
 import gzip
 import json
 import os
@@ -314,11 +315,12 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         time_metric = request.args.get('time_metric', 'ms')
         memory_metric = request.args.get('memory_metric', 'KB')
         if profile.device_target == 'Ascend':
-            operator_memory_events = profile.memory_events['operator']['rows']
+            temp_memory_events = copy.deepcopy(profile.memory_events)
+            operator_memory_events = temp_memory_events['operator']['rows']
             if start_ts is not None:
-                start_ts = int(start_ts)
+                start_ts = float(start_ts)
             if end_ts is not None:
-                end_ts = int(end_ts)
+                end_ts = float(end_ts)
             for key in operator_memory_events:
                 if start_ts is not None and end_ts is not None:
                     operator_memory_events[key] = [i for i in operator_memory_events[key] if
@@ -329,7 +331,7 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
                 elif end_ts is not None:
                     operator_memory_events[key] = [i for i in operator_memory_events[key] if
                                                    i[2] and end_ts >= i[2]]
-            return self.respond_as_json(profile.memory_events, True)
+            return self.respond_as_json(temp_memory_events, True)
         else:
             if start_ts is not None:
                 start_ts = int(start_ts)
