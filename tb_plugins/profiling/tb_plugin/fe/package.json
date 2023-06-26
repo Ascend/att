@@ -16,10 +16,12 @@
     "@material-ui/icons": "^4.11.2",
     "antd": "^4.17.0",
     "clsx": "^1.1.1",
+    "echarts": "^5.4.2",
     "portable-fetch": "^3.0.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "react-flame-graph": "^1.4.0"
+    "react-flame-graph": "^1.4.0",
+    "url": "^0.11.1"
   },
   "devDependencies": {
     "@types/react": "^16.9.51",

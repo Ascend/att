@@ -347,13 +347,13 @@ class RunGenerator(object):
             'rows': self.process_data
         }
         for device in process_devices_type:
-            if self.process_data.get(device).get('Allocated') is not None:
+            if self.process_data.get(device).get('Allocated') is not None and self.process_data.get(device).get(
+                    'Reserved') is not None:
                 total_result['columns'][device].append(
                     {'name': f'Allocated ({cano.memory_metric})', 'type': 'number', 'tooltip': 'PTA+GE memory in use.'})
-            if self.process_data.get(device).get('Reserved') is not None:
                 total_result['columns'][device].append(
                     {'name': f'Reserved ({cano.memory_metric})', 'type': 'number',
-                     'tooltip': 'APP reserved memory by allocator, both used and unused.'})
+                     'tooltip': 'PTA+GE reserved memory by allocator, both used and unused.'})
             if len(total_result['columns'][device]) > 0:
                 total_result['columns'][device].insert(0, {'name': f'Time ({cano.time_metric})', 'type': 'number',
                                                            'tooltip': 'Time since profiler starts.'})
@@ -422,19 +422,12 @@ class RunGenerator(object):
                 max_reserved = 0
                 for array_value in process_data.get(device).get(component):
                     max_reserved = max(array_value[2], max_reserved)
-                peaks[device] += f'{component} Peak Memory Usage: {max_reserved:.1f}{memory_metric}\n'
+                peaks[device] += f'{component} Reserved Peak Memory Usage: {max_reserved:.1f}{memory_metric}\n'
         return devices_type, peaks
 
     @staticmethod
-    def _check_csv_columns(columns: list):
+    def _check_csv_columns(columns: list, column_idxs: dict):
         column_exist_count = 0
-        column_idxs = {
-            'Component': -1,
-            'Device Type': -1,
-            'Timestamp(us)': -1,
-            'Total Reserved(MB)': -1,
-            'Total Allocated(MB)': -1
-        }
         for idx, column in enumerate(columns):
             if column in column_idxs:
                 column_idxs[column] = idx
@@ -456,21 +449,29 @@ class RunGenerator(object):
                         {'name': 'Time(ms)', 'type': 'number'}]
         }
         peak_memory_rows = defaultdict(list)
+        required_column_idxs = {
+            'Component': -1,
+            'Device Type': -1,
+            'Timestamp(us)': -1,
+            'Total Reserved(MB)': -1,
+            'Total Allocated(MB)': -1
+        }
         (tag_type_idx, device_type_idx, time_idx, reserved_idx, allocated_idx), column_exist_count = \
-            RunGenerator._check_csv_columns(datas[0])
+            RunGenerator._check_csv_columns(datas[0], required_column_idxs)
         if column_exist_count < 5:
             logger.error('Required column is missing in file "memory_record.csv"')
         else:
             for ls in datas[1:]:
-                time_column = round((float(ls[time_idx]) - self.profile_data.start_ts) / 1000, 3)
+                time_column = round((float(ls[time_idx]) - self.profile_data.start_ts) / 1000, 2)
                 device_type = ls[device_type_idx]
                 if ls[tag_type_idx] == 'PTA+GE':
                     process_data.setdefault(device_type, {}).setdefault('Allocated', []).append(
-                        [time_column, float(ls[allocated_idx])])
+                        [time_column, round(float(ls[allocated_idx]), 3)])
                     process_data.setdefault(device_type, {}).setdefault('Reserved', []).append(
-                        [time_column, float(ls[reserved_idx])])
+                        [time_column, round(float(ls[reserved_idx]), 3)])
                 elif ls[tag_type_idx] in ('PTA', 'GE'):
-                    line_chart_data = [time_column, float(ls[allocated_idx]), float(ls[reserved_idx])]
+                    line_chart_data = [time_column, round(float(ls[allocated_idx]), 3),
+                                       round(float(ls[reserved_idx]), 3)]
                     pta_or_ge_data.setdefault(device_type, {}).setdefault(ls[tag_type_idx], []).append(line_chart_data)
                 else:
                     self._handle_peak_memory_rows(device_type_idx, ls, peak_memory_rows, reserved_idx, tag_type_idx,
@@ -853,35 +854,33 @@ class RunGenerator(object):
         return datas
 
     def _generate_kernel_table_npu(self):
-        display_columns = ('Step Id', 'Name', 'Type', 'Accelerator Core', 'Start Time(us)', 'Duration(us)',
-                           'Wait Time(us)', 'Block Dim', 'Input Shapes', 'Input Data Types', 'Input Formats',
-                           'Output Shapes', 'Output Data Types', 'Output Formats')
-        display_idxs = []
         table = {'columns': [], 'rows': []}
         result = {
             'metadata': {
-                'sort': 'Total Duration (us)'
+                'sort': 'Duration (us)'
             },
             'data': table
         }
         path = self.profile_data.kernel_file_path
         datas = RunGenerator._get_csv_data(path)
-        for idx, column in enumerate(datas[0]):
-            if column == 'Name':
-                self.name_idx = idx
-            elif column == 'Duration(us)':
-                self.duration_idx = idx
-            elif column == 'Accelerator Core':
-                self.core_type_idx = idx
-
-            if column in display_columns:
-                display_idxs.append(idx)
-                if column in ('Duration(us)', 'Start Time', 'Wait Time(us)', 'Block Dim'):
+        required_column_idxs = {
+            'Name': -1,
+            'Duration(us)': -1,
+            'Accelerator Core': -1
+        }
+        (name_idx, duration_idx, core_type_idx), column_exist_count = \
+            RunGenerator._check_csv_columns(datas[0], required_column_idxs)
+        if column_exist_count < 3:
+            logger.error('Required column is missing in file "kernel_details.csv"')
+        else:
+            for column in datas[0]:
+                if column in ('Duration(us)', 'Start Time(us)', 'Wait Time(us)', 'Block Dim'):
                     table['columns'].append({'type': 'number', 'name': column})
                 else:
                     table['columns'].append({'type': 'string', 'name': column})
-        table['rows'] = [self._handle_kernel_table_rows(display_idxs, ls) for idx, ls in
-                         enumerate(datas) if idx != 0]
+
+            self._handle_kernel_table_rows(name_idx, duration_idx, core_type_idx, datas[1:])
+        table['rows'] = datas[1:]
         return result
 
     @staticmethod
@@ -924,34 +923,31 @@ class RunGenerator(object):
 
         return gpu_info
 
-    def _handle_kernel_table_rows(self, ids, row):
-        display_row = []
-        for idx in ids:
-            display_row.append(row[idx])
-        call_name = row[self.name_idx]
-        call_duration = float(row[self.duration_idx])
-        call_type = row[self.core_type_idx]
-        if self.accelerator_data.get(call_type) is not None:
-            self.accelerator_data[call_type] += call_duration
-        else:
-            self.accelerator_data[call_type] = call_duration
+    def _handle_kernel_table_rows(self, name_idx, duration_idx, core_type_idx, rows):
+        for row in rows:
+            call_name = row[name_idx]
+            call_duration = float(row[duration_idx])
+            call_type = row[core_type_idx]
+            if self.accelerator_data.get(call_type) is not None:
+                self.accelerator_data[call_type] += call_duration
+            else:
+                self.accelerator_data[call_type] = call_duration
 
-        if self.statistic_data.get(call_name) is not None:
-            temp = self.statistic_data[call_name]
-            temp['Max'] = max(temp['Max'], call_duration)
-            temp['Min'] = min(temp['Min'], call_duration)
-            temp['Total'] = round(temp['Total'] + call_duration, 2)
-            temp['Calls'] += 1
-            temp['Average'] = round(temp['Total'] / temp['Calls'], 2)
-        else:
-            self.statistic_data[call_name] = {
-                'Calls': 1,
-                'Total': call_duration,
-                'Min': call_duration,
-                'Average': call_duration,
-                'Max': call_duration
-            }
-        return display_row
+            if self.statistic_data.get(call_name) is not None:
+                temp = self.statistic_data[call_name]
+                temp['Max'] = max(temp['Max'], call_duration)
+                temp['Min'] = min(temp['Min'], call_duration)
+                temp['Total'] = round(temp['Total'] + call_duration, 2)
+                temp['Calls'] += 1
+                temp['Average'] = round(temp['Total'] / temp['Calls'], 2)
+            else:
+                self.statistic_data[call_name] = {
+                    'Calls': 1,
+                    'Total': call_duration,
+                    'Min': call_duration,
+                    'Average': call_duration,
+                    'Max': call_duration
+                }
 
 
 class DistributedRunGenerator(object):
