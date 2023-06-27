@@ -366,7 +366,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
         needLoopStart = false
         realStart = i - 1
       }
-      if (allDatas[i] !== allDatas[i - 1]) {
+      if (allDatas[i][0] !== allDatas[i - 1][0]) {
         if (startId <= start) {
           startId += 1
         }
