@@ -128,35 +128,29 @@ export const LineChart: React.FC<IProps> = (props) => {
             )
           }
         } else if (graph.columns.length === 5) {
-          const datasetTitle1: Array<string> = []
-          const datasetTitle2: Array<string> = []
-          graph.columns.forEach((column, index) => {
-            if (index === 0 || index < 3) {
-              datasetTitle1.push(column.name)
-            }
-            if (index === 0 || index >= 3) {
-              datasetTitle2.push(column.name)
-            }
+          const datasetTitle = graph.columns.map(item => item.name)
+          const mergedGERows = graph.rows['GE'].map((item: Array<number | null>) => {
+            return [item[0], null, null, item[1], item[2]]
+          })
+          const finalRows = graph.rows['PTA'].concat(mergedGERows).sort((a: any, b: any) => {
+            return a[0] - b[0]
           })
           option = {
             ...option,
-            dataset: [
-              {
-                source: [
-                  datasetTitle1,
-                  ...graph.rows['PTA']
-                ]
-              },
-              {
-                source: [
-                  datasetTitle2,
-                  ...graph.rows['GE']
-                ]
-              }
-            ],
-            series: Array(2).fill(
+            dataset:
+            {
+              source: [
+                datasetTitle,
+                ...finalRows
+              ]
+            },
+            tooltip: {
+              show: false
+            },
+            series: Array(4).fill(
               {
                 type: 'line',
+                connectNulls: true,
                 select: {
                   itemStyle: {
                     borderWidth: 5,
@@ -171,24 +165,7 @@ export const LineChart: React.FC<IProps> = (props) => {
                 },
                 selectedMode: 'single',
                 datasetIndex: 0
-              }).concat(Array(2).fill(
-                {
-                  type: 'line',
-                  select: {
-                    itemStyle: {
-                      borderWidth: 5,
-                      shadowBlur: 5
-                    }
-                  },
-                  emphasis: {
-                    itemStyle: {
-                      borderWidth: 5,
-                      shadowBlur: 5
-                    }
-                  },
-                  selectedMode: 'single',
-                  datasetIndex: 1
-                }))
+              })
           }
         }
       } else {
