@@ -201,12 +201,13 @@ class RunProfileData(object):
         for i in reversed(range(len(event_list))):
             if event_list[i].get('ts') is not None:
                 start_ts = min(start_ts, event_list[i]['ts'])
-            if event_list[i]['name'] == 'Record Window End':
-                end_index = i
-            elif event_list[i]['name'].startswith('Iteration Start:'):
-                start_index = i
-            if start_index is not None and end_index is not None:
-                break
+            if device_target != 'Ascend':
+                if event_list[i]['name'] == 'Record Window End':
+                    end_index = i
+                elif event_list[i]['name'].startswith('Iteration Start:'):
+                    start_index = i
+                if start_index is not None and end_index is not None:
+                    break
 
         if start_index is not None and end_index is not None:
             dur = event_list[end_index]['ts'] - event_list[start_index]['ts']
