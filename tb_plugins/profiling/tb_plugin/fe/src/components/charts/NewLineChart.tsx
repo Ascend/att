@@ -137,15 +137,31 @@ export const LineChart: React.FC<IProps> = (props) => {
           })
           option = {
             ...option,
+            tooltip: {
+              trigger: 'axis',
+              formatter: function (params: any) {
+                var res = `${params[0].name} <br/>`
+                for (const item of params) {
+                  if (typeof item.value[item.encode.y[0]] === 'number') {
+                    res += `<span style="background: ${item.color}; 
+                    height:10px; 
+                    width: 10px; 
+                    border-radius: 50%;
+                    display: inline-block;
+                    margin-right:10px;">
+                    </span> 
+                    ${item.seriesName}: ${item.value[item.encode.y[0]]}<br/>`
+                  }
+                }
+                return res
+              }
+            },
             dataset:
             {
               source: [
                 datasetTitle,
                 ...finalRows
               ]
-            },
-            tooltip: {
-              show: false
             },
             series: Array(4).fill(
               {
