@@ -33,14 +33,14 @@ gpu上的内存使用可以使用nvidia-smi查看，使用json文件分析时需
 ### 调度占比
 1、调度占比的求取需先计算调度耗时，调度占比=调度耗时/e2e耗时 * 100%。
 2、调度耗时的计算方法有2种，①调度耗时=单步打屏时间-算子耗时-通信不可掩盖耗时，②调度耗时=e2e耗时-计算流执行任务总耗时。
-3、由于”单步打屏时间“需额外记录输入，增加可选输入字段“-ns”，作为用户的可选输入“单步打屏时间”，若无输入，该值使用e2e耗时替代。
+3、由于”单步打屏时间“需额外记录输入，增加可选输入字段“-nlt”，作为用户的可选输入“单步打屏时间”，若无输入，该值使用e2e耗时替代。
 
 ### 内存
 1、内存统计的数据来源于ASCEND_PROFILER_OUTPUT/memory_record.csv中的”Total Reserved(MB)“。
 2、其值在模型训练趋于稳定时逐渐固定，整体偏差不大，因此输出结果为该列数据的最大值。
 
 ## 样例
-- step1:获取gpu和npu的profiling数据，若没开启memory采集开关，则没有内存使用数据
+- step1:获取gpu和npu的profiling数据，若采集profiling数据时没开启memory采集开关，则没有内存使用数据
 
-- 运行命令:python profiling_parse.py -g gpu\gpu_trace_device0.json -gs 0.9 -n npu\xxx_ascend_pt -ns 1.2
+- 运行命令:python profiling_parse.py -g gpu\gpu_trace_device0.json -glt 0.9 -n npu\xxx_ascend_pt -nlt 1.2
 - 输出结果：可以得到gpu与npu对照的打屏性能拆解数据
