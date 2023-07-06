@@ -24,14 +24,14 @@ gpu上的内存使用可以使用nvidia-smi查看，使用json文件分析时需
 ## npu性能数据解析
 ### 算子耗时
 1、算子耗时profiling数据位于/PROFxxx/device_x/summary路径下的op_summary_x_1.csv文件中。
-2、当前仅统计算子运行在vector和cube上的耗时。、
+2、当前仅统计算子运行在vector和cube上的耗时。
 3、这2中算子于csv文件中的的TaskType均为AI_CORE，其中aiv_vec_time时间多表明为vector算子，aic_mac_time表明为cube算子。分别累加求和算子耗时进行输出。
 
 ### 大kernel算子
 待补充大kernel算子列表
 
 ### 通信
-此处的通信为通信未掩盖耗时，对应为ASCEND_PROFILER_OUTPUT/trace_view.json下的communication_not_overlapped。
+此处的通信为通信未掩盖耗时，对应为ASCEND_PROFILER_OUTPUT/trace_view.json下的EVENT_WAIT_SQE，对于多个Stream Id的结果，取Stream Id最小值。
 输出结果为该字段时间求和。
 
 ### 计算流e2e耗时
@@ -40,7 +40,7 @@ gpu上的内存使用可以使用nvidia-smi查看，使用json文件分析时需
 ### 调度占比
 1、调度占比的求取需先计算调度耗时，调度占比=调度耗时/e2e耗时 * 100%。
 2、调度耗时的计算方法有2种，①调度耗时=单步打屏时间-算子耗时-通信不可掩盖耗时，②调度耗时=e2e耗时-计算流执行任务总耗时。
-3、由于”单步打屏时间“需额外记录输入，暂不使用方法①，方法②中的计算流执行任务总耗时即为trace_view.json下的compute_time。
+3、由于”单步打屏时间“需额外记录输入，增加可选输入字段“-ns”，作为用户的可选输入“单步打屏时间”，若无输入，该值使用e2e耗时替代。
 
 ### 内存
 1、内存统计的数据来源于ASCEND_PROFILER_OUTPUT/memory_record.csv中的”Total Reserved(MB)“。
