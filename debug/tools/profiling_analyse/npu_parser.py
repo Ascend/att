@@ -1,5 +1,6 @@
 import sys
 import pandas as pd
+from collections import defaultdict
 import parser_helper
 
 
@@ -12,7 +13,10 @@ class NpuProfilingParser:
         self.npu_step_time = npu_step_time
 
     def parse_npu_json_events(self):
-        event_wait_sqe = {}
+        event_wait_sqe = defaultdict(float)
+        if not self.npu_json_file:
+            print('Npu trace json file is not available.')
+            return
         min_ts = sys.float_info.max
         max_ts = sys.float_info.min
         data = parser_helper.read_json_file(self.npu_json_file)
@@ -20,8 +24,7 @@ class NpuProfilingParser:
             if dic.get('name') == 'EVENT_WAIT_SQE':
                 args = dic.get('args')
                 stream_id = args.get('Stream Id')
-                event_wait_sqe[stream_id] = (event_wait_sqe[stream_id] + dic.get('dur')) if \
-                    event_wait_sqe.get(stream_id) else dic.get('dur')
+                event_wait_sqe[stream_id] += dic.get('dur')
             if dic.get('ts'):
                 ts = dic.get('ts')
                 min_ts = ts if ts < min_ts else min_ts
@@ -30,16 +33,18 @@ class NpuProfilingParser:
         self.profiling_info.communication_not_overlapped = event_wait_sqe.get(min(event_wait_sqe)) / 1000 / 1000
         time_required = (self.profiling_info.cube_time + self.profiling_info.vector_time) + \
             self.profiling_info.communication_not_overlapped
-        self.profiling_info.scheduling_time = (self.npu_step_time - time_required) if self.npu_step_time \
-            else (self.profiling_info.e2e_time - time_required)
+        if self.npu_step_time:
+            self.profiling_info.scheduling_time = self.npu_step_time - time_required
+        else:
+            self.profiling_info.scheduling_time = self.profiling_info.e2e_time - time_required
         self.profiling_info.scheduling_ratio = self.profiling_info.scheduling_time / self.profiling_info.e2e_time
 
     def parse_npu_csv_events(self):
-        # 读取csv文件
+        if not self.npu_summary_file:
+            print('Npu op summary csv file is not available.')
+            return
         info = pd.read_csv(self.npu_summary_file, index_col=None)
-        # 用一个字典保存各类算子的统计结果
         op_statics_result = {}
-        # cube和vector时间
         cube_time = 0.0
         vec_time = 0.0
         length = len(info['Model ID'])
@@ -67,8 +72,14 @@ class NpuProfilingParser:
                         op_statics_result[op_type] = [task_durations, 'cube']
                     else:
                         op_statics_result[op_type][0] += task_durations
-
-        info = pd.read_csv(self.npu_mem_file, usecols=['Total Reserved(MB)'], index_col=None)
-        self.profiling_info.memory_used = max(info.get('Total Reserved(MB)')) / 1024
+        if not self.npu_mem_file:
+            print('Npu op memory csv file is not available.')
+            return
+        try:
+            info = pd.read_csv(self.npu_mem_file, usecols=['Total Reserved(MB)'], index_col=None)
+        except ValueError:
+            print('Npu profiling data does not contain memory info.')
+        else:
+            self.profiling_info.memory_used = max(info.get('Total Reserved(MB)')) / 1024
         self.profiling_info.cube_time = cube_time / 10 ** 6
         self.profiling_info.vector_time = vec_time / 10 ** 6

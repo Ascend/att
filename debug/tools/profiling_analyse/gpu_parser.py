@@ -7,7 +7,7 @@ import parser_helper
 class GpuProfilingParser:
     def __init__(self, args):
         self.trace_events = self.read_profiling_json_file(args.gpu)
-        self.one_step_time = args.gpu_step
+        self.one_step_time = args.gpu_log_time
         self.profiling_info = parser_helper.ProfilingInfo()
 
     @staticmethod
