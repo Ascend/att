@@ -11,10 +11,10 @@ from parser_helper import ProfilingInfo
 def parse_command():
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--gpu', required=False, default='', metavar='(FILE)', help='Gpu profiling json file.')
-    parser.add_argument('-gs', '--gpu_step', required=False, default=0, type=float, help='Gpu one step time(s)')
+    parser.add_argument('-glt', '--gpu_log_time', required=False, default=0.0, type=float, help='Gpu one step time(s)')
     parser.add_argument('-n', '--npu', required=False, default='', metavar='(FILE)',
                         help='Npu single core profiling root path.')
-    parser.add_argument('-ns', '--npu_step', required=False, default='', metavar='(FILE)', type=float, 
+    parser.add_argument('-nlt', '--npu_log_time', required=False, default=0.0, metavar='(FILE)', type=float, 
                         help='Npu one step time(s).')
     return parser.parse_args()
 
@@ -37,7 +37,7 @@ def show_table(gpu_profiling_info, npu_profiling_info):
 
 def parse_gpu(args):
     if args.gpu:
-        if args.gpu_step < 0:
+        if args.gpu_log_time < 0:
             raise ValueError("Gpu one step time shouldn't less than 0.")
         gpu_parser = GpuProfilingParser(args)
         gpu_parser.parse_events()
@@ -47,16 +47,7 @@ def parse_gpu(args):
 
 
 def parse_npu(args, npu_path):
-    if not npu_path.get('trace_view'):
-        print('Npu trace json file is not available.')
-        return ProfilingInfo()
-    if not npu_path.get('op_summary'):
-        print('Npu op summary csv file is not available.')
-        return ProfilingInfo()
-    if not npu_path.get('memory_record'):
-        print('Npu op memory csv file is not available.')
-        return ProfilingInfo()
-    npu_parser = NpuProfilingParser(args.npu_step, npu_path)
+    npu_parser = NpuProfilingParser(args.npu_log_time, npu_path)
     npu_parser.parse_npu_csv_events()
     npu_parser.parse_npu_json_events()
     return npu_parser.profiling_info
@@ -71,7 +62,7 @@ def main():
                 npu_path['trace_view'] = os.path.join(root, file)
             if file == 'memory_record.csv':
                 npu_path['memory_record'] = os.path.join(root, file)
-            if 'op_summary' in file:
+            if 'op_summary_' in file:
                 npu_path['op_summary'] = os.path.join(root, file)
     show_table(parse_gpu(args), parse_npu(args, npu_path))
 
