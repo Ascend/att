@@ -10,14 +10,19 @@ Ascend Training Tools，昇腾训练工具链
 #### 使用说明
 
 1.  训练脚本工具[tools](https://gitee.com/ascend/att/tree/master/debug/tools)
+
     a. [custom](http://https://gitee.com/ascend/att/tree/master/debug/tools/custom)
         **社区用户贡献工具**：用户可提交自己的脚本代码及使用说明，规则：创建新的文件夹xxx_tool, 下面放脚本文件及相关文件以及README
+
     b. [compare_tools](https://gitee.com/ascend/att/tree/master/debug/tools/compare_tools)
         **GPU与NPU性能比较工具**：提供NPU与GPU算子性能的比较功能。
+
     c. [distribute_tools](http://https://gitee.com/ascend/att/tree/master/debug/tools/distribute_tools)
         **集群场景脚本集合**：提供集群场景数据一键汇聚功能和一键修改各机hostname功能。
+
     d. [merge_profiling_timeline](https://gitee.com/ascend/att/tree/master/debug/tools/merge_profiling_timeline)
         **合并大json工具**：融合多个profiling的timeline在一个json文件中的功能。
+
     e. [profiling analysis](https://gitee.com/ascend/att/tree/master/debug/tools/profiling_analyse)
         **性能拆解工具**：提供GPU与NPU的性能分析拆解能力。
     
