@@ -32,7 +32,8 @@ Ascend Training Tools，昇腾训练工具链
         **性能拆解工具**：提供GPU与NPU的性能分析拆解能力。
     
 2.  tensorboard支持npu可视化插件[tb-plugin](https://gitee.com/ascend/att/tree/master/tb_plugins/profiling/tb_plugin)
-    PyTorch profiling数据可视化的TensorBoard的插件。 它支持将Ascend平台采集、解析的Pytorch Profiling数据可视化呈现，也兼容GPU数据采集、解析可视化。
+
+    **PyTorch profiling数据可视化的TensorBoard的插件**： 它支持将Ascend平台采集、解析的Pytorch Profiling数据可视化呈现，也兼容GPU数据采集、解析可视化。
 
 #### 参与贡献
 
