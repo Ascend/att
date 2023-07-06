@@ -37,7 +37,7 @@ get_node_passwd()
 cluster_account_config_path=$1
 
 node_list=$(get_cluster_list ${cluster_account_config_path})
-echo"-------begin--------"
+echo "-------begin--------"
 
 for node in ${node_list}
 do
