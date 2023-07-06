@@ -14,6 +14,8 @@ def parse_command():
     parser.add_argument('-gs', '--gpu_step', required=False, default=0, type=float, help='Gpu one step time(s)')
     parser.add_argument('-n', '--npu', required=False, default='', metavar='(FILE)',
                         help='Npu single core profiling root path.')
+    parser.add_argument('-ns', '--npu_step', required=False, default='', metavar='(FILE)', type=float, 
+                        help='Npu one step time(s).')
     return parser.parse_args()
 
 
@@ -44,7 +46,7 @@ def parse_gpu(args):
     return ProfilingInfo()
 
 
-def parse_npu(npu_path):
+def parse_npu(args, npu_path):
     if not npu_path.get('trace_view'):
         print('Npu trace json file is not available.')
         return ProfilingInfo()
@@ -54,9 +56,9 @@ def parse_npu(npu_path):
     if not npu_path.get('memory_record'):
         print('Npu op memory csv file is not available.')
         return ProfilingInfo()
-    npu_parser = NpuProfilingParser(npu_path)
-    npu_parser.parse_npu_json_events()
+    npu_parser = NpuProfilingParser(args.npu_step, npu_path)
     npu_parser.parse_npu_csv_events()
+    npu_parser.parse_npu_json_events()
     return npu_parser.profiling_info
 
 
@@ -71,7 +73,7 @@ def main():
                 npu_path['memory_record'] = os.path.join(root, file)
             if 'op_summary' in file:
                 npu_path['op_summary'] = os.path.join(root, file)
-    show_table(parse_gpu(args), parse_npu(npu_path))
+    show_table(parse_gpu(args), parse_npu(args, npu_path))
 
 
 if __name__ == '__main__':

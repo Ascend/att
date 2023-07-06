@@ -4,31 +4,34 @@ import parser_helper
 
 
 class NpuProfilingParser:
-    def __init__(self, npu_file_path):
+    def __init__(self, npu_step_time, npu_file_path):
         self.npu_json_file = npu_file_path.get('trace_view')
         self.npu_summary_file = npu_file_path.get('op_summary')
         self.npu_mem_file = npu_file_path.get('memory_record')
         self.profiling_info = parser_helper.ProfilingInfo()
+        self.npu_step_time = npu_step_time
 
     def parse_npu_json_events(self):
-        conn_time = 0.0
-        compute_time = 0.0
+        event_wait_sqe = {}
         min_ts = sys.float_info.max
         max_ts = sys.float_info.min
         data = parser_helper.read_json_file(self.npu_json_file)
         for dic in data:
-            if dic.get('name') == 'communication_not_overlapped':
-                conn_time += float(dic.get('dur'))
-            if dic.get('name') == 'compute_time':
-                compute_time += float(dic.get('dur'))
+            if dic.get('name') == 'EVENT_WAIT_SQE':
+                args = dic.get('args')
+                stream_id = args.get('Stream Id')
+                event_wait_sqe[stream_id] = (event_wait_sqe[stream_id] + dic.get('dur')) if \
+                    event_wait_sqe.get(stream_id) else dic.get('dur')
             if dic.get('ts'):
                 ts = dic.get('ts')
                 min_ts = ts if ts < min_ts else min_ts
                 max_ts = ts if ts > max_ts else max_ts
-        self.profiling_info.e2e_time = (max_ts - min_ts) / 10 ** 6
-        self.profiling_info.communication_not_overlapped = conn_time / 10 ** 6
-        compute_time = compute_time / 10 ** 6
-        self.profiling_info.scheduling_time = self.profiling_info.e2e_time - compute_time
+        self.profiling_info.e2e_time = (max_ts - min_ts) / 1000 / 1000
+        self.profiling_info.communication_not_overlapped = event_wait_sqe.get(min(event_wait_sqe)) / 1000 / 1000
+        time_required = (self.profiling_info.cube_time + self.profiling_info.vector_time) + \
+            self.profiling_info.communication_not_overlapped
+        self.profiling_info.scheduling_time = (self.npu_step_time - time_required) if self.npu_step_time \
+            else (self.profiling_info.e2e_time - time_required)
         self.profiling_info.scheduling_ratio = self.profiling_info.scheduling_time / self.profiling_info.e2e_time
 
     def parse_npu_csv_events(self):
