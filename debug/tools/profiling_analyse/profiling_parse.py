@@ -11,6 +11,7 @@ from parser_helper import ProfilingInfo
 def parse_command():
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--gpu', required=False, default='', metavar='(FILE)', help='Gpu profiling json file.')
+    parser.add_argument('-gs', '--gpu_step', required=False, default=0, type=float, help='Gpu one step time(s)')
     parser.add_argument('-n', '--npu', required=False, default='', metavar='(FILE)',
                         help='Npu single core profiling root path.')
     return parser.parse_args()
@@ -34,7 +35,9 @@ def show_table(gpu_profiling_info, npu_profiling_info):
 
 def parse_gpu(args):
     if args.gpu:
-        gpu_parser = GpuProfilingParser(args.gpu)
+        if args.gpu_step < 0:
+            raise ValueError("Gpu one step time shouldn't less than 0.")
+        gpu_parser = GpuProfilingParser(args)
         gpu_parser.parse_events()
         return gpu_parser.profiling_info
     print('Gpu trace json file is not specified.')

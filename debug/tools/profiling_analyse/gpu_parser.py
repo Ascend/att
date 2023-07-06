@@ -1,11 +1,13 @@
+from collections import defaultdict
 import pandas as pd
 
 import parser_helper
 
 
 class GpuProfilingParser:
-    def __init__(self, gpu_trace_file):
-        self.trace_events = self.read_profiling_json_file(gpu_trace_file)
+    def __init__(self, args):
+        self.trace_events = self.read_profiling_json_file(args.gpu)
+        self.one_step_time = args.gpu_step
         self.profiling_info = parser_helper.ProfilingInfo()
 
     @staticmethod
@@ -21,6 +23,7 @@ class GpuProfilingParser:
         communication_not_overlapped = 0.0
         op_list = []
         compute_stream_dur = 0.0  # 计算流耗时
+        marks = defaultdict(int) # mark for compute communication_not_overlapped time
 
         for event in self.trace_events:
             if not isinstance(event, dict):
@@ -31,6 +34,7 @@ class GpuProfilingParser:
                 continue
             name = event.get('name')
             dur = event.get('dur')
+            ts = event.get('ts')
             if 'nccl' in name:
                 if 'ncclKernel_' in name:
                     communication_not_overlapped += float(dur)
@@ -38,17 +42,29 @@ class GpuProfilingParser:
             cat = event.get('cat')
             if cat.lower() != 'kernel':
                 continue
+            if 'nccl' in name:
+                for timestep in range(ts + 1, ts + dur + 1):
+                    marks[str(timestep)] += 1 # mark this timestep in communication stream
+                continue
+            else:
+                for timestep in range(ts + 1, ts + dur + 1):
+                    marks[str(timestep)] += -100   # mark this timestep in compute stream
             if 'gemm' in name:
                 cube_time += float(dur)
             all_op_time += float(dur)
-            op_list.append([event.get('ts'), name, cat, dur])
+            op_list.append([ts, name, cat, dur])
         op_dataframe = pd.DataFrame(op_list, columns=['time start', 'name', 'cat', 'dur'])
         op_dataframe.to_csv('gpu_perf.csv', index=False)
-        self.profiling_info.communication_not_overlapped = communication_not_overlapped / 10 ** 6
+        self.profiling_info.communication_not_overlapped = len([_ for _,value in marks.items() if value > 0]) / 10 ** 6
         self.profiling_info.cube_time = cube_time / 10 ** 6
         self.profiling_info.vector_time = (all_op_time - cube_time) / 10 ** 6
         self.parse_e2e_time()
-        self.profiling_info.scheduling_time = self.profiling_info.e2e_time - compute_stream_dur / 10 ** 6
+        if self.one_step_time:
+            self.profiling_info.scheduling_time = self.one_step_time - all_op_time / 10 ** 6 - \
+                                                  self.profiling_info.communication_not_overlapped
+        else:
+            self.profiling_info.scheduling_time = self.profiling_info.e2e_time - all_op_time / 10 ** 6 - \
+                                                  self.profiling_info.communication_not_overlapped
         self.profiling_info.scheduling_ratio = self.profiling_info.scheduling_time / self.profiling_info.e2e_time
         self.parse_memory_reserved()
 

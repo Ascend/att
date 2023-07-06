@@ -13,11 +13,6 @@ class ProfilingInfo:
         self.e2e_time = 0.0
         self.scheduling_time = 0.0
 
-    def __setattr__(self, key, value):
-        if value < 0:
-            raise ValueError(f"The {key} value shouldn't be less than 0.")
-        super().__setattr__(key, value)
-
 
 def read_json_file(path):
     if not os.path.isfile(path):
