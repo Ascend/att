@@ -20,7 +20,6 @@ class GpuProfilingParser:
     def parse_events(self):
         cube_time = 0.0
         all_op_time = 0.0
-        communication_not_overlapped = 0.0
         op_list = []
         compute_stream_dur = 0.0  # 计算流耗时
         marks = defaultdict(int) # mark for compute communication_not_overlapped time
@@ -35,10 +34,6 @@ class GpuProfilingParser:
             name = event.get('name')
             dur = event.get('dur')
             ts = event.get('ts')
-            if 'nccl' in name:
-                if 'ncclKernel_' in name:
-                    communication_not_overlapped += float(dur)
-                continue
             cat = event.get('cat')
             if cat.lower() != 'kernel':
                 continue
