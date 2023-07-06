@@ -42,5 +42,5 @@ gpu上的内存使用可以使用nvidia-smi查看，使用json文件分析时需
 ## 样例
 - step1:获取gpu和npu的profiling数据，若没开启memory采集开关，则没有内存使用数据
 
-- 运行命令:python profiling_parse.py -g gpu\gpu_trace_device0.json -gs 0.9 -n npu\xxx_ascend_pt -ns 1.5
+- 运行命令:python profiling_parse.py -g gpu\gpu_trace_device0.json -gs 0.9 -n npu\xxx_ascend_pt -ns 1.2
 - 输出结果：可以得到gpu与npu对照的打屏性能拆解数据
