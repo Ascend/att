@@ -5,8 +5,6 @@
 1. 获取json文件中的traceEvents字段，获取所有cat为kernel的，且name中不包含nccl的event，将他们的耗时相加即为所有算子耗时all_time；
 2. 取算子中name包含gemm的为cube算子耗时cube_time.
 3. vector算子耗时即为(all_time - cube_time)
-### 大kernel算子
-待补充大kernel列表
 ### 通信
 此处的通信指通信未掩盖耗时，通过计算有通信流而无计算流的时间戳获得
 ### 计算流e2e耗时
@@ -25,9 +23,6 @@ gpu上的内存使用可以使用nvidia-smi查看，使用json文件分析时需
 2、当前仅统计算子运行在vector和cube上的耗时。
 3、这2中算子于csv文件中的的TaskType均为AI_CORE，其中aiv_vec_time时间多表明为vector算子，aic_mac_time表明为cube算子。分别累加求和算子耗时进行输出。
 
-### 大kernel算子
-待补充大kernel算子列表
-
 ### 通信
 此处的通信为通信未掩盖耗时，对应为ASCEND_PROFILER_OUTPUT/trace_view.json下的EVENT_WAIT_SQE，对于多个Stream Id的结果，取Stream Id最小值。
 输出结果为该字段时间求和。
@@ -45,7 +40,7 @@ gpu上的内存使用可以使用nvidia-smi查看，使用json文件分析时需
 2、其值在模型训练趋于稳定时逐渐固定，整体偏差不大，因此输出结果为该列数据的最大值。
 
 ## 样例
-- step1:下载数据：https://onebox.huawei.com/v/2ad3400460fac22fa61f21f478edd116
+- step1:获取gpu和npu的profiling数据，若没开启memory采集开关，则没有内存使用数据
 
-- 运行命令:python profiling_parse.py -g prof0704_best\gpu\gpu_trace_device0.json -n prof0704_best\Malluma_443350_20230704144255_ascend_pt
+- 运行命令:python profiling_parse.py -g gpu\gpu_trace_device0.json -gs 0.9 -n npu\xxx_ascend_pt -ns 1.5
 - 输出结果：可以得到gpu与npu对照的打屏性能拆解数据
