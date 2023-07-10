@@ -22,13 +22,15 @@ gpu上的内存使用可以使用nvidia-smi查看，使用json文件分析时需
 1、算子耗时profiling数据位于/PROFxxx/device_x/summary路径下的op_summary_x_1.csv文件中。
 2、当前仅统计算子运行在vector和cube上的耗时。
 3、这2中算子于csv文件中的的TaskType均为AI_CORE，其中aiv_vec_time时间多表明为vector算子，aic_mac_time表明为cube算子。分别累加求和算子耗时进行输出。
+4、算子若无pmu信息，仅统计ai_core的总耗时并显示在结果"vector算子"一列
 
 ### 通信
-此处的通信为通信未掩盖耗时，对应为ASCEND_PROFILER_OUTPUT/trace_view.json下的EVENT_WAIT_SQE，对于多个Stream Id的结果，取Stream Id最小值。
-输出结果为该字段时间求和。
+1、此处的通信为通信未掩盖耗时，对应为ASCEND_PROFILER_OUTPUT/trace_view.json下同一条流的EVENT_WAIT_SQE总耗时。
+2、选取trace_view中的计算流——即流中同时存在EVENT_WAIT_SQE和Task Type为AI_CORE的流
+3、对于AI_CORE存在2条流中的情况，计算流中累加EVENT_WAIT_SQE时会减去同时间区间内另外流产生的AI_CORE耗时
 
 ### 计算流e2e耗时
-此耗时通过统计trace_view.json中时间戳‘ts’的最小值和最大值，其时间差的绝对值即为e2e耗时。
+此耗时通过统计trace_view.json中compute_time时间戳‘ts’的最小值和最大值，其时间差的绝对值即为e2e耗时。
 
 ### 调度占比
 1、调度占比的求取需先计算调度耗时，调度占比=调度耗时/e2e耗时 * 100%。

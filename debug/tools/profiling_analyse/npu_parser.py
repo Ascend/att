@@ -28,10 +28,11 @@ class NpuProfilingParser:
         for dic in data:
             self.get_ts_by_task_type(dic, event_wait_sqe, ai_core_dict, event_wait_sqe_res)
             if ('name' in dic) and (dic.get('name') == 'compute_time'):
-                compute_time += dic.get('dur')
                 ts = dic.get('ts')
+                dur = dic.get('dur')
+                compute_time += dur
                 min_ts = ts if ts < min_ts else min_ts
-                max_ts = ts if ts > max_ts else max_ts
+                max_ts = (ts + dur) if (ts + dur) > max_ts else max_ts
         # AI_CORE和EVENT_WAIT_SQE共存为计算流
         compute_stream = []
         parallel_stream = []
