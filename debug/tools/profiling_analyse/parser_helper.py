@@ -6,7 +6,7 @@ class ProfilingInfo:
     def __init__(self):
         self.cube_time = 0.0
         self.vector_time = 0.0
-        self.large_kernel = 0.0
+        self.compute_time = 0.0
         self.communication_not_overlapped = 0.0
         self.scheduling_ratio = 0.0
         self.memory_used = 0.0

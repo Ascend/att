@@ -22,14 +22,14 @@ def parse_command():
 def show_table(gpu_profiling_info, npu_profiling_info):
     table = PrettyTable()
     table.title = '大模型性能拆解'
-    table.field_names = ['', 'cube算子', 'vector算子', '大kernel算子', '通信', '调度耗时', '调度占比', '内存',
+    table.field_names = ['', 'cube算子', 'vector算子', '计算流耗时', '通信', '调度耗时', '调度占比', '内存',
                          'E2E性能值']
     table.add_row(['GPU基线', f'{gpu_profiling_info.cube_time:.3f}s', f'{gpu_profiling_info.vector_time:.3f}s',
-                  f'{gpu_profiling_info.large_kernel:.3f}s', f'{gpu_profiling_info.communication_not_overlapped: .3f}s',
+                  f'{gpu_profiling_info.compute_time:.3f}s', f'{gpu_profiling_info.communication_not_overlapped: .3f}s',
                   f'{gpu_profiling_info.scheduling_time:.3f}', f'{gpu_profiling_info.scheduling_ratio:.2%}',
                   f'{gpu_profiling_info.memory_used:.2f}G', f'{gpu_profiling_info.e2e_time:.3f}s'])
     table.add_row(['当前现状', f'{npu_profiling_info.cube_time:.3f}s', f'{npu_profiling_info.vector_time:.3f}s',
-                  f'{npu_profiling_info.large_kernel:.3f}s', f'{npu_profiling_info.communication_not_overlapped: .3f}s',
+                  f'{npu_profiling_info.compute_time:.3f}s', f'{npu_profiling_info.communication_not_overlapped: .3f}s',
                   f'{npu_profiling_info.scheduling_time:.3f}', f'{npu_profiling_info.scheduling_ratio:.2%}',
                   f'{npu_profiling_info.memory_used:.2f}G', f'{npu_profiling_info.e2e_time:.3f}s'])
     print(table)
