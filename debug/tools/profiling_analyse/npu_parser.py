@@ -130,5 +130,5 @@ class NpuProfilingParser:
             if args.get('Task Type') == 'EVENT_WAIT_SQE':
                 res[stream_id] += dur
                 event_wait_sqe[stream_id].append([ts, ts + dur])
-            elif:
+            elif args.get('Task Type') == 'AI_CORE':
                 ai_core_dict[stream_id].append([ts, ts + dur])
