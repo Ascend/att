@@ -38,7 +38,7 @@ class NpuProfilingParser:
         parallel_stream = []
         # 不存在算子并行的情况
         if len(ai_core_dict) == 1:
-            compute_stream.appen(min(ai_core_dict.keys()))
+            compute_stream.append(min(ai_core_dict.keys()))
         elif len(ai_core_dict) == 2:  # 2个ai_core，存在并行流（当前最多2条算子计算流）
             compute_stream = list(event_wait_sqe.keys() & ai_core_dict.keys())
             parallel_stream = list(ai_core_dict.keys() - set(compute_stream))
@@ -48,7 +48,7 @@ class NpuProfilingParser:
             sorted(cs_event_wait_sqe_list, key=lambda x: (x[0]))
             sorted(cs_ai_core_list, key=lambda x: (x[0]))
             self.parallel_time = self.interval_intersection(cs_event_wait_sqe_list, cs_ai_core_list)
-        self.profiling.compute_time = compute_time / 10 ** 6
+        self.profiling_info.compute_time = compute_time / 10 ** 6
         self.profiling_info.e2e_time = (max_ts - min_ts) / 1000 / 1000
         self.profiling_info.communication_not_overlapped = (event_wait_sqe_res[compute_stream[0]] - 
             self.parallel_time) / 10 ** 6
@@ -108,8 +108,8 @@ class NpuProfilingParser:
         j = 0
         while i < len(cs_event_wait_sqe_list) and j < len(cs_ai_core_list):
             lo = max(cs_event_wait_sqe_list[i][0], cs_ai_core_list[j][0])
-            hi = max(cs_event_wait_sqe_list[i][1], cs_ai_core_list[j][1])
-            if lo < hi:
+            hi = min(cs_event_wait_sqe_list[i][1], cs_ai_core_list[j][1])
+            if lo <= hi:
                 ans += (hi - lo)
             if cs_event_wait_sqe_list[i][1] < cs_ai_core_list[j][1]:
                 i += 1
