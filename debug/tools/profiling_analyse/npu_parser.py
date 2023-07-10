@@ -5,7 +5,7 @@ import parser_helper
 
 
 class NpuProfilingParser:
-    def __init__(self, npu_step_time, add_cube_time, npu_file_path):
+    def __init__(self, npu_step_time, add_cube_name, npu_file_path):
         self.npu_json_file = npu_file_path.get('trace_view')
         self.npu_summary_file = npu_file_path.get('op_summary')
         self.npu_mem_file = npu_file_path.get('memory_record')
@@ -14,7 +14,7 @@ class NpuProfilingParser:
         self.parallel_time = 0
         self.aicore_time = 0
         self.cube_op_type = ['MatMul', 'BatchMatMul']
-        self.cube_op_type = list(set(self.cube_op_type + add_cube_time))
+        self.cube_op_type = list(set(self.cube_op_type + add_cube_name))
 
     def parse_npu_json_events(self):
         if not self.npu_json_file:
@@ -73,7 +73,7 @@ class NpuProfilingParser:
         vec_mac_flag = True  # True标记当前summary文件中存在pmu信息
         if info.get('aic_mac_time(us)') is None or info.get('aiv_vec_time(us)') is None:
             print('当前的profiling结果可能是极简模式,通过cube算子白名单进行区分,白名单如下:')
-            print(cube_op_type)
+            print(self.cube_op_type)
             vec_mac_flag = False
         for i in range(len(info['Model ID'])):
             task_type = info.loc[i, 'Task Type']
@@ -122,7 +122,6 @@ class NpuProfilingParser:
             else:
                 j += 1
         return ans
-
 
     @staticmethod
     def get_ts_by_task_type(dic, event_wait_sqe, ai_core_dict, res):
