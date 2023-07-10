@@ -23,6 +23,7 @@ class NpuProfilingParser:
         compute_time = 0
         min_ts = sys.float_info.max
         max_ts = sys.float_info.min
+        ts_flag = False  # 表明没有获取到compute time的耗时
         data = parser_helper.read_json_file(self.npu_json_file)
         event_wait_sqe = defaultdict(list)
         ai_core_dict = defaultdict(list)
@@ -30,6 +31,7 @@ class NpuProfilingParser:
         for dic in data:
             self.get_ts_by_task_type(dic, event_wait_sqe, ai_core_dict, event_wait_sqe_res)
             if ('name' in dic) and (dic.get('name') == 'compute_time'):
+                ts_flag = True
                 ts = dic.get('ts')
                 dur = dic.get('dur')
                 compute_time += dur
@@ -51,7 +53,7 @@ class NpuProfilingParser:
             sorted(cs_ai_core_list, key=lambda x: (x[0]))
             self.parallel_time = self.interval_intersection(cs_event_wait_sqe_list, cs_ai_core_list)
         self.profiling_info.compute_time = compute_time / 10 ** 6
-        self.profiling_info.e2e_time = (max_ts - min_ts) / 1000 / 1000
+        self.profiling_info.e2e_time = (max_ts - min_ts) / 1000 ** 6 if ts_flag else 0
         self.profiling_info.communication_not_overlapped = (event_wait_sqe_res[compute_stream[0]] - 
             self.parallel_time) / 10 ** 6
         time_required = (self.profiling_info.cube_time + self.profiling_info.vector_time) + \
@@ -60,7 +62,8 @@ class NpuProfilingParser:
             self.profiling_info.scheduling_time = self.npu_step_time - time_required
         else:
             self.profiling_info.scheduling_time = self.profiling_info.e2e_time - time_required
-        self.profiling_info.scheduling_ratio = self.profiling_info.scheduling_time / self.profiling_info.e2e_time
+        self.profiling_info.scheduling_ratio = self.profiling_info.scheduling_time / self.profiling_info.e2e_time \
+            if self.profiling_info.e2e_time != 0 else 0
 
     def parse_npu_csv_events(self):
         if not self.npu_summary_file:
