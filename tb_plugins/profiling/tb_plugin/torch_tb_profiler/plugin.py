@@ -507,7 +507,7 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
             /run2
                 /[worker1].pt.trace.json
         A directory is considered to be an ascend run if it satisfies the following two conditions:
-            1.At least one subdirectory with the name in this format: {worker_span}.
+            1.At least one subdirectory with the name in this format: {worker}_{span}_ascend_pt.
             2.The subdirectory in condition 1 has a 'ASCEND_PROFILER_OUTPUT' subdirectory which
             contains at least one of these 4 kind of files:
                 [
@@ -518,16 +518,19 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
                 ]
         E.g. there are 2 runs: run1, run2
             /run1
-                /[worker1]_[span1]
+                /[worker1]_[span1]_ascend_pt
                     /ASCEND_PROFILER_OUTPUT
                         /trace_view.json
                         /kernel_details.csv
-                /[worker2]_[span1]
+                        /operator_details.csv
+                        /operator_memory.csv
+                        /memory_record.csv
+                /[worker2]_[span1]_ascend_pt
                     /ASCEND_PROFILER_OUTPUT
                         /trace_view.json
                         /operator_details.csv
             /run2
-                /[worker1]_[span1]
+                /[worker1]_[span1]_ascend_pt
                     /ASCEND_PROFILER_OUTPUT
                         /memory_record.csv
                         /operator_memory.csv
