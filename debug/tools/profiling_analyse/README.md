@@ -22,7 +22,8 @@ gpu上的内存使用可以使用nvidia-smi查看，使用json文件分析时需
 1、算子耗时profiling数据位于/PROFxxx/device_x/summary路径下的op_summary_x_1.csv文件中。
 2、当前仅统计算子运行在vector和cube上的耗时。
 3、这2中算子于csv文件中的的TaskType均为AI_CORE，其中aiv_vec_time时间多表明为vector算子，aic_mac_time表明为cube算子。分别累加求和算子耗时进行输出。
-4、算子若无pmu信息，仅统计ai_core的总耗时并显示在结果"vector算子"一列
+4、算子若无pmu信息，会根据cube算子类型进行区分，当前已知的算子类型为['MatMul', 'BatchMatMul']
+5、用户有添加cube算子的要求，可以使用可选入参'-aop'添加算子名称，使用方式见样例。
 
 ### 通信
 1、此处的通信为通信未掩盖耗时，对应为ASCEND_PROFILER_OUTPUT/trace_view.json下同一条流的EVENT_WAIT_SQE总耗时。
@@ -44,5 +45,5 @@ gpu上的内存使用可以使用nvidia-smi查看，使用json文件分析时需
 ## 样例
 - step1:获取gpu和npu的profiling数据，若采集profiling数据时没开启memory采集开关，则没有内存使用数据
 
-- 运行命令:python profiling_parse.py -g gpu\gpu_trace_device0.json -glt 0.9 -n npu\xxx_ascend_pt -nlt 1.2
-- 输出结果：可以得到gpu与npu对照的打屏性能拆解数据
+- 运行命令:python profiling_parse.py -g gpu\gpu_trace_device0.json -glt 0.9 -n npu\xxx_ascend_pt -nlt 1.2 -aop op1 op2
+- 输出结果：可以得到gpu与npu对照的打屏性能拆解数据，其中-nlt为输入打屏时间，-aop为手动添加的cube算子类型

@@ -5,7 +5,7 @@ import parser_helper
 
 
 class NpuProfilingParser:
-    def __init__(self, npu_step_time, npu_file_path):
+    def __init__(self, npu_step_time, add_cube_time, npu_file_path):
         self.npu_json_file = npu_file_path.get('trace_view')
         self.npu_summary_file = npu_file_path.get('op_summary')
         self.npu_mem_file = npu_file_path.get('memory_record')
@@ -13,6 +13,8 @@ class NpuProfilingParser:
         self.npu_step_time = npu_step_time
         self.parallel_time = 0
         self.aicore_time = 0
+        self.cube_op_type = ['MatMul', 'BatchMatMul']
+        self.cube_op_type = list(set(self.cube_op_type + add_cube_time))
 
     def parse_npu_json_events(self):
         if not self.npu_json_file:
@@ -70,7 +72,8 @@ class NpuProfilingParser:
         ai_core_time = 0.0
         vec_mac_flag = True  # True标记当前summary文件中存在pmu信息
         if info.get('aic_mac_time(us)') is None or info.get('aiv_vec_time(us)') is None:
-            print('当前的profiling结果可能是极简模式,无法区分cube和vector,总的ai_core耗时会展示在vector算子列')
+            print('当前的profiling结果可能是极简模式,通过cube算子白名单进行区分,白名单如下:')
+            print(cube_op_type)
             vec_mac_flag = False
         for i in range(len(info['Model ID'])):
             task_type = info.loc[i, 'Task Type']
@@ -78,7 +81,9 @@ class NpuProfilingParser:
                 continue
             task_durations = info.loc[i, 'Task Duration(us)']
             ai_core_time += task_durations
-            if not vec_mac_flag:
+            op_type = info.loc[i, 'OP Type']
+            if not vec_mac_flag:  # 如果是极简模式根据OP_Type计算完cube time后提前返回
+                cube_time += task_durations if op_type in self.cube_op_type else 0.0
                 continue
             aiv_vec_time = info.loc[i, 'aiv_vec_time(us)']
             if aiv_vec_time > 0:
@@ -88,7 +93,8 @@ class NpuProfilingParser:
             cube_time = (ai_core_time - vec_time) / 10 ** 6
             vec_time /= 10 ** 6
         else:
-            vec_time = ai_core_time / 10 ** 6
+            vec_time = (ai_core_time - cube_time) / 10 ** 6
+            cube_time /= 10 ** 6
         self.profiling_info.cube_time = cube_time
         self.profiling_info.vector_time = vec_time
         if not self.npu_mem_file:

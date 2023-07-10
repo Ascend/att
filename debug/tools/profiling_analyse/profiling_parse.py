@@ -16,6 +16,7 @@ def parse_command():
                         help='Npu single core profiling root path.')
     parser.add_argument('-nlt', '--npu_log_time', required=False, default=0.0, metavar='(FILE)', type=float, 
                         help='Npu one step time(s).')
+    parser.add_argument('-aop', '--add_cube_op', required=False, default=[], nargs='*', help='add cube op name')
     return parser.parse_args()
 
 
@@ -47,7 +48,7 @@ def parse_gpu(args):
 
 
 def parse_npu(args, npu_path):
-    npu_parser = NpuProfilingParser(args.npu_log_time, npu_path)
+    npu_parser = NpuProfilingParser(args.npu_log_time, args.add_cube_op, npu_path)
     npu_parser.parse_npu_csv_events()
     npu_parser.parse_npu_json_events()
     return npu_parser.profiling_info
