@@ -46,6 +46,9 @@ class NpuProfilingParser:
         elif len(ai_core_dict) == 2:  # 2个ai_core，存在并行流（当前最多2条算子计算流）
             compute_stream = list(event_wait_sqe.keys() & ai_core_dict.keys())
             parallel_stream = list(ai_core_dict.keys() - set(compute_stream))
+        else:
+            print('Npu trace json file lack of Stream info')
+            return
         cs_event_wait_sqe_list = event_wait_sqe[compute_stream[0]]
         if parallel_stream:
             cs_ai_core_list = ai_core_dict[parallel_stream[0]]
@@ -53,7 +56,7 @@ class NpuProfilingParser:
             sorted(cs_ai_core_list, key=lambda x: (x[0]))
             self.parallel_time = self.interval_intersection(cs_event_wait_sqe_list, cs_ai_core_list)
         self.profiling_info.compute_time = compute_time / 10 ** 6
-        self.profiling_info.e2e_time = (max_ts - min_ts) / 1000 ** 6 if ts_flag else 0
+        self.profiling_info.e2e_time = (max_ts - min_ts) / 10 ** 6 if ts_flag else 0
         self.profiling_info.communication_not_overlapped = (event_wait_sqe_res[compute_stream[0]] - 
             self.parallel_time) / 10 ** 6
         time_required = (self.profiling_info.cube_time + self.profiling_info.vector_time) + \
