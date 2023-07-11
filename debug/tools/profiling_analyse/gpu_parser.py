@@ -73,8 +73,10 @@ class GpuProfilingParser:
                                         compute_events_timeline[0].get('ts')) / 10 ** 6
 
     def parse_memory_reserved(self):
-        memories = [event.get('args').get('Total Reserved') for event in self.trace_events if
-                    event.get('name') == '[memory]' and event.get('args').get('Device Id') >= 0]
+        memories = [
+            event.get('args').get('Total Reserved') for event in self.trace_events
+            if event.get('name') == '[memory]' and event.get('args').get('Device Id') >= 0
+        ]
         if not memories:
             print("Gpu profiling data doesn't contain memory info")
             return
