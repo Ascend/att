@@ -81,9 +81,12 @@ class GpuProfilingParser:
         self.profiling_info.memory_used = max(memories) / 1024 ** 3
 
     def infer_compute_stream_id(self):
-        kernel_stream_ids = [event.get('args').get('stream') for event in self.trace_events if
-                             event.get('cat') == 'Kernel' and 'nccl' not in event.get('name')
-                             and event.get('args') and event.get('args').get('stream')]
+        kernel_stream_ids = []
+        for event in self.trace_events:
+            is_kernel_exec_event = event.get('cat') == 'Kernel' and 'nccl' not in event.get('name')
+            has_stream_id_event = event.get('args') and event.get('args').get('stream')
+            if is_kernel_exec_event and has_stream_id_event:
+                kernel_stream_ids.append(event)
         if not kernel_stream_ids:
             raise RuntimeError('The profiling data does not contain kernel running data.')
         counter = Counter(kernel_stream_ids)
