@@ -86,7 +86,7 @@ class GpuProfilingParser:
             is_kernel_exec_event = event.get('cat') == 'Kernel' and 'nccl' not in event.get('name')
             has_stream_id_event = event.get('args') and event.get('args').get('stream')
             if is_kernel_exec_event and has_stream_id_event:
-                kernel_stream_ids.append(event)
+                kernel_stream_ids.append(event.get('args').get('stream'))
         if not kernel_stream_ids:
             raise RuntimeError('The profiling data does not contain kernel running data.')
         counter = Counter(kernel_stream_ids)
