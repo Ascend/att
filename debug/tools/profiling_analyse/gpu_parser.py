@@ -66,8 +66,6 @@ class GpuProfilingParser:
         self.parse_memory_reserved()
 
     def parse_e2e_time(self):
-        # timeline = sorted(self.trace_events, key=lambda event: event.get('ts'))
-        # self.profiling_info.e2e_time = (timeline[-1].get('ts') - timeline[0].get('ts')) / 10 ** 6
         compute_events_timeline = [event for event in self.trace_events if
                                    event.get('args') and event.get('args').get('stream') == self.compute_stream_id]
         compute_events_timeline = sorted(compute_events_timeline, key=lambda event: event.get('ts'))
@@ -87,6 +85,6 @@ class GpuProfilingParser:
                              event.get('cat') == 'Kernel' and 'nccl' not in event.get('name')
                              and event.get('args') and event.get('args').get('stream')]
         if not kernel_stream_ids:
-            raise RuntimeError('The profiling data does nor contain kernel running data.')
+            raise RuntimeError('The profiling data does not contain kernel running data.')
         counter = Counter(kernel_stream_ids)
         return counter.most_common(1)[0][0]
