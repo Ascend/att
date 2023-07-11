@@ -5,10 +5,12 @@
 1. 获取json文件中的traceEvents字段，获取所有cat为kernel的，且name中不包含nccl的event，将他们的耗时相加即为所有算子耗时all_time；
 2. 取算子中name包含gemm的为cube算子耗时cube_time.
 3. vector算子耗时即为(all_time - cube_time)
+### 计算流耗时
+获取计算流所有event的耗时总和
 ### 通信
 此处的通信指通信未掩盖耗时，通过计算有通信流而无计算流的时间戳获得
 ### 计算流e2e耗时
-按照时间也就是'ts'字段排序所有events，可以看到最后的event是Record Window End,故使用最后一个event的ts值减去第一个event的ts值作为计算流e2e耗时
+取计算流的所有event，用最后一个event的ts加上耗时dur减去第一个event的ts作为计算流的e2e耗时
 ### 调度
 gpu上的调度耗时计算方法采用：调度耗时 = 单步打屏时间 - 算子耗时 - 通信不可掩盖耗时
 单步打屏时间需要用户输入，当用户不输入时，采用e2e耗时代替单步打屏时间
