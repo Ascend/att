@@ -15,6 +15,8 @@ class NpuProfilingParser:
         self.aicore_time = 0
         self.cube_op_type = ['MatMul', 'BatchMatMul']
         self.cube_op_type = list(set(self.cube_op_type + add_cube_name))
+        self.min_aicore_ts = sys.float_info.max
+        self.max_aicore_ts = sys.float_info.min
 
     def parse_npu_json_events(self):
         if not self.npu_json_file:
@@ -28,8 +30,9 @@ class NpuProfilingParser:
         event_wait_sqe = defaultdict(list)
         ai_core_dict = defaultdict(list)
         event_wait_sqe_res = defaultdict(float)
+        ai_core_res = defaultdict(float)
         for dic in data:
-            self.get_ts_by_task_type(dic, event_wait_sqe, ai_core_dict, event_wait_sqe_res)
+            self.get_ts_by_task_type(dic, event_wait_sqe, ai_core_dict, event_wait_sqe_res, ai_core_res)
             if ('name' in dic) and (dic.get('name') == 'compute_time'):
                 ts_flag = True
                 ts = dic.get('ts')
@@ -55,8 +58,8 @@ class NpuProfilingParser:
             sorted(cs_event_wait_sqe_list, key=lambda x: (x[0]))
             sorted(cs_ai_core_list, key=lambda x: (x[0]))
             self.parallel_time = self.interval_intersection(cs_event_wait_sqe_list, cs_ai_core_list)
-        self.profiling_info.compute_time = compute_time / 10 ** 6
-        self.profiling_info.e2e_time = (max_ts - min_ts) / 10 ** 6 if ts_flag else 0
+        self.profiling_info.compute_time = compute_time / 10 ** 6 if ts_flag else ai_core_res[compute_stream[0]] / 10 ** 6
+        self.profiling_info.e2e_time = (max_ts - min_ts) / 10 ** 6 if ts_flag else (self.max_aicore_ts - self.min_aicore_ts) / 10 ** 6
         self.profiling_info.communication_not_overlapped = (event_wait_sqe_res[compute_stream[0]] - 
             self.parallel_time) / 10 ** 6
         time_required = (self.profiling_info.cube_time + self.profiling_info.vector_time) + \
@@ -129,8 +132,7 @@ class NpuProfilingParser:
                 j += 1
         return ans
 
-    @staticmethod
-    def get_ts_by_task_type(dic, event_wait_sqe, ai_core_dict, res):
+    def get_ts_by_task_type(dic, event_wait_sqe, ai_core_dict, enent_wait_res, ai_core_res):
         if not dic.get('args'):
             return
         args = dic.get('args')
@@ -139,7 +141,10 @@ class NpuProfilingParser:
             ts = dic.get('ts')
             dur = dic.get('dur')
             if args.get('Task Type') == 'EVENT_WAIT_SQE':
-                res[stream_id] += dur
+                enent_wait_res[stream_id] += dur
                 event_wait_sqe[stream_id].append([ts, ts + dur])
             elif args.get('Task Type') == 'AI_CORE':
+                self.min_aicore_ts = ts if ts < self.min_aicore_ts else self.min_aicore_ts
+                self.max_aicore_ts = (ts + dur) if (ts + dur) > self.max_aicore_ts else self.max_aicore_ts
+                ai_core_res[stream_id] += dur
                 ai_core_dict[stream_id].append([ts, ts + dur])
