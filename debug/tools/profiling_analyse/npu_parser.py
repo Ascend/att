@@ -132,7 +132,7 @@ class NpuProfilingParser:
                 j += 1
         return ans
 
-    def get_ts_by_task_type(dic, event_wait_sqe, ai_core_dict, enent_wait_res, ai_core_res):
+    def get_ts_by_task_type(self, dic, event_wait_sqe, ai_core_dict, enent_wait_res, ai_core_res):
         if not dic.get('args'):
             return
         args = dic.get('args')
