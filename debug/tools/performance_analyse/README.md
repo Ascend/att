@@ -14,7 +14,7 @@ gpu通信未掩盖耗时
 #### 内存分析
 gpu上的内存使用可以使用nvidia-smi查看
 profiling信息采集时打开profile_memory=True开关，即可从json文件中读出运行稳定后的memory信息
-### 计算流e2e耗时
+#### 计算流e2e耗时
 gpu计算流端到端耗时
 ### npu性能拆解
 #### 算子耗时
@@ -29,8 +29,12 @@ npu通信未掩盖耗时
 #### 内存分析
 npu上的内存使用可以使用npu-smi查看
 profiling信息采集时打开profile_memory=True开关，即可从csv文件中读出运行稳定后的memory信息
-### 计算流e2e耗时
+#### 计算流e2e耗时
 gpu计算流端到端耗时
+### 使用方法
+- 获取数据:获取gpu和npu的profiling数据，若采集profiling数据时没开启memory采集开关，则没有内存使用数据
+- 运行命令:python profiling_parse.py -g gpu\gpu_trace_device0.json -glt 0.9 -n npu\xxx_ascend_pt -nlt 1.2 -aop op1 op2
+- 输出结果：可以得到gpu与npu对照的打屏性能拆解数据，其中-nlt为输入打屏时间，-aop为手动添加的cube算子类型
 
 ## 卡间不同步问题分析（实现中）
 ### GPU通信算子8卡同步情况可视化
