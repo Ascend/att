@@ -142,7 +142,8 @@ def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch
         check_mode_valid(mode)
         assert switch in ["ON", "OFF"], "Please set dump switch with 'ON' or 'OFF'."
         assert filter_switch in ["ON", "OFF"], "Please set filter_switch with 'ON' or 'OFF'."
-        assert dump_mode in ["all", "forward", "backward"], "Please set dump_mode with 'all' or 'forward' or 'backward'."
+        assert dump_mode in ["all", "forward", "backward"], \
+            "Please set dump_mode with 'all' or 'forward' or 'backward'."
         if mode == Const.RANGE:
             assert len(scope) == 2, "set_dump_switch, scope param set invalid, it's must be [start, end]."
         if mode == Const.LIST:
@@ -150,7 +151,8 @@ def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch
         if mode == Const.STACK:
             assert len(scope) <= 2, "set_dump_switch, scope param set invalid, it's must be [start, end] or []."
         if mode == Const.ACL:
-            assert len(scope) == 1, "set_dump_switch, scope param set invalid, only one api name is supported in acl mode."
+            assert len(scope) == 1, \
+                "set_dump_switch, scope param set invalid, only one api name is supported in acl mode."
         if mode == Const.API_LIST:
             assert isinstance(api_list, list) and len(api_list) >= 1, \
                 "Current dump mode is 'api_list', but the content of api_list parameter is empty or valid."
@@ -160,7 +162,8 @@ def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch
 
     if switch == "OFF":
         dump_path_str = generate_dump_path_str()
-    DumpUtil.set_dump_switch(switch, mode=mode, scope=scope, api_list=api_list, filter_switch=filter_switch, dump_mode=dump_mode)
+    DumpUtil.set_dump_switch(switch, mode=mode, scope=scope, api_list=api_list,
+                             filter_switch=filter_switch, dump_mode=dump_mode)
     if switch == "ON":
         dump_path_str = generate_dump_path_str()
 

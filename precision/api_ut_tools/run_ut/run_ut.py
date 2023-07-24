@@ -81,7 +81,8 @@ def nested_generate_input(info, need_backward, need_convert):
                     inpt.requires_grad_(True)
                     inpt.retain_grad()
             elif 'int' in data_dtype or 'long' in data_dtype: # 应该搞个int类型列表,
-                inpt = torch.randint(int(low), int(high)+1, tuple(info['shape']), dtype=eval(data_dtype)) # high + 1因为右边是开区间
+                inpt = torch.randint(int(low), int(high)+1, tuple(info['shape']),
+                                     dtype=eval(data_dtype)) # high + 1因为右边是开区间
             else:
                 print(f'Warning: Dtype is not supported: ', info['dtype'])
                 raise NotImplementedError()

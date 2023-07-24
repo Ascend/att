@@ -30,11 +30,11 @@ import torch
 try:
     import torch_npu
 except ImportError:
-    is_gpu = True
+    IS_GPU = True
 else:
-    is_gpu = False
+    IS_GPU = False
 
-if not is_gpu:
+if not IS_GPU:
     from torch_npu.utils.device_guard import torch_device_guard as torch_npu_device_guard
 
 device = collections.namedtuple('device', ['type', 'index'])
@@ -414,7 +414,7 @@ def format_value(value):
 
 
 def torch_device_guard(func):
-    if is_gpu:
+    if IS_GPU:
         return func
     # Parse args/kwargs matched torch.device objects
 
@@ -430,7 +430,7 @@ def seed_all(seed=1234, mode=False):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.use_deterministic_algorithms(mode)
-    if is_gpu:
+    if IS_GPU:
         torch.cuda.manual_seed_all(seed)
         torch.cuda.manual_seed(seed)
         torch.backends.cudnn.deterministic = True
