@@ -9,7 +9,6 @@ class APIInfo:
     def __init__(self, api_name):
         self.api_name = api_name
         self.save_real_data = DumpUtil.save_real_data
-        self.buildin_class = []
 
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
