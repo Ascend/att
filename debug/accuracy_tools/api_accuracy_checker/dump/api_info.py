@@ -19,7 +19,10 @@ class APIInfo:
         elif isinstance(element, dict):
             out = {}
             for key, value in element.items():
-                out[key] = self.analyze_element(value)
+                if isinstance(value, torch.Tensor):
+                    out[key] = self.analyze_element(value)
+                else:
+                    out[key] = value
         elif isinstance(element, torch.Tensor):
             out = self.analyze_tensor(element, self.save_real_data)
 
