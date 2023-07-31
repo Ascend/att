@@ -62,8 +62,6 @@ class APIInfo:
         return single_arg
 
     def transfer_types(self, data, dtype):
-        if 'bool' in dtype:
-            breakpoint()
         if 'int' in dtype or 'bool' in dtype:
             return int(data)
         else:
