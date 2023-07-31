@@ -43,7 +43,7 @@ class TorchOPTemplate(HOOKModule):
 
     def __init__(self, op_name, hook):
         self.op_name_ = op_name
-        self.prefix_op_name_ = "Torch_" + str(op_name) + "_"
+        self.prefix_op_name_ = "Torch*" + str(op_name) + "*"
         super().__init__(hook)
 
     def input_param_need_adapt(self):

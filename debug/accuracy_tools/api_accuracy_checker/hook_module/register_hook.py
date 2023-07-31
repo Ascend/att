@@ -14,27 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-
-import functools
-import os
-
 import torch
 
 from . import wrap_torch, wrap_functional, wrap_tensor
-from .hook_module import HOOKModule
-from ..common.utils import check_file_or_directory_path, print_error_log, CompareException, Const, \
-    print_info_log, print_warn_log, get_process_rank
-from ..dump.utils import make_dump_dirs
-from ..dump.dump import acc_cmp_dump
-
-try:
-    import torch_npu
-except ImportError:
-    is_gpu = True
-else:
-    is_gpu = False
-
-make_dir_flag = True
+from ..dump.dump import pretest_hook
 
 
 def initialize_hook(hook):
@@ -55,8 +38,4 @@ def initialize_hook(hook):
 
 
 def register_hook():
-    global make_dir_flag
-    if make_dir_flag:
-        make_dump_dirs(0)
-        make_dir_flag = False
-    initialize_hook(acc_cmp_dump)
+    initialize_hook(pretest_hook)

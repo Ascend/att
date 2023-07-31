@@ -40,13 +40,13 @@ class HOOKModule(nn.Module):
 
         if prefix not in module_count:
             module_count[prefix] = 1
-            prefix += '0*'
+            prefix += '0'
         else:
             module_count[prefix] += 1
-            prefix = prefix + str(module_count[prefix] - 1) + '*'
+            prefix = prefix + str(module_count[prefix] - 1)
 
-        self.register_forward_hook(hook(prefix + "forward"))
-        self.register_backward_hook(hook(prefix + "backward"))
+        self.register_forward_hook(hook(prefix, "forward"))
+        self.register_backward_hook(hook(prefix, "backward"))
 
     def __call__(self, *input, **kwargs):
         changed = False
