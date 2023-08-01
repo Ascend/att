@@ -211,6 +211,21 @@ def check_mode_valid(mode):
         raise CompareException(CompareException.INVALID_DUMP_MODE, msg)
 
 
+def check_object_type(check_object, allow_type):
+    """
+    Function Description:
+        Check if the object belongs to a certain data type
+    Parameter:
+        check_object: the object to be checked
+        allow_type: legal data type
+    Exception Description:
+        when invalid data throw exception
+    """
+    if not isinstance(check_object, allow_type):
+        print_error_log(f"{check_object} not of {allow_type} type")
+        raise CompareException(CompareException.INVALID_DATA_ERROR)
+
+
 def check_file_or_directory_path(path, isdir=False):
     """
     Function Description:
