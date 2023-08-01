@@ -25,7 +25,7 @@ def write_npy(file_path, tensor):
     if os.path.exists(file_path):
         raise ValueError(f"File {file_path} already exists")
     np.save(file_path, tensor)
-    full_path = os.path.abspath(file_path+'.npy')
+    full_path = os.path.abspath(file_path)
     return full_path
 
 class DumpUtil(object):
