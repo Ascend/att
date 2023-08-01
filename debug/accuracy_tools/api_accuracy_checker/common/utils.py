@@ -15,6 +15,7 @@
 # limitations under the License.
 """
 import collections
+import json
 import os
 import random
 import re
@@ -456,3 +457,41 @@ def get_process_rank(model):
         return 0, False
     else:
         return device.index, True
+
+
+def get_json_contents(file_path):
+    ops = get_file_content_bytes(file_path)
+    return json.loads(ops)
+
+
+def get_file_content_bytes(file):
+    check_input_file_valid(file)
+    with open(file, 'rb') as file_handle:
+        return file_handle.read()
+
+
+def islink(path):
+    path = os.path.abspath(path)
+    return os.path.islink(path)
+
+
+class SoftlinkCheckException(Exception):
+    pass
+
+
+MAX_JSON_FILE_SIZE = 10 * 1024 ** 2
+
+
+def check_input_file_valid(input_path, max_file_size=MAX_JSON_FILE_SIZE):
+    if islink(input_path):
+        raise SoftlinkCheckException("Input path doesn't support soft link.")
+
+    input_path = os.path.realpath(input_path)
+    if not os.path.exists(input_path):
+        raise ValueError('Input file %s does not exist!' % input_path)
+
+    if not os.access(input_path, os.R_OK):
+        raise PermissionError('Input file %s is not readable!' % input_path)
+
+    if os.path.getsize(input_path) > max_file_size:
+        raise ValueError(f'The file is too large, exceeds {max_file_size // 1024 ** 2}MB')
