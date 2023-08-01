@@ -1,52 +1,57 @@
+import fcntl
+import json
 import os
-import shutil
-import sys
-from pathlib import Path
+import threading
 import numpy as np
-from ..common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
-    check_mode_valid, get_api_name_from_matcher
 
-from ..common.version import __version__
+from .api_info import ForwardAPIInfo, BackwardAPIInfo
+from .utils import DumpUtil
+from ..common.utils import check_file_or_directory_path
 
-dump_count = 0
-range_begin_flag, range_end_flag = False, False
+lock = threading.Lock()
 
-class DumpConst:
-    delimiter = '*'
-    forward = 'forward'
-    backward = 'backward' 
+def write_api_info_json(api_info):
+    dump_path = DumpUtil.dump_path
+    initialize_output_json()
+    if isinstance(api_info, ForwardAPIInfo):
+        file_path = os.path.join(dump_path, 'forward_info.json')
+        stack_file_path = os.path.join(dump_path, 'stack_info.json')
+        write_json(file_path, api_info.api_info_struct)
+        write_json(stack_file_path, api_info.stack_info_struct, indent=4)
 
-def create_folder(path):
-    if not os.path.exists(path):
-        os.makedirs(path, mode=0o750)
-    return path
+    elif isinstance(api_info, BackwardAPIInfo):
+        file_path = os.path.join(dump_path, 'backward_info.json')
+        write_json(file_path, api_info.grad_info_struct)
+    else:
+        raise ValueError(f"Invalid api_info type {type(api_info)}")
 
-def write_npy(file_path, tensor):
-    if os.path.exists(file_path):
-        raise ValueError(f"File {file_path} already exists")
-    np.save(file_path, tensor)
-    full_path = os.path.abspath(file_path+'.npy')
-    return full_path
+def write_json(file_path, data, indent=None):
+    check_file_or_directory_path(file_path,False)
+    with open(file_path, 'w') as f:
+        f.write("{\n}")
+    try:
+        lock.acquire()
+        with open(file_path, 'a+') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.seek(0, os.SEEK_END)
+            f.seek(f.tell() - 1, os.SEEK_SET)
+            f.truncate()
+            if f.tell() > 3:
+                f.seek(f.tell() - 1, os.SEEK_SET)
+                f.truncate()
+                f.write(',\n')
+            f.write(json.dumps(data, indent=indent)[1:-1] + '\n}')
+    except Exception as e:
+        raise ValueError(f"Json save failed:{e}")
+    finally:
+        fcntl.flock(f, fcntl.LOCK_UN)
+        lock.release()
 
-class DumpUtil(object):
-    save_real_data = False
-    dump_path = './random_data_jsons'
-    dump_switch = None
-
-    @staticmethod
-    def set_dump_path(save_path):
-        DumpUtil.dump_path = save_path
-        DumpUtil.dump_init_enable = True
-
-    @staticmethod
-    def set_dump_switch(switch):
-        DumpUtil.dump_switch = switch
-
-    @staticmethod
-    def get_dump_path():
-        if DumpUtil.dump_path:
-            return DumpUtil.dump_path
-
-    @staticmethod
-    def get_dump_switch():
-        return DumpUtil.dump_switch == "ON"
+def initialize_output_json():
+    dump_path = DumpUtil.dump_path
+    check_file_or_directory_path(dump_path,True)
+    files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
+    for file in files:
+        file_path = os.path.join(dump_path, file)
+        if os.path.exists(file_path):
+            raise ValueError(f"file {file_path} already exists, please remove it first or use a new dump path")
