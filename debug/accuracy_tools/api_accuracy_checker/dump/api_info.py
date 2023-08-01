@@ -77,10 +77,7 @@ class APIInfo:
             if operator == 'max':
                 return True in data
             elif operator == 'min':
-                if False in data:
-                    return False
-                else:
-                    return True
+                return False not in data
         if operator == 'max':
             return torch._C._VariableFunctionsClass.max(data).item()
         else:
