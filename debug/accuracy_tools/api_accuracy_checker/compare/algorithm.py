@@ -27,9 +27,11 @@ def get_max_rel_err(n_value, b_value):
     if not isinstance(n_value, np.ndarray):
         print_warn_log("Max rel err only support numpy array!")
         raise ValueError("Max rel err only support numpy array!")
+    if n_value.dtype != b_value.dtype:
+        raise ValueError("npu and bench value dtype is different.")
     if n_value.dtype in Const.FLOAT_TYPE:
-        rel_err = ((n_value - b_value) / b_value).max()
-        return rel_err, abs(rel_err)<0.001 
+        rel_err = np.abs((n_value - b_value) / (b_value + np.finfo(b_value.dtype).eps)).max()
+        return rel_err, rel_err < 0.001
     if np.all(n_value == b_value):
         return 0, True 
     return 1, False 
