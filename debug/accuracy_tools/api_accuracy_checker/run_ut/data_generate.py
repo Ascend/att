@@ -19,7 +19,8 @@ import os
 import torch
 import numpy as np
 
-from ..common.utils import check_file_or_directory_path, print_warn_log
+from ..common.utils import check_file_or_directory_path, check_object_type, print_warn_log, print_error_log, \
+    CompareException
 
 TENSOR_DATA_LIST = ["torch.Tensor", "torch.nn.parameter.Parameter"]
 FLOAT_TYPE = ['torch.float32', 'torch.float', 'torch.float64', 'torch.double', 'torch.float16',
@@ -34,6 +35,7 @@ def gen_data(info, need_grad):
         info: arg basic information. Dict
         need_grad: set Tensor grad for backward
     """
+    check_object_type(info, dict)
     data_type = info.get('type')
     data_path = info.get('datapath')
     if data_type in TENSOR_DATA_LIST:
@@ -60,6 +62,9 @@ def gen_real_tensor(data_path):
     """
     data_path = os.path.realpath(data_path)
     check_file_or_directory_path(data_path)
+    if not data_path.endswith('.npy'):
+        print_error_log(f"The file: {data_path} is not a numpy file.")
+        raise CompareException.INVALID_FILE_ERROR
     data_np = np.load(data_path)
     data = torch.from_numpy(data_np)
     return data
@@ -72,9 +77,13 @@ def gen_random_tensor(info):
     Parameter:
         info: API data info
     """
+    check_object_type(info, dict)
     low, high = info.get('Min'), info.get('Max')
     data_dtype = info.get('dtype')
     shape = tuple(info.get('shape'))
+    if not isinstance(low, (int, float)) or not isinstance(high, (int, float)):
+        print_error_log(f'Data info Min: {low} , Max: {high}, info type must be int or float')
+        raise CompareException.INVALID_PARAM_ERROR
     if data_dtype == "torch.bool":
         data = gen_bool_tensor(low, high, shape)
     else:
@@ -103,7 +112,7 @@ def gen_common_tensor(low, high, shape, data_dtype):
         low, high = int(low), int(high)
         tensor = torch.randint(low, high + 1, shape, dtype=eval(data_dtype))
     else:
-        print_warn_log('Warning: Dtype is not supported: ' + data_dtype)
+        print_error_log('Dtype is not supported: ' + data_dtype)
         raise NotImplementedError()
     tmp_tensor = tensor.reshape(-1)
     tmp_tensor[0] = low
@@ -132,9 +141,10 @@ def gen_args(args_info, need_grad=True):
     Function Description:
         Based on API basic information, generate input parameters: args, for API forward running
     Parameter:
-        api_info: API basic information. Dict
+        api_info: API basic information. List
         need_grad: set Tensor grad for backward
     """
+    check_object_type(args_info, list)
     args_result = []
     for arg in args_info:
         if isinstance(arg, (list, tuple)):
@@ -155,6 +165,7 @@ def gen_kwargs(api_info):
     Parameter:
         api_info: API basic information. Dict
     """
+    check_object_type(api_info, dict)
     kwargs_params = api_info.get("kwargs")
     for key, value in kwargs_params.items():
         if value.get('type') in TENSOR_DATA_LIST:
@@ -172,6 +183,7 @@ def gen_api_params(api_info, need_grad=True):
         api_info: API basic information. Dict
         need_grad: set grad for backward
     """
+    check_object_type(api_info, dict)
     kwargs_params = gen_kwargs(api_info)
     if "inplace" in kwargs_params:
         need_grad = False
