@@ -6,15 +6,15 @@ from ..common.utils import get_json_contents, print_error_log, print_info_log, w
 from .compare_utils import CompareConst 
 
 class Comparator:
-    test_file_name = "pretest_result.csv"
+    TEST_FILE_NAME = "pretest_result.csv"
     # consts for result csv 
-    column_api_name = "API name"
-    column_forward_success = "Forward Test Success"
-    column_backward_success = "Backward Test Success"
-    column_stack_info = "Traceback callstack info"
+    COLUMN_API_NAME = "API name"
+    COLUMN_FORWARD_SUCCESS = "Forward Test Success"
+    COLUMN_BACKWARD_SUCCESS = "Backward Test Success"
+    COLUMN_STACK_INFO = "Traceback callstack info"
 
     def __init__(self, result_save_path, stack_info_json_path=None):
-        self.save_path = os.path.join(result_save_path, self.test_file_name)
+        self.save_path = os.path.join(result_save_path, self.TEST_FILE_NAME)
         if stack_info_json_path:
             self.stack_info = get_json_contents(stack_info_json_path)
         else:
@@ -42,9 +42,9 @@ class Comparator:
         self.write_summary_csv() 
 
     def write_summary_csv(self):
-        test_rows = [[self.column_api_name, self.column_forward_success, self.column_backward_success]]
+        test_rows = [[self.COLUMN_API_NAME, self.COLUMN_FORWARD_SUCCESS, self.COLUMN_BACKWARD_SUCCESS]]
         if self.stack_info:
-            test_rows[0].append(self.column_stack_info)
+            test_rows[0].append(self.COLUMN_STACK_INFO)
         for result in self.test_results:
             name = result[0] 
             df_row = list(result[:3])
@@ -54,8 +54,8 @@ class Comparator:
             test_rows.append(df_row)
         write_csv(test_rows, self.save_path)
 
-    def record_results(self, record_target, *args):
-        record_target.append(args)
+    def record_results(self, *args):
+        self.test_results.append(args)
 
     def register_compare_algorithm(self, name, compare_func, standard):
         self.compare_alg.update({name: (compare_func, standard)})
@@ -67,7 +67,7 @@ class Comparator:
             is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
             is_bwd_success, bwd_compare_alg_results = CompareConst.NA, None 
-        self.record_results(self.test_results, api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
+        self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
         if is_fwd_success and is_bwd_success:
             self.test_result_cnt['success_num'] += 1
         elif not is_fwd_success and not is_bwd_success:

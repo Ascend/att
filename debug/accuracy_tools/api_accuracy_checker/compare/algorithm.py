@@ -26,7 +26,7 @@ def compare_bool_tensor(cpu_output, npu_output, compare_alg):
 
 
 def get_max_rel_err(n_value, b_value):
-    if not isinstance(n_value, np.ndarray):
+    if not isinstance(n_value, np.ndarray) or not isinstance(b_value, np.ndarray):
         print_warn_log("Max rel err only support numpy array!")
         raise ValueError("Max rel err only support numpy array!")
     if n_value.dtype != b_value.dtype:
@@ -87,12 +87,14 @@ def compare_core(bench_out, npu_out, alg):
         compare_result, test_success = [], True
         if len(bench_out) != len(npu_out):
             raise ValueError("bench and npu output structure is different")
-        compare_result = []
         for b_out_i, n_out_i in zip(bench_out, npu_out):
             compare_result_i, test_success_i = compare_core(b_out_i, n_out_i, alg)
             compare_result.append(compare_result_i)
             test_success = test_success and test_success_i
     elif isinstance(bench_out, dict):
+        b_keys, n_keys = set(bench_out.keys()), set(npu_out.keys())
+        if b_keys != n_keys:
+            raise ValueError("bench and npu output dictionary keys are different")
         compare_result, test_success = compare_core(list(bench_out.values()), list(npu_out.values()))
     elif isinstance(bench_out, torch.Tensor):
         compare_result, test_success = compare_torch_tensor(bench_out, npu_out, alg)
