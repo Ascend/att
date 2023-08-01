@@ -1,10 +1,11 @@
-import os
-import json
-import numpy as np
-from .utils import DumpUtil
-from .api_info import ForwardAPIInfo, BackwardAPIInfo
-import threading
 import fcntl
+import json
+import os
+import threading
+import numpy as np
+
+from .api_info import ForwardAPIInfo, BackwardAPIInfo
+from .utils import DumpUtil
 from ..common.utils import check_file_or_directory_path
 
 lock = threading.Lock()
@@ -24,22 +25,10 @@ def write_api_info_json(api_info):
     else:
         raise ValueError(f"Invalid api_info type {type(api_info)}")
 
-def write_npy(name, tensor):
-    dump_path = DumpUtil.dump_path
-    if not os.path.exists(dump_path):
-        raise ValueError(f"Path {dump_path} does not exist")
-    npy_folder = os.path.join(dump_path, 'npy')
-    if not os.path.exists(npy_folder):
-        os.makedirs(npy_folder, mode=0o750)
-    npy_path = os.path.join(npy_folder, name)
-    if os.path.exists(npy_path):
-        raise ValueError(f"File {npy_path} already exists")
-    np.save(npy_path, tensor)
-
 def write_json(file_path, data, indent=None):
-    if not os.path.exists(file_path):
-        with open(file_path, 'w') as f:
-            f.write("{\n}")
+    check_file_or_directory_path(file_path,False)
+    with open(file_path, 'w') as f:
+        f.write("{\n}")
     try:
         lock.acquire()
         with open(file_path, 'a+') as f:
@@ -52,15 +41,15 @@ def write_json(file_path, data, indent=None):
                 f.truncate()
                 f.write(',\n')
             f.write(json.dumps(data, indent=indent)[1:-1] + '\n}')
-        except Exception as e:
-            raise ValueError(f"Json save failed:{e}")
-        finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
-            lock.release()
+    except Exception as e:
+        raise ValueError(f"Json save failed:{e}")
+    finally:
+        fcntl.flock(f, fcntl.LOCK_UN)
+        lock.release()
 
 def initialize_output_json():
     dump_path = DumpUtil.dump_path
-    check_file_or_directory_path(dump_path)
+    check_file_or_directory_path(dump_path,True)
     files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
     for file in files:
         file_path = os.path.join(dump_path, file)
