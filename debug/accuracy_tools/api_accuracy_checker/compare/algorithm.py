@@ -7,21 +7,23 @@ from ..common.utils import print_warn_log, Const
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if cpu_output.dtype == torch.bool:
-        return compare_bool_tensor(cpu_output, npu_output) 
+        return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output, npu_output)
+
 
 def compare_bool_tensor(cpu_output, npu_output, compare_alg):
     error_rate = CompareConst.NAN
     cpu_shape = cpu_output.shape 
     npu_shape = npu_output.shape 
     if cpu_shape != npu_shape:
-        return error_rate 
+        return error_rate, False
     npu_data = npu_output.cpu().detach().numpy() 
     bench_data = cpu_output.detach().numpy()
     data_size = bench_data.size 
     error_nums = (bench_data != npu_data).sum()
-    error_rate = float(error_nums/data_size)
+    error_rate = float(error_nums / data_size)
     return error_rate, error_rate < 0.001 
+
 
 def get_max_rel_err(n_value, b_value):
     if not isinstance(n_value, np.ndarray):
@@ -35,6 +37,7 @@ def get_max_rel_err(n_value, b_value):
     if np.all(n_value == b_value):
         return 0, True 
     return 1, False 
+
 
 def cosine_sim(cpu_output, npu_output):
     n_value = npu_output.cpu().detach().numpy().reshape(-1)
@@ -60,10 +63,12 @@ def cosine_sim(cpu_output, npu_output):
             print_warn_log("Dump data has NaN when comparing with Cosine Similarity.")
         return cos, cos > 0.99
 
+
 def compare_builtin_type(bench_out, npu_out):
     if bench_out != npu_out:
         return CompareConst.NAN, False 
     return 1.0, True 
+
 
 def flatten_compare_result(result):
     flatten_result = [] 
@@ -73,6 +78,7 @@ def flatten_compare_result(result):
         else:
             flatten_result.append(result_i)
     return flatten_result 
+
 
 def compare_core(bench_out, npu_out, alg):
     if type(bench_out) != type(npu_out):
