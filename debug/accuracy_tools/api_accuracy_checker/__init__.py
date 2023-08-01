@@ -16,13 +16,6 @@
 # ==============================================================================
 """
 
-from .dump.utils import set_dump_switch
-from .dump.info_dump import initialize_output_json 
-from .hook_module.register_hook import register_hook
 from .common.utils import seed_all
-from .common.version import __version__
 seed_all()
-# 目前，以下两行代码在run UT时需要注释掉。不知道怎么规避比较好？
-register_hook() 
-initialize_output_json()
-__all__ = ["set_dump_switch"]
+__all__ = []

@@ -17,7 +17,6 @@
 import torch
 
 from . import wrap_torch, wrap_functional, wrap_tensor
-from ..dump.dump import pretest_hook
 
 
 def initialize_hook(hook):
@@ -36,6 +35,3 @@ def initialize_hook(hook):
         if attr_name.startswith("wrap_"):
             setattr(torch.nn.functional, attr_name[5:], getattr(wrap_functional.HOOKFunctionalOP, attr_name))
 
-
-def register_hook():
-    initialize_hook(pretest_hook)
