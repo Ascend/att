@@ -1,9 +1,12 @@
-# 用户构造并运行api用例，注意前反向的区分
-import yaml
+import argparse
 import os
-import json
+import sys
+sys.path.append("..")
+import yaml
 import torch
-import torch_npu
+from data_generate import gen_api_params, gen_args
+from common.utils import print_info_log, get_json_contents
+from compare.compare import Comparator
 
 FLOAT_TYPE = ['torch.float32', 'torch.float', 'torch.float64', 'torch.double', 'torch.float16', \
             'torch.half', 'torch.bfloat16']
