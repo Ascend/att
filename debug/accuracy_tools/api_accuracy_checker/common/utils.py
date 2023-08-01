@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 
 import numpy as np
 import torch
+import pandas as pd
 
 try:
     import torch_npu
@@ -60,6 +61,7 @@ class Const:
     OFF = 'OFF'
     BACKWARD = 'backward'
     FORWARD = 'forward'
+    FLOAT_TYPE = [np.half, np.single, np.double, np.float64, np.longdouble]
 
     # dump mode
     ALL = "all"
@@ -74,7 +76,6 @@ class Const:
     API_PATTERN = r"^[A-Za-z0-9]+[_]+([A-Za-z0-9]+[_]*[A-Za-z0-9]+)[_]+[0-9]+[_]+[A-Za-z0-9]+"
     WRITE_FLAGS = os.O_WRONLY | os.O_CREAT
     WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
-
 
 class CompareConst:
     """
@@ -166,6 +167,15 @@ class CompareException(Exception):
 
 class DumpException(CompareException):
     pass
+
+def read_json(file):
+    with open(file, 'r') as f:
+        obj = json.load(f)
+    return obj
+
+def write_csv(data, filepath):
+    data_frame = pd.DataFrame(columns=data)
+    data_frame.to_csv(filepath, index=False)
 
 def _print_log(level, msg):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
