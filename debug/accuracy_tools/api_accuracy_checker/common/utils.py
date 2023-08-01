@@ -480,6 +480,18 @@ class SoftlinkCheckException(Exception):
 
 
 MAX_JSON_FILE_SIZE = 10 * 1024 ** 2
+LINUX_FILE_NAME_LENGTH_LIMIT = 200
+
+
+def check_path_length_valid(path):
+    path = os.path.realpath(path)
+    return len(os.path.basename(path) <= LINUX_FILE_NAME_LENGTH_LIMIT)
+
+
+def check_path_pattern_valid(path):
+    pattern = re.compile(r'(\.|/|:|_|-|\s|[~0-9a-zA-Z])+')
+    if not pattern.fullmatch(path):
+        raise ValueError('Only the following characters are allowed in the path: A-Z a-z 0-9 - _ . / :')
 
 
 def check_input_file_valid(input_path, max_file_size=MAX_JSON_FILE_SIZE):
@@ -492,6 +504,11 @@ def check_input_file_valid(input_path, max_file_size=MAX_JSON_FILE_SIZE):
 
     if not os.access(input_path, os.R_OK):
         raise PermissionError('Input file %s is not readable!' % input_path)
+
+    check_path_pattern_valid(input_path)
+
+    if not check_path_length_valid(input_path):
+        raise ValueError("The real path or file_name of input is too long.")
 
     if os.path.getsize(input_path) > max_file_size:
         raise ValueError(f'The file is too large, exceeds {max_file_size // 1024 ** 2}MB')

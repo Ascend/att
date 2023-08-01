@@ -126,6 +126,8 @@ def _run_ut():
         torch.npu.set_compile_mode(jit_compile=False)
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
+    if not forward_file.endswith(".csv") or not backward_file.endswith(".csv"):
+        raise ValueError("The forward_input_file and backward_input_file should be a json file!")
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     save_error_data = args.save_error_data
     run_ut(forward_file, backward_file, out_path, save_error_data)
