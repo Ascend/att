@@ -2,7 +2,7 @@
 import os 
 from prettytable import Prettytable 
 from .algorithm import compare_core, cosine_sim, cosine_standard 
-from ..common.utils import read_json, print_error_log, print_info_log, write_csv 
+from ..common.utils import get_json_contents, print_error_log, print_info_log, write_csv
 from .compare_utils import CompareConst 
 
 class Comparator:
@@ -16,7 +16,7 @@ class Comparator:
     def __init__(self, result_save_path, stack_info_json_path=None):
         self.save_path = os.path.join(result_save_path, self.test_file_name)
         if stack_info_json_path:
-            self.stack_info = read_json(stack_info_json_path) 
+            self.stack_info = get_json_contents(stack_info_json_path)
         else:
             self.stack_info = None 
         self.compare_alg = {}
