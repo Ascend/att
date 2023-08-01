@@ -30,20 +30,33 @@ def exec_api(api_type, api_name, args, kwargs):
 
 def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
     npu_args = []
+    npu_kwargs = {}
     if need_backward:
         for arg_in in cpu_args:
-            if isinstance(arg_in, torch.Tensor) and arg_in.dtype in [torch.float, torch.float16,
-                                                                     torch.float64] and arg_in.requires_grad:
-                arg_in = arg_in.clone().detach().to("npu").requires_grad_()
-            elif isinstance(arg_in, torch.Tensor):
-                arg_in = arg_in.clone().detach().to("npu")
+            arg_in = arg_to_npu(arg_in)
             npu_args.append(arg_in)
+        for key, value in cpu_kwargs.items():
+            value = arg_to_npu(value)
+            npu_kwargs[key] = value
     else:
         for arg_in in cpu_args:
             if isinstance(arg_in, torch.Tensor):
                 arg_in = arg_in.clone().detach().to("npu")
             npu_args.append(arg_in)
-    return npu_args, cpu_kwargs
+        for key, value in cpu_kwargs.items():
+            if isinstance(value, torch.Tensor):
+                value = value.clone().detach().to("npu")
+            npu_kwargs[key] = value
+    return npu_args, npu_kwargs
+
+
+def arg_to_npu(arg_in):
+    if isinstance(arg_in, torch.Tensor) and arg_in.dtype in [torch.float, torch.float16,
+                                                             torch.float64] and arg_in.requires_grad:
+        arg_in = arg_in.clone().detach().to("npu").requires_grad_()
+    elif isinstance(arg_in, torch.Tensor):
+        arg_in = arg_in.clone().detach().to("npu")
+    return arg_in
 
 
 def run_ut(forward_file, backward_file, out_path, save_error_data):
@@ -52,8 +65,9 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     backward_content = get_json_contents(backward_file)
     api_setting_dict = get_json_contents("torch_ut_setting.json")
     compare = Comparator(out_path)
-    for api_full_name, value in forward_content.items():
-        grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content, value)
+    for api_full_name, api_info_dict in forward_content.items():
+        grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
+                                                             api_info_dict)
         compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
 
     compare.print_pretest_result()
@@ -126,7 +140,7 @@ def _run_ut():
         torch.npu.set_compile_mode(jit_compile=False)
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
-    if not forward_file.endswith(".csv") or not backward_file.endswith(".csv"):
+    if not forward_file.endswith(".json") or not backward_file.endswith(".json"):
         raise ValueError("The forward_input_file and backward_input_file should be a json file!")
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     save_error_data = args.save_error_data
