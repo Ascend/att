@@ -3,6 +3,7 @@ import yaml
 import os
 import json
 import torch
+import torch_npu
 
 FLOAT_TYPE = ['torch.float32', 'torch.float', 'torch.float64', 'torch.double', 'torch.float16', \
             'torch.half', 'torch.bfloat16']
