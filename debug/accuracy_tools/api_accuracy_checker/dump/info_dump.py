@@ -5,13 +5,13 @@ import threading
 import numpy as np
 
 from .api_info import ForwardAPIInfo, BackwardAPIInfo
-from .utils import DumpUtil
 from ..common.utils import check_file_or_directory_path
+from ..common.config import msCheckerConfig
 
 lock = threading.Lock()
 
 def write_api_info_json(api_info):
-    dump_path = DumpUtil.dump_path
+    dump_path = msCheckerConfig.dump_path
     initialize_output_json()
     if isinstance(api_info, ForwardAPIInfo):
         file_path = os.path.join(dump_path, 'forward_info.json')
@@ -48,7 +48,7 @@ def write_json(file_path, data, indent=None):
         lock.release()
 
 def initialize_output_json():
-    dump_path = DumpUtil.dump_path
+    dump_path = msCheckerConfig.dump_path
     check_file_or_directory_path(dump_path,True)
     files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
     for file in files:

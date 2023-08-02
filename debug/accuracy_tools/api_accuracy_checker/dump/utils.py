@@ -32,23 +32,11 @@ def set_dump_switch(switch):
     DumpUtil.set_dump_switch(switch)
 
 class DumpUtil(object):
-    save_real_data = False
-    dump_path = './random_data_jsons'
     dump_switch = None
-
-    @staticmethod
-    def set_dump_path(save_path):
-        DumpUtil.dump_path = save_path
-        DumpUtil.dump_init_enable = True
 
     @staticmethod
     def set_dump_switch(switch):
         DumpUtil.dump_switch = switch
-
-    @staticmethod
-    def get_dump_path():
-        if DumpUtil.dump_path:
-            return DumpUtil.dump_path
 
     @staticmethod
     def get_dump_switch():

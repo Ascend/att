@@ -1,13 +1,14 @@
 # 定义API INFO，保存基本信息，用于后续结构体的落盘，注意考虑random场景及真实数据场景
 import inspect
 import torch
-from .utils import DumpUtil, DumpConst, write_npy
+from .utils import DumpConst, write_npy
 from ..common.utils import print_error_log
+from ..common.config import msCheckerConfig
 
 class APIInfo:
     def __init__(self, api_name):
         self.api_name = api_name
-        self.save_real_data = DumpUtil.save_real_data
+        self.save_real_data = msCheckerConfig.real_data
 
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
