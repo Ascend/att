@@ -28,6 +28,9 @@ def write_npy(file_path, tensor):
     full_path = os.path.abspath(file_path)
     return full_path
 
+def set_dump_switch(switch):
+    DumpUtil.set_dump_switch(switch)
+
 class DumpUtil(object):
     save_real_data = False
     dump_path = './random_data_jsons'
