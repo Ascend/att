@@ -107,9 +107,10 @@ class ForwardAPIInfo(APIInfo):
     def analyze_api_call_stack(self):
         stack_str = []
         for (_, path, line, func, code, _) in inspect.stack()[3:]:
+            if not code: continue
             stack_line = " ".join([
                 "File", ", ".join([path, " ".join(["line", str(line)]), " ".join(["in", func]),
-                                " ".join(["\n", code[0].strip() if code else code])])])
+                                " ".join(["\n", code[0].strip()])])])
             stack_str.append(stack_line)
         self.stack_info_struct = {self.api_name: stack_str}
     

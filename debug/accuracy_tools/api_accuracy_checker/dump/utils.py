@@ -28,7 +28,7 @@ def set_dump_switch(switch):
 
 class DumpUtil(object):
     save_real_data = False
-    dump_path = './random_data_jsons'
+    dump_path = './api_info'
     dump_switch = None
 
     @staticmethod
