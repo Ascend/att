@@ -16,12 +16,6 @@
 # ==============================================================================
 """
 
-from .dump.dump import acc_cmp_dump
-from .dump.utils import set_dump_path, set_dump_switch, set_backward_input
-from .hook_module.register_hook import register_hook
 from .common.utils import seed_all
-from .common.version import __version__
 seed_all()
-
-__all__ = ["register_hook", "set_dump_path", "set_dump_switch", "seed_all",
-           "acc_cmp_dump"]
+__all__ = []
