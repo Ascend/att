@@ -95,6 +95,8 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
         grad = gen_args(backward_args)[0]
         if grad_index is not None:
             out[grad_index].backward(grad)
+        elif isinstance(out, (list, tuple)):
+            raise NotImplementedError("Multiple backward is not supported.")
         else:
             out.backward(grad)
         args_grad = []
