@@ -12,7 +12,6 @@ lock = threading.Lock()
 
 def write_api_info_json(api_info):
     dump_path = msCheckerConfig.dump_path
-    initialize_output_json()
     if isinstance(api_info, ForwardAPIInfo):
         file_path = os.path.join(dump_path, 'forward_info.json')
         stack_file_path = os.path.join(dump_path, 'stack_info.json')
@@ -26,13 +25,13 @@ def write_api_info_json(api_info):
         raise ValueError(f"Invalid api_info type {type(api_info)}")
 
 def write_json(file_path, data, indent=None):
-    check_file_or_directory_path(file_path,False)
+    check_file_or_directory_path(os.path.dirname(file_path),True)
     with open(file_path, 'w') as f:
         f.write("{\n}")
-    try:
-        lock.acquire()
-        with open(file_path, 'a+') as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
+    lock.acquire()
+    with open(file_path, 'a+') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
             f.seek(0, os.SEEK_END)
             f.seek(f.tell() - 1, os.SEEK_SET)
             f.truncate()
@@ -41,11 +40,11 @@ def write_json(file_path, data, indent=None):
                 f.truncate()
                 f.write(',\n')
             f.write(json.dumps(data, indent=indent)[1:-1] + '\n}')
-    except Exception as e:
-        raise ValueError(f"Json save failed:{e}")
-    finally:
-        fcntl.flock(f, fcntl.LOCK_UN)
-        lock.release()
+        except Exception as e:
+            raise ValueError(f"Json save failed:{e}")
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+            lock.release()
 
 def initialize_output_json():
     dump_path = msCheckerConfig.dump_path
