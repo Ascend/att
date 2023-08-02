@@ -24,7 +24,7 @@ import torch
 import threading
 
 
-from .utils import ForwardAPIInfo, BackwardAPIInfo
+from .api_info import ForwardAPIInfo, BackwardAPIInfo
 from .info_dump import write_api_info_json 
 from .utils import DumpConst, DumpUtil
 from ..common.utils import print_warn_log, print_info_log, print_error_log
