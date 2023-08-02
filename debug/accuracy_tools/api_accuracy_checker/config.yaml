@@ -1,0 +1,6 @@
+dump_path: './api_info'
+jit_compile: True
+compile_option: -O3
+compare_algorithm: cosine_similarity
+real_data: False
+dump_step: 1000
