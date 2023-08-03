@@ -48,7 +48,7 @@ def write_json(file_path, data, indent=None):
             lock.release()
 
 def initialize_output_json():
-    dump_path = DumpUtil.dump_path
+    dump_path = msCheckerConfig.dump_path
     check_file_or_directory_path(dump_path,True)
     
     files_in_dir = os.listdir(dump_path)
