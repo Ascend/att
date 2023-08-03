@@ -39,6 +39,11 @@ def get_max_rel_err(n_value, b_value):
     return 1, False 
 
 
+def cosine_standard(compare_result):
+    bool_result = np.array(compare_result) > 0.99
+    return np.all(bool_result), bool_result
+
+
 def cosine_sim(cpu_output, npu_output):
     n_value = npu_output.cpu().detach().numpy().reshape(-1)
     b_value = cpu_output.detach().numpy().reshape(-1)

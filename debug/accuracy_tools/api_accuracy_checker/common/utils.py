@@ -510,7 +510,7 @@ LINUX_FILE_NAME_LENGTH_LIMIT = 200
 
 def check_path_length_valid(path):
     path = os.path.realpath(path)
-    return len(os.path.basename(path) <= LINUX_FILE_NAME_LENGTH_LIMIT)
+    return len(os.path.basename(path)) <= LINUX_FILE_NAME_LENGTH_LIMIT
 
 
 def check_path_pattern_valid(path):

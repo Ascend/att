@@ -1,12 +1,14 @@
 # 定义API INFO，保存基本信息，用于后续结构体的落盘，注意考虑random场景及真实数据场景
 import inspect
 import torch
-from .utils import DumpConst, write_npy
+import torch_npu
+from .utils import DumpUtil, DumpConst, write_npy
 from ..common.utils import print_error_log
 from ..common.config import msCheckerConfig
 
 class APIInfo:
     def __init__(self, api_name):
+        self.rank = torch_npu.npu.current_device()
         self.api_name = api_name
         self.save_real_data = msCheckerConfig.real_data
 
@@ -106,9 +108,10 @@ class ForwardAPIInfo(APIInfo):
     def analyze_api_call_stack(self):
         stack_str = []
         for (_, path, line, func, code, _) in inspect.stack()[3:]:
+            if not code: continue
             stack_line = " ".join([
                 "File", ", ".join([path, " ".join(["line", str(line)]), " ".join(["in", func]),
-                                " ".join(["\n", code[0].strip() if code else code])])])
+                                " ".join(["\n", code[0].strip()])])])
             stack_str.append(stack_line)
         self.stack_info_struct = {self.api_name: stack_str}
     
