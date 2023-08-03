@@ -8,6 +8,8 @@ from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert
 from api_accuracy_checker.compare.compare import Comparator
 
+NO_GRAD_APIS = ["hardtanh"]
+
 cur_path = os.path.dirname(os.path.realpath(__file__))
 yaml_path = os.path.join(cur_path, "../hook_module/support_wrap_ops.yaml")
 with open(yaml_path, 'r') as f:
@@ -77,10 +79,14 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
 def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
     [api_type, api_name, _] = api_full_name.split("*")
     convert_type = check_need_convert(api_name)
-    args, kwargs = gen_api_params(value, api_name[-1] != "_", convert_type)
+    need_grad = True
+    if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
+        need_grad = False
+    args, kwargs = gen_api_params(value, need_grad, convert_type)
     inplace = kwargs.get("inplace") if kwargs.get("inplace") else None
     need_backward = api_full_name in backward_content and api_name[-1] != "_" and inplace is not True
-    if inplace or api_name[-1] == "_":
+    need_backward = need_backward and need_grad
+    if inplace or not need_grad:
         print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     grad_out, npu_grad_out = None, None
