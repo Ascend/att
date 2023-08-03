@@ -77,6 +77,14 @@ class Const:
     API_PATTERN = r"^[A-Za-z0-9]+[_]+([A-Za-z0-9]+[_]*[A-Za-z0-9]+)[_]+[0-9]+[_]+[A-Za-z0-9]+"
     WRITE_FLAGS = os.O_WRONLY | os.O_CREAT
     WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
+    
+    CONVERT = {
+        "fp16_to_fp32": ["torch.float16", "torch.float32"]
+    }
+
+    CONVERT_API = {
+        "fp16_to_fp32": ["conv2d", "batch_norm", "relu", "max_pool2d"]
+    }
 
 class CompareConst:
     """
@@ -537,3 +545,14 @@ def check_input_file_valid(input_path, max_file_size=MAX_JSON_FILE_SIZE):
 
     if os.path.getsize(input_path) > max_file_size:
         raise ValueError(f'The file is too large, exceeds {max_file_size // 1024 ** 2}MB')
+
+
+def check_need_convert(api_name):
+    convert_type = None
+    for key, value in Const.CONVERT_API:
+        if api_name not in value:
+            continue
+        else:
+            convert_type = key
+    return convert_type
+
