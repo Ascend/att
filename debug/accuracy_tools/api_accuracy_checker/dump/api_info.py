@@ -1,4 +1,5 @@
 # 定义API INFO，保存基本信息，用于后续结构体的落盘，注意考虑random场景及真实数据场景
+import os
 import inspect
 import torch
 import torch_npu
@@ -9,7 +10,7 @@ from api_accuracy_checker.dump.utils import write_npy
 
 class APIInfo:
     def __init__(self, api_name):
-        self.rank = torch_npu.npu.current_device()
+        self.rank = os.getpid()
         self.api_name = api_name
         self.save_real_data = msCheckerConfig.real_data
 
