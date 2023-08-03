@@ -19,7 +19,7 @@ import os
 import torch
 import numpy as np
 
-from ..common.utils import check_file_or_directory_path, check_object_type, print_warn_log, print_error_log, \
+from api_accuracy_checker.common.utils import check_file_or_directory_path, check_object_type, print_warn_log, print_error_log, \
     CompareException
 
 TENSOR_DATA_LIST = ["torch.Tensor", "torch.nn.parameter.Parameter"]
