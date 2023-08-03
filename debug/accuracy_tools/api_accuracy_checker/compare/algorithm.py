@@ -11,7 +11,7 @@ def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     return compare_alg(cpu_output, npu_output)
 
 
-def compare_bool_tensor(cpu_output, npu_output, compare_alg):
+def compare_bool_tensor(cpu_output, npu_output):
     error_rate = CompareConst.NAN
     cpu_shape = cpu_output.shape 
     npu_shape = npu_output.shape 
@@ -88,7 +88,7 @@ def flatten_compare_result(result):
 def compare_core(bench_out, npu_out, alg):
     if type(bench_out) != type(npu_out):
         raise ValueError("bench and npu output type is different")
-    if isinstance(bench_out, list, tuple):
+    if isinstance(bench_out, (list, tuple)):
         compare_result, test_success = [], True
         if len(bench_out) != len(npu_out):
             raise ValueError("bench and npu output structure is different")
