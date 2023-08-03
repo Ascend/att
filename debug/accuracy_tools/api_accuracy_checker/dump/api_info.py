@@ -2,8 +2,10 @@
 import inspect
 import torch
 import torch_npu
-from .utils import DumpUtil, DumpConst, write_npy
-from ..common.utils import print_error_log
+from api_accuracy_checker.common.config import msCheckerConfig
+from api_accuracy_checker.common.utils import print_error_log
+from api_accuracy_checker.common.config import msCheckerConfig
+from api_accuracy_checker.dump.utils import write_npy
 
 class APIInfo:
     def __init__(self, api_name):
