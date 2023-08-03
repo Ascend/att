@@ -24,10 +24,10 @@ import torch
 import threading
 
 
-from .api_info import ForwardAPIInfo, BackwardAPIInfo
-from .info_dump import write_api_info_json 
-from .utils import DumpConst, DumpUtil
-from ..common.utils import print_warn_log, print_info_log, print_error_log
+from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
+from api_accuracy_checker.dump.info_dump import write_api_info_json 
+from api_accuracy_checker.dump.utils import DumpConst, DumpUtil
+from api_accuracy_checker.common.utils import print_warn_log, print_info_log, print_error_log
 
 def pretest_info_dump(name, out_feat, module, phase):
     if not DumpUtil.dump_switch:

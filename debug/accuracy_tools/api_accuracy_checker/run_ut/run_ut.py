@@ -1,12 +1,12 @@
 import argparse
 import os
 import sys
-sys.path.append("..")
+import torch_npu
 import yaml
 import torch
-from data_generate import gen_api_params, gen_args
-from common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert
-from compare.compare import Comparator
+from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
+from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents
+from api_accuracy_checker.compare.compare import Comparator
 
 cur_path = os.path.dirname(os.path.realpath(__file__))
 yaml_path = os.path.join(cur_path, "../hook_module/support_wrap_ops.yaml")

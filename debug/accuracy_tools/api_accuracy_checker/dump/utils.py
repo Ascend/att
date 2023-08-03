@@ -3,7 +3,7 @@ import shutil
 import sys
 from pathlib import Path
 import numpy as np
-from ..common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
+from api_accuracy_checker.common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
     check_mode_valid, get_api_name_from_matcher
 
 class DumpConst:
