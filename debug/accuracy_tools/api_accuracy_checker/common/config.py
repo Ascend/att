@@ -1,6 +1,6 @@
 import yaml
 import os
-from ..common.utils import check_file_or_directory_path
+from api_accuracy_checker.common.utils import check_file_or_directory_path
 
 class Config:
     def __init__(self, yaml_file):
