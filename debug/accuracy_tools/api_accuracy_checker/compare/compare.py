@@ -1,6 +1,6 @@
 # 进行比对及结果展示
 import os 
-from prettytable import Prettytable 
+from prettytable import PrettyTable
 from .algorithm import compare_core, cosine_sim, cosine_standard 
 from ..common.utils import get_json_contents, print_error_log, print_info_log, write_csv
 from .compare_utils import CompareConst 
@@ -32,7 +32,7 @@ class Comparator:
             "forward_and_backward_not_pass": self.test_result_cnt['forward_and_backward_fail_num'],
             "pass": self.test_result_cnt['success_num']
         }    
-        tb = Prettytable()
+        tb = PrettyTable()
         tb.add_column("Category", list(res_dict.keys()))
         tb.add_column("statistics",list(res_dict.values()))
         info_tb = str(tb)

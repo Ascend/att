@@ -6,11 +6,6 @@ import numpy as np
 from ..common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
     check_mode_valid, get_api_name_from_matcher
 
-from ..common.version import __version__
-
-dump_count = 0
-range_begin_flag, range_end_flag = False, False
-
 class DumpConst:
     delimiter = '*'
     forward = 'forward'
@@ -33,7 +28,7 @@ def set_dump_switch(switch):
 
 class DumpUtil(object):
     save_real_data = False
-    dump_path = './random_data_jsons'
+    dump_path = './api_info'
     dump_switch = None
 
     @staticmethod
