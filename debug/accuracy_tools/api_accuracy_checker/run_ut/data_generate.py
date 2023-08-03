@@ -34,6 +34,7 @@ def gen_data(info, need_grad, convert_type):
     Parameter:
         info: arg basic information. Dict
         need_grad: set Tensor grad for backward
+        convert_type: convert ori_type to dist_type flag.
     """
     check_object_type(info, dict)
     data_type = info.get('type')
@@ -59,6 +60,7 @@ def gen_real_tensor(data_path, convert_type):
         Based on API data path, generate input parameters real data
     Parameter:
         data_path: API data path
+        convert_type: convert ori_type to dist_type flag.
     """
     data_path = os.path.realpath(data_path)
     check_file_or_directory_path(data_path)
@@ -81,6 +83,7 @@ def gen_random_tensor(info, convert_type):
         Based on API MAX and MIN, generate input parameters random data
     Parameter:
         info: API data info
+        convert_type: convert ori_type to dist_type flag.
     """
     check_object_type(info, dict)
     low, high = info.get('Min'), info.get('Max')
@@ -105,6 +108,7 @@ def gen_common_tensor(low, high, shape, data_dtype, convert_type):
         high: The max value in Tensor
         shape:The shape of Tensor
         data_dtype: The data type of Tensor
+        convert_type: convert ori_type to dist_type flag.
     """
     if convert_type:
         ori_dtype = Const.CONVERT.get(convert_type)[0]
@@ -152,6 +156,7 @@ def gen_args(args_info, need_grad=True, convert_type=None):
     Parameter:
         api_info: API basic information. List
         need_grad: set Tensor grad for backward
+        convert_type: convert ori_type to dist_type flag.
     """
     check_object_type(args_info, list)
     args_result = []
@@ -173,20 +178,28 @@ def gen_kwargs(api_info, convert_type=None):
         Based on API basic information, generate input parameters: kwargs, for API forward running
     Parameter:
         api_info: API basic information. Dict
+        convert_type: convert ori_type to dist_type flag.
     """
     check_object_type(api_info, dict)
     kwargs_params = api_info.get("kwargs")
     for key, value in kwargs_params.items():
         if isinstance(value, (list, tuple)):
             kwargs_params[key] = gen_list_kwargs(value, convert_type)
-        if value.get('type') in TENSOR_DATA_LIST:
-            kwargs_params[key] = gen_data(value, False)
+        elif value.get('type') in TENSOR_DATA_LIST:
+            kwargs_params[key] = gen_data(value, False, convert_type)
         else:
             kwargs_params[key] = value.get('value')
     return kwargs_params
 
 
 def gen_list_kwargs(kwargs_item_value, convert_type):
+    """
+    Function Description:
+        When kwargs value is list, generate the list of kwargs result
+    Parameter:
+        kwargs_item_value: kwargs value before to generate. List
+        convert_type: convert ori_type to dist_type flag.
+    """
     kwargs_item_result = []
     for item in kwargs_item_value:
         if item.get('type') in TENSOR_DATA_LIST:
@@ -204,12 +217,13 @@ def gen_api_params(api_info, need_grad=True, convert_type=None):
     Parameter:
         api_info: API basic information. Dict
         need_grad: set grad for backward
+        convert_type: convert ori_type to dist_type flag.
     """
     check_object_type(api_info, dict)
     if convert_type and convert_type not in Const.CONVERT:
         print_error_log(f"convert_type params not support {convert_type} ")
         raise CompareException.INVALID_PARAM_ERROR
-    kwargs_params = gen_kwargs(api_info)
+    kwargs_params = gen_kwargs(api_info, convert_type)
     if "inplace" in kwargs_params:
         need_grad = False
     if api_info.get("args"):
