@@ -5,7 +5,7 @@ import torch_npu
 import yaml
 import torch
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
-from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents
+from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert
 from api_accuracy_checker.compare.compare import Comparator
 
 cur_path = os.path.dirname(os.path.realpath(__file__))
