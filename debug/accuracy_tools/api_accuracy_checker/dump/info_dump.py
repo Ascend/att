@@ -50,11 +50,8 @@ def write_json(file_path, data, indent=None):
 def initialize_output_json():
     dump_path = msCheckerConfig.dump_path
     check_file_or_directory_path(dump_path,True)
-    
-    files_in_dir = os.listdir(dump_path)
-    pattern = re.compile(r"(forward|backward|stack)_info_[0-9].json")
-    match = re.search(pattern, ''.join(files_in_dir))
-    if match:
-        match_file = match.group()
-        file_path = os.path.join(DumpUtil.dump_path, match_file)
-        raise ValueError(f"file {file_path} already exists, please remove it first or use a new dump path")
+    files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
+    for file in files:
+        file_path = os.path.join(dump_path, file)
+        if os.path.exists(file_path):
+            raise ValueError(f"file {file_path} already exists, please remove it first or use a new dump path")
