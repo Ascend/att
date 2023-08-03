@@ -1,7 +1,7 @@
 # 进行比对及结果展示
 import os 
 from prettytable import PrettyTable
-from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim
+from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard
 from api_accuracy_checker.common.utils import get_json_contents, print_error_log, print_info_log, write_csv
 from api_accuracy_checker.compare.compare_utils import CompareConst 
 
