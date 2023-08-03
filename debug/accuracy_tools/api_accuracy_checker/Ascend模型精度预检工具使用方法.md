@@ -26,5 +26,5 @@
    python run_ut.py --forward ./api_info/forward_info_0.json --backward ./api_info/backward_info_0.json
    ```
 
-   forward和backward两个命令行参数根据实际情况配置。比对结果存盘位置会打屏显示。
+   forward和backward两个命令行参数根据实际情况配置。比对结果存盘位置会打屏显示，默认是'./'，可以在运行run_ut.py时通过 --out_path命令行参数配置。
 
