@@ -549,7 +549,7 @@ def check_input_file_valid(input_path, max_file_size=MAX_JSON_FILE_SIZE):
 
 def check_need_convert(api_name):
     convert_type = None
-    for key, value in Const.CONVERT_API:
+    for key, value in Const.CONVERT_API.items():
         if api_name not in value:
             continue
         else:
