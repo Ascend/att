@@ -110,6 +110,10 @@ class RunLoader(object):
 
             generator = RunGenerator(worker, span, data, self.device_target)
             profile = generator.generate_run_profile()
+            if self.device_target == 'Ascend':
+                data.step_to_overlap = profile.step_to_overlap
+                data.step_to_wait = profile.step_to_wait
+                data.comm_op = profile.comm_op
             dist_data = DistributedRunProfileData(data)
 
             logger.debug('Sending back profile via mp.Queue')
@@ -141,6 +145,18 @@ class RunLoader(object):
             return span_profiles
 
     def _process_distributed_profiles(self, profiles: List[DistributedRunProfileData], span):
+        if self.device_target != 'Ascend':
+            return self._gpu_distributed(profiles, span)
+        else:
+            for data in profiles:
+                if not data.has_communication:
+                    logger.debug('There is no communication profile in this NPU run.')
+                    return None
+            generator = DistributedRunGenerator(profiles, span, self.device_target)
+            profile = generator.generate_run_profile()
+            return profile
+
+    def _gpu_distributed(self, profiles, span):
         has_communication = True
         comm_node_lists: List[List[CommunicationNode]] = []
         for data in profiles:
@@ -157,7 +173,7 @@ class RunLoader(object):
             logger.debug('Processing profile data finish')
 
         if not has_communication:
-            logger.debug('There is no communication profile in this run.')
+            logger.debug('There is no communication profile in this GPU run.')
             return None
 
         worker_num = len(comm_node_lists)
@@ -184,6 +200,6 @@ class RunLoader(object):
         for data in profiles:
             data.communication_parse()
 
-        generator = DistributedRunGenerator(profiles, span)
+        generator = DistributedRunGenerator(profiles, span, self.device_target)
         profile = generator.generate_run_profile()
         return profile

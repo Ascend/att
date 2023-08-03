@@ -145,6 +145,10 @@ class RunProfile(object):
         self.memory_div_curve = None
         self.memory_events = None
 
+        self.step_to_overlap = None
+        self.step_to_wait = None
+        self.comm_op = None
+
     def append_gpu_metrics(self, raw_data: bytes):
         counter_json_str = ', {}'.format(', '.join(self.gpu_metrics))
         counter_json_bytes = bytes(counter_json_str, 'utf-8')
