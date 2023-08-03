@@ -79,5 +79,5 @@ class Comparator:
 
     def _compare_core_wrapper(self, bench_out, npu_out):
         name = self.compare_alg_names[0]
-        detailed_result, test_success = compare_core(bench_out, npu_out, self.compare_lag[name][0])
+        detailed_result, test_success = compare_core(bench_out, npu_out, self.compare_alg[name][0])
         return test_success, detailed_result 
