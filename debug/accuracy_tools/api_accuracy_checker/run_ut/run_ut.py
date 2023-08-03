@@ -116,6 +116,8 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
             if isinstance(arg, torch.Tensor):
                 npu_args_grad.append(arg.grad)
         npu_grad_out = npu_args_grad
+    if grad_index is not None:
+        return grad_out, npu_grad_out, npu_out[grad_index], out[grad_index]
     return grad_out, npu_grad_out, npu_out, out
 
 
