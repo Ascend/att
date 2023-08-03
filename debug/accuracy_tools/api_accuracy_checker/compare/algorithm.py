@@ -2,8 +2,8 @@
 
 import torch 
 import numpy as np 
-from .compare_utils import CompareConst 
-from ..common.utils import print_warn_log, Const
+from api_accuracy_checker.compare.compare_utils import CompareConst 
+from api_accuracy_checker.common.utils import print_warn_log, Const
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if cpu_output.dtype == torch.bool:
