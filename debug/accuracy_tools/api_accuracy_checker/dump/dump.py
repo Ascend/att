@@ -24,7 +24,7 @@ import torch
 import threading
 
 
-from .api_info import ForwardAPIInfo, BackwardAPIInfo
+from .utils import ForwardAPIInfo, BackwardAPIInfo
 from .info_dump import write_api_info_json 
 from .utils import DumpConst, DumpUtil
 from ..common.utils import print_warn_log, print_info_log, print_error_log
@@ -35,7 +35,7 @@ def pretest_info_dump(name, out_feat, module, phase):
     if phase == DumpConst.forward:
         api_info = ForwardAPIInfo(name, module.input_args, module.input_kwargs)
     elif phase == DumpConst.backward:
-        api_info = BackwardAPIInfo(name, out_feat)
+        api_info = BackwardApiInfo(name, out_feat)
     else:
         msg = "Unexpected training phase {}.".format(phase)
         print_error_log(msg)

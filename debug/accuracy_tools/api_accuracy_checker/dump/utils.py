@@ -6,6 +6,11 @@ import numpy as np
 from ..common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
     check_mode_valid, get_api_name_from_matcher
 
+from ..common.version import __version__
+
+dump_count = 0
+range_begin_flag, range_end_flag = False, False
+
 class DumpConst:
     delimiter = '*'
     forward = 'forward'

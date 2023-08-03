@@ -12,15 +12,14 @@ lock = threading.Lock()
 
 def write_api_info_json(api_info):
     dump_path = msCheckerConfig.dump_path
-    rank = api_info.rank
     if isinstance(api_info, ForwardAPIInfo):
-        file_path = os.path.join(dump_path, f'forward_info_{rank}.json')
-        stack_file_path = os.path.join(dump_path, f'stack_info_{rank}.json')
+        file_path = os.path.join(dump_path, 'forward_info.json')
+        stack_file_path = os.path.join(dump_path, 'stack_info.json')
         write_json(file_path, api_info.api_info_struct)
         write_json(stack_file_path, api_info.stack_info_struct, indent=4)
 
     elif isinstance(api_info, BackwardAPIInfo):
-        file_path = os.path.join(dump_path, f'backward_info_{rank}.json')
+        file_path = os.path.join(dump_path, 'backward_info.json')
         write_json(file_path, api_info.grad_info_struct)
     else:
         raise ValueError(f"Invalid api_info type {type(api_info)}")
