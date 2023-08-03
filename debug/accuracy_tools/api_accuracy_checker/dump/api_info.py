@@ -11,7 +11,7 @@ class APIInfo:
     def __init__(self, api_name):
         self.rank = torch_npu.npu.current_device()
         self.api_name = api_name
-        self.save_real_data = DumpUtil.save_real_data
+        self.save_real_data = msCheckerConfig.real_data
 
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
