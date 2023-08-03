@@ -31,4 +31,6 @@ class Config:
             else:
                 raise ValueError(f"Invalid key '{key}'")
 
-msCheckerConfig = Config('./config.yaml')
+cur_path = os.path.dirname(os.path.realpath(__file__))
+yaml_path = os.path.join(cur_path, "config.yaml")
+msCheckerConfig = Config(yaml_path)
