@@ -48,7 +48,10 @@ class APIInfo:
             single_arg.update({'requires_grad': arg.requires_grad})
             
         else:
-            npy_path = write_npy(self.api_name, arg.contiguous().cpu().detach().numpy())
+            dump_path = msCheckerConfig.dump_path
+            real_data_path = os.path.join(dump_path, 'real_data')
+            file_path = os.path.join(real_data_path, self.api_name)
+            npy_path = write_npy(file_path, arg.contiguous().cpu().detach().numpy())
             single_arg.update({'type' : 'torch.Tensor'})
             single_arg.update({'datapath' : npy_path})
             single_arg.update({'requires_grad': arg.requires_grad})
