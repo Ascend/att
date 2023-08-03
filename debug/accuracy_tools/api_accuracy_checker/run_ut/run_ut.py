@@ -1,12 +1,12 @@
 import argparse
 import os
 import sys
-sys.path.append("..")
+import torch_npu
 import yaml
 import torch
-from data_generate import gen_api_params, gen_args
-from common.utils import print_info_log, print_warn_log, get_json_contents
-from compare.compare import Comparator
+from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
+from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents
+from api_accuracy_checker.compare.compare import Comparator
 
 cur_path = os.path.dirname(os.path.realpath(__file__))
 yaml_path = os.path.join(cur_path, "../hook_module/support_wrap_ops.yaml")
@@ -76,7 +76,8 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
     [api_type, api_name, _] = api_full_name.split("*")
-    args, kwargs = gen_api_params(value, api_name[-1] != "_")
+    convert_type = check_need_convert(api_name)
+    args, kwargs = gen_api_params(value, api_name[-1] != "_", convert_type)
     inplace = kwargs.get("inplace") if kwargs.get("inplace") else None
     need_backward = api_full_name in backward_content and api_name[-1] != "_" and inplace is not True
     if inplace or api_name[-1] == "_":

@@ -16,7 +16,7 @@
 """
 import torch
 
-from . import wrap_torch, wrap_functional, wrap_tensor
+from api_accuracy_checker.hook_module import wrap_torch, wrap_functional, wrap_tensor
 
 
 def initialize_hook(hook):

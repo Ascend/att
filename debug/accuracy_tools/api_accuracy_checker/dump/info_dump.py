@@ -52,6 +52,9 @@ def initialize_output_json():
     dump_path = os.path.realpath(msCheckerConfig.dump_path)
     check_file_or_directory_path(dump_path,True)
     files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
+    if msCheckerConfig.real_data:
+        real_data_path = os.path.join(dump_path, 'real_data')
+        check_file_or_directory_path(real_data_path, True)
     for file in files:
         file_path = os.path.join(dump_path, file)
         if os.path.exists(file_path):

@@ -1,8 +1,7 @@
-from ..hook_module.register_hook import initialize_hook
-from .dump import pretest_hook
-from .info_dump import initialize_output_json
-from .utils import set_dump_switch
-from ..common.config import msCheckerConfig
+from api_accuracy_checker.hook_module.register_hook import initialize_hook
+from api_accuracy_checker.dump.dump import pretest_hook
+from api_accuracy_checker.dump.info_dump import initialize_output_json
+from api_accuracy_checker.dump.utils import set_dump_switch
 
 
 initialize_hook(pretest_hook)

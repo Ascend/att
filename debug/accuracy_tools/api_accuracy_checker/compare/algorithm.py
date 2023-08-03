@@ -2,8 +2,8 @@
 
 import torch 
 import numpy as np 
-from .compare_utils import CompareConst 
-from ..common.utils import print_warn_log, Const
+from api_accuracy_checker.compare.compare_utils import CompareConst 
+from api_accuracy_checker.common.utils import print_warn_log, Const
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if cpu_output.dtype == torch.bool:
@@ -11,7 +11,7 @@ def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     return compare_alg(cpu_output, npu_output)
 
 
-def compare_bool_tensor(cpu_output, npu_output, compare_alg):
+def compare_bool_tensor(cpu_output, npu_output):
     error_rate = CompareConst.NAN
     cpu_shape = cpu_output.shape 
     npu_shape = npu_output.shape 
@@ -88,7 +88,7 @@ def flatten_compare_result(result):
 def compare_core(bench_out, npu_out, alg):
     if type(bench_out) != type(npu_out):
         raise ValueError("bench and npu output type is different")
-    if isinstance(bench_out, list, tuple):
+    if isinstance(bench_out, (list, tuple)):
         compare_result, test_success = [], True
         if len(bench_out) != len(npu_out):
             raise ValueError("bench and npu output structure is different")
