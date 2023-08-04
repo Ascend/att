@@ -55,7 +55,7 @@ class DumpConst:
 
 
 def pretest_info_dump(name, out_feat, module, phase):
-    if not DumpUtil.dump_switch:
+    if not DumpUtil.get_dump_switch():
         return 
     if phase == DumpConst.forward:
         api_info = ForwardAPIInfo(name, module.input_args, module.input_kwargs)
