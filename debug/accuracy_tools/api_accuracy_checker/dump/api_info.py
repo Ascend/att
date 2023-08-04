@@ -14,10 +14,7 @@ class APIInfo:
         self.api_name = api_name
         self.save_real_data = msCheckerConfig.real_data
         self.special_key = {'device' : self.analyze_device_in_kwargs, 'dtype' : self.analyze_dtype_in_kwargs}
-
         
-
-
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
             out = []
