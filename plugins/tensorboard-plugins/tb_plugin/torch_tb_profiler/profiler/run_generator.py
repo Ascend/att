@@ -35,7 +35,6 @@ class RunGenerator(object):
         profile_run.has_communication = self.profile_data.has_communication
         profile_run.has_memcpy_or_memset = self.profile_data.has_memcpy_or_memset
         profile_run.profiler_start_ts = self.profile_data.profiler_start_ts
-        profile_run.overview = self._generate_overview()
 
         if self.device_target != 'Ascend':
             profile_run.views.append(consts.OVERALL_VIEW)

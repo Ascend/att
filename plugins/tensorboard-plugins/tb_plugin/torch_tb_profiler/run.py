@@ -48,9 +48,9 @@ class Run(object):
                 if v.display_name == view:
                     worker_set.add(profile.worker)
                     if not temp_span_view.get(profile.worker):
-                        temp_span_view[profile.worker] = [profile.span]
+                        temp_span_view[profile.worker] = [str(profile.span)]
                     else:
-                        temp_span_view[profile.worker].append(profile.span)
+                        temp_span_view[profile.worker].append(str(profile.span))
                     break
         self.span_view = temp_span_view
         return sorted(list(worker_set))
