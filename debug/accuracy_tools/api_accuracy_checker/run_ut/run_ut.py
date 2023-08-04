@@ -35,18 +35,28 @@ def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
     npu_kwargs = {}
     if need_backward:
         for arg_in in cpu_args:
-            arg_in = arg_to_npu(arg_in)
+            if isinstance(arg_in, list):
+                arg_in = [arg_to_npu(item) for item in arg_in]
+            else:
+                arg_in = arg_to_npu(arg_in)
             npu_args.append(arg_in)
         for key, value in cpu_kwargs.items():
-            value = arg_to_npu(value)
+            if isinstance(value, list):
+                value = [arg_to_npu(item) for item in value]
+            else:
+                value = arg_to_npu(value)
             npu_kwargs[key] = value
     else:
         for arg_in in cpu_args:
-            if isinstance(arg_in, torch.Tensor):
+            if isinstance(arg_in, list):
+                arg_in = [item.clone().detach().to("npu") if isinstance(item, torch.Tensor) else item for item in arg_in]
+            elif isinstance(arg_in, torch.Tensor):
                 arg_in = arg_in.clone().detach().to("npu")
             npu_args.append(arg_in)
         for key, value in cpu_kwargs.items():
-            if isinstance(value, torch.Tensor):
+            if isinstance(value, list):
+                value = [item.clone().detach().to("npu") if isinstance(item, torch.Tensor) else item for item in value]
+            elif isinstance(value, torch.Tensor):
                 value = value.clone().detach().to("npu")
             npu_kwargs[key] = value
     return npu_args, npu_kwargs
