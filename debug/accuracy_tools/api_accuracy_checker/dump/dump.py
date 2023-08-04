@@ -25,12 +25,37 @@ import threading
 
 
 from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
-from api_accuracy_checker.dump.info_dump import write_api_info_json 
-from api_accuracy_checker.dump.utils import DumpConst, DumpUtil
+from api_accuracy_checker.dump.info_dump import write_api_info_json, initialize_output_json
 from api_accuracy_checker.common.utils import print_warn_log, print_info_log, print_error_log
+from api_accuracy_checker.hook_module.register_hook import initialize_hook
+
+
+def set_dump_switch(switch):
+    if switch == "ON":
+        initialize_hook(pretest_hook)
+        initialize_output_json()
+    DumpUtil.set_dump_switch(switch)
+
+class DumpUtil(object):
+    dump_switch = None
+
+    @staticmethod
+    def set_dump_switch(switch):
+        DumpUtil.dump_switch = switch
+
+    @staticmethod
+    def get_dump_switch():
+        return DumpUtil.dump_switch == "ON"
+
+
+class DumpConst:
+    delimiter = '*'
+    forward = 'forward'
+    backward = 'backward'
+
 
 def pretest_info_dump(name, out_feat, module, phase):
-    if not DumpUtil.dump_switch:
+    if not DumpUtil.get_dump_switch():
         return 
     if phase == DumpConst.forward:
         api_info = ForwardAPIInfo(name, module.input_args, module.input_kwargs)
