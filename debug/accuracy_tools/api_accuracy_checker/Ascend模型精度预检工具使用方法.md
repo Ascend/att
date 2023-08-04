@@ -17,7 +17,7 @@
    set_dump_switch("ON")
    ```
 
-​	dump信息默认会存盘到./api_info/路径下，后缀的数字代表rank id
+​	dump信息默认会存盘到./api_info/路径下，后缀的数字代表进程pid
 
 3. 将上述信息输入给run_ut模块运行精度检测并比对
 
