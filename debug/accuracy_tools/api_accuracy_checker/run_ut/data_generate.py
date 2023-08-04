@@ -187,6 +187,8 @@ def gen_kwargs(api_info, convert_type=None):
             kwargs_params[key] = gen_list_kwargs(value, convert_type)
         elif value.get('type') in TENSOR_DATA_LIST:
             kwargs_params[key] = gen_data(value, False, convert_type)
+        elif value.get('type') == "torch.device":
+            kwargs_params[key] = torch.device(value.get('value'))
         else:
             kwargs_params[key] = value.get('value')
     return kwargs_params
