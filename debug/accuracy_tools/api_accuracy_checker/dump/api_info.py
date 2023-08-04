@@ -12,6 +12,7 @@ class APIInfo:
         self.rank = torch_npu.npu.current_device()
         self.api_name = api_name
         self.save_real_data = DumpUtil.save_real_data
+        self.special_key = {'device' : self.analyze_device_in_kwargs, 'dtype' : self.analyze_dtype_in_kwargs}
 
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
@@ -21,7 +22,11 @@ class APIInfo:
         elif isinstance(element, dict):
             out = {}
             for key, value in element.items():
-                out[key] = self.analyze_element(value)
+                if key in self.special_key.keys():
+                    fun = self.special_key[key]
+                    out[key] = fun(value)
+                else:
+                    out[key] = self.analyze_element(value)
 
         elif isinstance(element, torch.Tensor):
             out = self.analyze_tensor(element, self.save_real_data)
@@ -77,7 +82,26 @@ class APIInfo:
         if element is None or isinstance(element, (bool,int,float,str,slice)):
             return True
         return False
-
+        
+    def analyze_device_in_kwargs(self, element):
+        single_arg = {}
+        single_arg.update({'type' : 'torch.device'})
+        if not isinstance(element, str):
+            
+            if hasattr(element, "index"):
+                device_value = element.type + ":" + str(element.index)
+                single_arg.update({'value' : device_value})
+            else:
+                device_value = element.type
+        else:
+            single_arg.update({'value' : element})
+        return single_arg
+    
+    def analyze_dtype_in_kwargs(self, element):
+        single_arg = {}
+        single_arg.update({'type' : 'torch.dtype'})
+        single_arg.update({'value' : str(element)})
+        return single_arg
     
     def get_tensor_extremum(self, data, operator):
         if data.dtype is torch.bool:
