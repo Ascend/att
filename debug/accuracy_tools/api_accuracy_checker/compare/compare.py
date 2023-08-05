@@ -23,7 +23,8 @@ class Comparator:
         self.compare_alg_names = [] 
         self.register_compare_algorithm("Cosine Similarity", cosine_sim, cosine_standard) 
         self.test_results = []
-        self.test_result_cnt = {"forward_fail_num":0, "backward_fail_num":0, "forward_and_backward_fail_num":0, "success_num":0}
+        self.test_result_cnt = {"forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0,
+                                "success_num": 0}
 
     def print_pretest_result(self):
         res_dict = {
@@ -34,7 +35,7 @@ class Comparator:
         }    
         tb = PrettyTable()
         tb.add_column("Category", list(res_dict.keys()))
-        tb.add_column("statistics",list(res_dict.values()))
+        tb.add_column("statistics", list(res_dict.values()))
         info_tb = str(tb)
         print_info_log(info_tb)
 
@@ -62,9 +63,15 @@ class Comparator:
         self.compare_alg_names.append(name)
 
     def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None):
-        is_fwd_success, fwd_compare_alg_results = self._compare_core_wrapper(bench_out, npu_out)
+        if "dropout" in api_name:
+            is_fwd_success, fwd_compare_alg_results = self._compare_dropout(bench_out, npu_out)
+        else:
+            is_fwd_success, fwd_compare_alg_results = self._compare_core_wrapper(bench_out, npu_out)
         if bench_grad and npu_grad:
-            is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
+            if "dropout" in api_name:
+                is_bwd_success, bwd_compare_alg_results = self._compare_dropout(bench_grad, npu_grad)
+            else:
+                is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
             is_bwd_success, bwd_compare_alg_results = CompareConst.NA, None 
         self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
@@ -80,4 +87,15 @@ class Comparator:
     def _compare_core_wrapper(self, bench_out, npu_out):
         name = self.compare_alg_names[0]
         detailed_result, test_success = compare_core(bench_out, npu_out, self.compare_alg[name][0])
-        return test_success, detailed_result 
+        return test_success, detailed_result
+
+    @staticmethod
+    def _compare_dropout(bench_out, npu_out):
+        tensor_num = bench_out.numel()
+        if tensor_num.numel() >= 100:
+            if abs((bench_out == 0).sum() - (npu_out == 0).sum()) / tensor_num < 0.1:
+                return True, 1
+            else:
+                return False, 0
+        else:
+            return True, 1
