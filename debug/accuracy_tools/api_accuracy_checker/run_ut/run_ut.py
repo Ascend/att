@@ -7,6 +7,9 @@ import torch
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert
 from api_accuracy_checker.compare.compare import Comparator
+from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
+from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
+from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
 
 NO_GRAD_APIS = ["hardtanh"]
 
@@ -22,11 +25,14 @@ for f in dir(torch.nn.functional):
 
 def exec_api(api_type, api_name, args, kwargs):
     if api_type == "Functional":
-        out = eval(api_name)(*args, **kwargs)
+        functional_api = FunctionalOPTemplate(api_name, str, False)
+        out = functional_api.forward(*args, **kwargs)
     if api_type == "Tensor":
-        out = getattr(torch._C._TensorBase, str(api_name))(*args, **kwargs)
+        tensor_api = TensorOPTemplate(api_name, str, False)
+        out = tensor_api.forward(*args, **kwargs)
     if api_type == "Torch":
-        out = getattr(torch._C._VariableFunctionsClass, str(api_name))(*args, **kwargs)
+        torch_api = TorchOPTemplate(api_name, str, False)
+        out = torch_api.forward(*args, **kwargs)
     return out
 
 
@@ -76,6 +82,8 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
         print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     grad_out, npu_grad_out = None, None
+    if kwargs.get("device"):
+        del kwargs["device"]
     out = exec_api(api_type, api_name, args, kwargs)
     npu_out = exec_api(api_type, api_name, npu_args, npu_kwargs)
     grad_input_index = api_setting_dict.get(api_name)

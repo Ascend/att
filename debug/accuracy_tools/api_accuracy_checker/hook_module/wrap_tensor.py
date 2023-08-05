@@ -41,10 +41,11 @@ class HOOKTensor(object):
 
 class TensorOPTemplate(HOOKModule):
 
-    def __init__(self, op_name, hook):
+    def __init__(self, op_name, hook, need_hook=True):
         self.op_name_ = op_name
         self.prefix_op_name_ = "Tensor*" + str(op_name) + "*"
-        super().__init__(hook)
+        if need_hook:
+            super().__init__(hook)
 
     @torch_device_guard
     def forward(self, *args, **kwargs):
