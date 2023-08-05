@@ -13,7 +13,7 @@ class APIInfo:
         self.rank = os.getpid()
         self.api_name = api_name
         self.save_real_data = msCheckerConfig.real_data
-        self.special_key = {'device' : self.analyze_device_in_kwargs, 'dtype' : self.analyze_dtype_in_kwargs}
+        self.torch_object_key = {'device' : self.analyze_device_in_kwargs, 'dtype' : self.analyze_dtype_in_kwargs}
         
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
@@ -23,8 +23,8 @@ class APIInfo:
         elif isinstance(element, dict):
             out = {}
             for key, value in element.items():
-                if key in self.special_key.keys():
-                    fun = self.special_key[key]
+                if key in self.torch_object_key.keys():
+                    fun = self.torch_object_key[key]
                     out[key] = fun(value)
                 else:
                     out[key] = self.analyze_element(value)
