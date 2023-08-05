@@ -93,7 +93,7 @@ class Comparator:
     def _compare_dropout(bench_out, npu_out):
         tensor_num = bench_out.numel()
         if tensor_num >= 100:
-            if abs((bench_out == 0).sum() - (npu_out == 0).sum()) / tensor_num < 0.1:
+            if abs((bench_out == 0).sum() - (npu_out == 0).cpu().sum()) / tensor_num < 0.1:
                 return True, 1
             else:
                 return False, 0
