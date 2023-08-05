@@ -31,44 +31,20 @@ def exec_api(api_type, api_name, args, kwargs):
 
 
 def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
-    npu_args = []
-    npu_kwargs = {}
-    if need_backward:
-        for arg_in in cpu_args:
-            if isinstance(arg_in, list):
-                arg_in = [arg_to_npu(item) for item in arg_in]
+    def recursive_arg_to_npu(arg_in):
+        if isinstance(arg_in, (list, tuple)):
+            return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
+        elif isinstance(arg_in, torch.Tensor):
+            if arg_in.dtype in [torch.float, torch.float16, torch.float64] and need_backward:
+                return arg_in.clone().detach().to("npu").requires_grad_()
             else:
-                arg_in = arg_to_npu(arg_in)
-            npu_args.append(arg_in)
-        for key, value in cpu_kwargs.items():
-            if isinstance(value, list):
-                value = [arg_to_npu(item) for item in value]
-            else:
-                value = arg_to_npu(value)
-            npu_kwargs[key] = value
-    else:
-        for arg_in in cpu_args:
-            if isinstance(arg_in, list):
-                arg_in = [item.clone().detach().to("npu") if isinstance(item, torch.Tensor) else item for item in arg_in]
-            elif isinstance(arg_in, torch.Tensor):
-                arg_in = arg_in.clone().detach().to("npu")
-            npu_args.append(arg_in)
-        for key, value in cpu_kwargs.items():
-            if isinstance(value, list):
-                value = [item.clone().detach().to("npu") if isinstance(item, torch.Tensor) else item for item in value]
-            elif isinstance(value, torch.Tensor):
-                value = value.clone().detach().to("npu")
-            npu_kwargs[key] = value
+                return arg_in.clone().detach().to("npu")
+        else:
+            return arg_in
+
+    npu_args = recursive_arg_to_npu(cpu_args)
+    npu_kwargs = {key: recursive_arg_to_npu(value) for key, value in cpu_kwargs.items()}
     return npu_args, npu_kwargs
-
-
-def arg_to_npu(arg_in):
-    if isinstance(arg_in, torch.Tensor) and arg_in.dtype in [torch.float, torch.float16,
-                                                             torch.float64] and arg_in.requires_grad:
-        arg_in = arg_in.clone().detach().to("npu").requires_grad_()
-    elif isinstance(arg_in, torch.Tensor):
-        arg_in = arg_in.clone().detach().to("npu")
-    return arg_in
 
 
 def run_ut(forward_file, backward_file, out_path, save_error_data):
