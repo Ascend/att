@@ -5,7 +5,8 @@ import torch_npu
 import yaml
 import torch
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
-from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert
+from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert, \
+    print_error_log
 from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
@@ -137,6 +138,8 @@ def _run_ut_parser(parser):
                         help="<optional> Save compare failed api output.", required=False)
     parser.add_argument("-c", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
                         default=True, required=False)
+    parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
+                        default=0, required=False)
 
 
 def _run_ut():
@@ -145,7 +148,12 @@ def _run_ut():
     args = parser.parse_args(sys.argv[1:])
     if not args.jit_compile:
         torch.npu.set_compile_mode(jit_compile=False)
-    torch.npu.set_device("npu:0")
+    npu_device = "npu:" + str(args.device_id)
+    try:
+        torch.npu.set_device(npu_device)
+    except Exception:
+        print_error_log(f"Set NPU device id failed. device id is: {args.device_id}")
+        raise NotImplementedError
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
     if not forward_file.endswith(".json") or not backward_file.endswith(".json"):
