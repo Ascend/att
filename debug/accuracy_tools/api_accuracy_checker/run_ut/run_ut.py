@@ -35,7 +35,7 @@ def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
         if isinstance(arg_in, (list, tuple)):
             return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
         elif isinstance(arg_in, torch.Tensor):
-            if arg_in.dtype in [torch.float, torch.float16, torch.float64] and need_backward:
+            if arg_in.dtype in [torch.float, torch.float16, torch.float64] and need_backward and arg_in.requires_grad:
                 return arg_in.clone().detach().to("npu").requires_grad_()
             else:
                 return arg_in.clone().detach().to("npu")
