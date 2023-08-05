@@ -145,6 +145,7 @@ def _run_ut():
     args = parser.parse_args(sys.argv[1:])
     if not args.jit_compile:
         torch.npu.set_compile_mode(jit_compile=False)
+    torch.npu.set_device("npu:0")
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
     if not forward_file.endswith(".json") or not backward_file.endswith(".json"):
