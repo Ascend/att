@@ -69,7 +69,7 @@ class Comparator:
             is_fwd_success, fwd_compare_alg_results = self._compare_core_wrapper(bench_out, npu_out)
         if bench_grad and npu_grad:
             if "dropout" in api_name:
-                is_bwd_success, bwd_compare_alg_results = self._compare_dropout(bench_grad, npu_grad)
+                is_bwd_success, bwd_compare_alg_results = self._compare_dropout(bench_grad[0], npu_grad[0])
             else:
                 is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
@@ -92,7 +92,7 @@ class Comparator:
     @staticmethod
     def _compare_dropout(bench_out, npu_out):
         tensor_num = bench_out.numel()
-        if tensor_num.numel() >= 100:
+        if tensor_num >= 100:
             if abs((bench_out == 0).sum() - (npu_out == 0).sum()) / tensor_num < 0.1:
                 return True, 1
             else:
