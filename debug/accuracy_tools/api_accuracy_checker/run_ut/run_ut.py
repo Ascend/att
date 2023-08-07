@@ -139,7 +139,7 @@ def _run_ut_parser(parser):
     parser.add_argument('-save_error_data', dest="save_error_data", action="store_true",
                         help="<optional> Save compare failed api output.", required=False)
     parser.add_argument("-c", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
-                        default=True, required=False)
+                        default=False, required=False)
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
                         default=0, required=False)
 
@@ -148,8 +148,8 @@ def _run_ut():
     parser = argparse.ArgumentParser()
     _run_ut_parser(parser)
     args = parser.parse_args(sys.argv[1:])
-    if not args.jit_compile:
-        torch.npu.set_compile_mode(jit_compile=False)
+    if args.jit_compile:
+        torch.npu.set_compile_mode(jit_compile=True)
     npu_device = "npu:" + str(args.device_id)
     try:
         torch.npu.set_device(npu_device)
