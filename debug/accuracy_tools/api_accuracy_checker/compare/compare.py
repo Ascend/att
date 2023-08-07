@@ -27,7 +27,7 @@ class Comparator:
         self.compare_alg_names = []
         self.register_compare_algorithm("Cosine Similarity", cosine_sim, cosine_standard)
         self.register_compare_algorithm("Max Relative Error", get_max_rel_err, None)
-        self.register_compare_algorithm("Default: Isequal", compare_builtin_type, None)
+        self.register_compare_algorithm("Default: isEqual", compare_builtin_type, None)
         self.test_results = []
         self.test_result_cnt = {"forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0,
                                 "success_num": 0}
@@ -65,8 +65,8 @@ class Comparator:
     def write_detail_csv(self):
         test_rows = [["Subject", "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
                       "Max Rel Err Similarity", "Max Rel Err Pass", "Max Rel Err Message",
-                      "Default Isequal", "Default Isequal Pass",
-                      "Default Isequal Message"]]  # "Max Absolute Error", "Max Relative Error"
+                      "Default isEqual", "Default isEqual Pass",
+                      "Default isEqual Message"]]  # "Max Absolute Error", "Max Relative Error"
         for test_result in self.test_results:
             subject_prefix = test_result[0]
             fwd_result = test_result[3]

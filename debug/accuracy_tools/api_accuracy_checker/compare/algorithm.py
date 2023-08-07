@@ -3,7 +3,6 @@
 import torch
 import numpy as np
 from api_accuracy_checker.compare.compare_utils import CompareConst
-from api_accuracy_checker.common.utils import print_warn_log, Const
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if cpu_output.dtype == torch.bool or cpu_output.dtype == torch.uint8:
@@ -41,15 +40,18 @@ def get_max_rel_err(n_value, b_value):
     rel_err = np.abs((n_value - b_value) / (b_value + np.finfo(b_value.dtype).eps)).max()
     bool_result = rel_err < 0.001
     
-    return reL_err, bool_result, msg
+    return rel_err, bool_result, msg
+
 
 def max_rel_err_standard(max_rel_errs):
     bool_result = np.array(max_rel_errs) < 0.001 
     return np.all(bool_result), bool_result
 
+
 def cosine_standard(compare_result):
     bool_result = np.array(compare_result) > 0.99
     return np.all(bool_result), bool_result
+
 
 def cosine_sim(cpu_output, npu_output):
     msg = ""
@@ -122,7 +124,7 @@ def compare_core(bench_out, npu_out, alg):
     elif isinstance(bench_out, dict):
         b_keys, n_keys = set(bench_out.keys()), set(npu_out.keys())
         if b_keys != n_keys:
-            compare_result, test_success, msg = CompareConst.NAN, False, "bench and npu output dictionary keys are different"
+            compare_result, test_success, msg = CompareConst.NAN, False, "bench and npu output dict keys are different"
         compare_result, test_success = compare_core(list(bench_out.values()), list(npu_out.values()))
     elif isinstance(bench_out, torch.Tensor):
         compare_result, test_success, msg = compare_torch_tensor(bench_out, npu_out, alg)
@@ -131,7 +133,8 @@ def compare_core(bench_out, npu_out, alg):
     elif bench_out is None:
         compare_result, test_success, msg = CompareConst.NA, True, "output is None"
     else:
-        compare_result, test_success, msg = CompareConst.NA, True, "Unexpected output type in compare_core: {}".format(type(bench_out))
+        compare_result, test_success, msg = CompareConst.NA, True, "Unexpected output type \
+                     in compare_core: {}".format(type(bench_out))
     if isinstance(compare_result, list):
         compare_result = flatten_compare_result(compare_result)
     else:
