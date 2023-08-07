@@ -54,16 +54,18 @@ def cosine_sim(cpu_output, npu_output):
         return get_max_rel_err(n_value, b_value)
     if n_value.dtype == np.uint8:
         return compare_uint8_data(n_value, b_value)
-    if np.max(np.abs(n_value)) <= np.finfo(float).eps and np.max(np.abs(b_value)) <= np.finfo(float).eps:
+    n_max = np.max(np.abs(n_value))
+    b_max = np.max(np.abs(b_value))
+    if n_max <= np.finfo(float).eps and b_max <= np.finfo(float).eps:
         return cos, True
-    elif np.max(np.abs(n_value)) <= np.finfo(float).eps:
+    elif n_max <= np.finfo(float).eps:
         print_warn_log("All the data is Zero in npu dump data. Compare by relative error.")
         return get_max_rel_err(n_value, b_value)
-    elif np.max(np.abs(b_value)) <= np.finfo(float).eps:
+    elif b_max <= np.finfo(float).eps:
         print_warn_log("All the data is Zero in bench dump data. Compare by relative error.")
     else:
-        n_value /= np.max(np.abs(n_value))
-        b_value /= np.max(np.abs(b_value))
+        n_value /= n_max
+        b_value /= b_max
         cos = np.dot(n_value, b_value) / (np.linalg.norm(n_value) * np.linalg.norm(b_value))
         if np.isnan(cos):
             print_warn_log("Dump data has NaN when comparing with Cosine Similarity.")
