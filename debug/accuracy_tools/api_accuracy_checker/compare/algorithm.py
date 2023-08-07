@@ -64,8 +64,8 @@ def cosine_sim(cpu_output, npu_output):
     elif b_max <= np.finfo(float).eps:
         print_warn_log("All the data is Zero in bench dump data. Compare by relative error.")
     else:
-        n_value /= n_max
-        b_value /= b_max
+        n_value = n_value.astype(float) / n_max
+        b_value = b_value.astype(float) / b_max
         cos = np.dot(n_value, b_value) / (np.linalg.norm(n_value) * np.linalg.norm(b_value))
         if np.isnan(cos):
             print_warn_log("Dump data has NaN when comparing with Cosine Similarity.")
