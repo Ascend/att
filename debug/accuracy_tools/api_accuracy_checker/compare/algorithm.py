@@ -52,6 +52,9 @@ def cosine_sim(cpu_output, npu_output):
     if len(n_value) == 1:
         print_warn_log("All the data in npu dump data is scalar. Compare by relative error.")
         return get_max_rel_err(n_value, b_value)
+    if len(n_value) == len(b_value) == 0:
+        print_warn_log("The npu dump data and bench dump data is empty.")
+        return cos, True
     if n_value.dtype == np.uint8:
         return compare_uint8_data(n_value, b_value)
     n_value = n_value / (np.max(np.abs(n_value)) + np.finfo(n_value.dtype).eps)
