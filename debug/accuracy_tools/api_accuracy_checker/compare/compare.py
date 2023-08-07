@@ -18,7 +18,7 @@ class Comparator:
 
     def __init__(self, result_save_path, stack_info_json_path=None):
         self.save_path = os.path.join(result_save_path, self.TEST_FILE_NAME)
-        self.detail_save_path = os.path.join(result_save_path, self.TEST_FILE_NAME)
+        self.detail_save_path = os.path.join(result_save_path, self.DETAIL_TEST_FILE_NAME)
         if stack_info_json_path:
             self.stack_info = get_json_contents(stack_info_json_path)
         else:
@@ -112,6 +112,7 @@ class Comparator:
         for name in self.compare_alg_names:
             alg = self.compare_alg[name][0]
             detailed_result, test_success = compare_core(bench_out, npu_out, alg)
+            test_success_total = test_success_total and test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
                     detailed_result_total[i] += detailed_result[i]

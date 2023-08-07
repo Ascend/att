@@ -9,7 +9,7 @@ def compare_torch_tensor(cpu_output, npu_output, compare_alg):
         if npu_output.dtype != cpu_output.dtype:
             return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but npu output dtype is {npu_output.dtype}, cannot compare."
         return compare_bool_tensor(cpu_output, npu_output)
-    return compare_alg(cpu_output, npu_output)
+    return compare_alg(cpu_output.detach().numpy(), npu_output.detach().numpy())
 
 
 def compare_bool_tensor(cpu_output, npu_output):
