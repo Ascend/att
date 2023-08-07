@@ -77,13 +77,13 @@ class Const:
     API_PATTERN = r"^[A-Za-z0-9]+[_]+([A-Za-z0-9]+[_]*[A-Za-z0-9]+)[_]+[0-9]+[_]+[A-Za-z0-9]+"
     WRITE_FLAGS = os.O_WRONLY | os.O_CREAT
     WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
-    
+
     CONVERT = {
         "fp16_to_fp32": ["torch.float16", "torch.float32"]
     }
 
     CONVERT_API = {
-        "fp16_to_fp32": ["conv2d", "batch_norm", "relu", "max_pool2d", "interpolate", "layer_norm", "bmm"]
+        "fp16_to_fp32": ["conv2d", "batch_norm", "relu", "max_pool2d", "interpolate", "group_norm", "layer_norm", "bmm"]
     }
 
 class CompareConst:
