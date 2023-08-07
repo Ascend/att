@@ -54,19 +54,19 @@ def cosine_sim(cpu_output, npu_output):
         return get_max_rel_err(n_value, b_value)
     if n_value.dtype == np.uint8:
         return compare_uint8_data(n_value, b_value)
-    n_value = n_value / (np.max(np.abs(n_value)) + np.finfo(n_value.dtype).eps)
-    b_value = b_value / (np.max(np.abs(b_value)) + np.finfo(b_value.dtype).eps)
-    num = n_value.dot(b_value)
-    a_norm = np.linalg.norm(n_value)
-    b_norm = np.linalg.norm(b_value)
-    if a_norm <= np.finfo(float).eps and b_norm <= np.finfo(float).eps:
+    if np.max(np.abs(n_value)) <= np.finfo(float).eps and np.max(np.abs(b_value)) <= np.finfo(float).eps:
         return cos, True
-    elif a_norm <= np.finfo(float).eps:
+    elif np.max(np.abs(n_value)) <= np.finfo(float).eps:
         print_warn_log("All the data is Zero in npu dump data. Compare by relative error.")
         return get_max_rel_err(n_value, b_value)
-    elif b_norm <= np.finfo(float).eps:
+    elif np.max(np.abs(b_value)) <= np.finfo(float).eps:
         print_warn_log("All the data is Zero in bench dump data. Compare by relative error.")
     else:
+        n_value = n_value / np.max(np.abs(n_value))
+        b_value = b_value / np.max(np.abs(b_value))
+        num = n_value.dot(b_value)
+        a_norm = np.linalg.norm(n_value)
+        b_norm = np.linalg.norm(b_value)
         cos = num / (a_norm * b_norm)
         if np.isnan(cos):
             print_warn_log("Dump data has NaN when comparing with Cosine Similarity.")
