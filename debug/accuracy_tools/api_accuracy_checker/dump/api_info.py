@@ -15,10 +15,6 @@ class APIInfo:
         self.save_real_data = msCheckerConfig.real_data
         self.torch_object_key = {'device' : self.analyze_device_in_kwargs, 'dtype' : self.analyze_dtype_in_kwargs}
         self.args_num = 0
-        if isinstance(self, ForwardAPIInfo):
-            self.is_forward = True
-        else:
-            self.is_forward = False
         
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
@@ -138,6 +134,7 @@ class APIInfo:
 class ForwardAPIInfo(APIInfo):
     def __init__(self, name, args, kwargs):
         super().__init__(name)
+        self.is_forward = True
         self.analyze_api_input(args, kwargs)
         self.analyze_api_call_stack() 
     
@@ -160,6 +157,7 @@ class ForwardAPIInfo(APIInfo):
 class BackwardAPIInfo(APIInfo):
     def __init__(self, name, grads):
         super().__init__(name)
+        self.is_forward = False
         self.analyze_api_input(grads)
     
     def analyze_api_input(self, grads):
