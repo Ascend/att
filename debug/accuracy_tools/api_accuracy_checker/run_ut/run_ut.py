@@ -73,6 +73,8 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
     [api_type, api_name, _] = api_full_name.split("*")
     convert_type = check_need_convert(api_name)
     need_grad = True
+    if value.get("kwargs") and "out" in value.get("kwargs"):
+        need_grad = False
     if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
         need_grad = False
     args, kwargs = gen_api_params(value, need_grad, convert_type)
