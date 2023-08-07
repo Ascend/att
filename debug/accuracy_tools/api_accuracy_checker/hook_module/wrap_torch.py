@@ -41,10 +41,11 @@ class HOOKTorchOP(object):
 
 class TorchOPTemplate(HOOKModule):
 
-    def __init__(self, op_name, hook):
+    def __init__(self, op_name, hook, need_hook=True):
         self.op_name_ = op_name
         self.prefix_op_name_ = "Torch*" + str(op_name) + "*"
-        super().__init__(hook)
+        if need_hook:
+            super().__init__(hook)
 
     def input_param_need_adapt(self):
         special_op_list = ["broadcast_tensors"]
@@ -52,7 +53,7 @@ class TorchOPTemplate(HOOKModule):
             if item in self.op_name_:
                 return True
         return False
-    
+
     def einsum_adapt(self, *args):
         if len(args) < 2:
             raise ValueError('einsum(): must specify the equation string and at least one operand, '
@@ -69,7 +70,7 @@ class TorchOPTemplate(HOOKModule):
                     return chr(ord('a') + n - 26)
                 raise ValueError('einsum(): subscript in subscript list is not within the valid range [0, 52]')
             equation = ','.join(''.join(parse_subscript(s) for s in l) for l in args[1::2])
-            
+
             if len(args) % 2 == 1:
                 equation += '->' + ''.join(parse_subscript(s) for s in args[-1])
                 operands = args[:-1:2]
