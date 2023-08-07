@@ -7,6 +7,8 @@ from api_accuracy_checker.common.utils import print_warn_log, Const
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if cpu_output.dtype == torch.bool:
+        if npu_output.dtype != torch.bool:
+            return CompareConst.NAN, False, f"Bench out dtype is torch.bool but npu output dtype is {npu_output.dtype}, cannot compare."
         return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output, npu_output)
 
@@ -16,39 +18,46 @@ def compare_bool_tensor(cpu_output, npu_output):
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
     if cpu_shape != npu_shape:
-        return error_rate, False
+        return error_rate, False, ""
     npu_data = npu_output.cpu().detach().numpy()
     bench_data = cpu_output.detach().numpy()
     data_size = bench_data.size
     error_nums = (bench_data != npu_data).sum()
     error_rate = float(error_nums / data_size)
-    return error_rate, error_rate < 0.001
+    return error_rate, error_rate < 0.001, ""
 
 
 def get_max_rel_err(n_value, b_value):
+    msg = ""
     if not isinstance(n_value, np.ndarray) or not isinstance(b_value, np.ndarray):
-        print_warn_log("Max rel err only support numpy array!")
-        raise ValueError("Max rel err only support numpy array!")
+        msg = f"Max rel err only support numpy array! The actual type is {type(n_value)}, {type(b_value)}."
+        return CompareConst.NAN, False, msg
+    if n_value.shape != b_value.shape:
+        msg = f"Shape of npu and bench outputs don't match. NPU: {n_value.shape}, bench: {b_value.shape}."
+        return CompareConst.NAN, False, msg
     if n_value.dtype != b_value.dtype:
-        return CompareConst.NA, False
-    if n_value.dtype in Const.FLOAT_TYPE:
-        rel_err = np.abs((n_value - b_value) / (b_value + np.finfo(b_value.dtype).eps)).max()
-        return rel_err, rel_err < 0.001
-    if np.all(n_value == b_value):
-        return 0, True
-    return 1, False
+        msg = f"Dtype of npu and bench outputs don't match. NPU: {n_value.dtype}, bench: {b_value.dtype}."
 
+    rel_err = np.abs((n_value - b_value) / (b_value + np.finfo(b_value.dtype).eps)).max()
+    bool_result = rel_err < 0.001
+    
+    return reL_err, bool_result, msg
+
+def max_rel_err_standard(max_rel_errs):
+    bool_result = np.array(max_rel_errs) < 0.001 
+    return np.all(bool_result), bool_result
 
 def cosine_standard(compare_result):
     bool_result = np.array(compare_result) > 0.99
     return np.all(bool_result), bool_result
 
-
 def cosine_sim(cpu_output, npu_output):
-    n_value = npu_output.cpu().detach().numpy().reshape(-1)
-    b_value = cpu_output.detach().numpy().reshape(-1)
+    msg = ""
+    n_value = npu_output.reshape(-1)
+    b_value = cpu_output.reshape(-1)
     cos = CompareConst.NA
     np.seterr(divide="ignore", invalid="ignore")
+    
     if len(n_value) == 1:
         print_warn_log("All the data in npu dump data is scalar. Compare by relative error.")
         return get_max_rel_err(n_value, b_value)
