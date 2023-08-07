@@ -14,6 +14,11 @@ class APIInfo:
         self.api_name = api_name
         self.save_real_data = msCheckerConfig.real_data
         self.torch_object_key = {'device' : self.analyze_device_in_kwargs, 'dtype' : self.analyze_dtype_in_kwargs}
+        self.args_num = 0
+        if isinstance(self, ForwardAPIInfo):
+            self.is_forward = True
+        else:
+            self.is_forward = False
         
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
@@ -55,8 +60,15 @@ class APIInfo:
             
         else:
             dump_path = msCheckerConfig.dump_path
-            real_data_path = os.path.join(dump_path, 'real_data')
-            file_path = os.path.join(real_data_path, self.api_name)
+            api_args = self.api_name + '*' + str(self.args_num)
+            if self.is_forward:
+                forward_real_data_path = os.path.join(dump_path, 'forward_real_data')
+
+                file_path = os.path.join(forward_real_data_path, f'{api_args}.npy')
+            else:
+                backward_real_data_path = os.path.join(dump_path, 'backward_real_data')
+                file_path = os.path.join(backward_real_data_path, f'{api_args}.npy')
+            self.args_num += 1
             npy_path = write_npy(file_path, arg.contiguous().cpu().detach().numpy())
             single_arg.update({'type' : 'torch.Tensor'})
             single_arg.update({'datapath' : npy_path})
