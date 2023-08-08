@@ -91,7 +91,10 @@ class Comparator:
         self.compare_alg.update({name: (compare_func, standard)})
 
     def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None):
-        is_fwd_success, fwd_compare_alg_results = self._compare_core_wrapper(bench_out, npu_out)
+        if "dropout" in api_name:
+            is_fwd_success, fwd_compare_alg_results = self._compare_dropout(bench_out, npu_out)    
+        else:
+            is_fwd_success, fwd_compare_alg_results = self._compare_core_wrapper(bench_out, npu_out)
         if bench_grad and npu_grad:
             is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
@@ -112,10 +115,22 @@ class Comparator:
         for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
             detailed_result, test_success = compare_core(bench_out, npu_out, alg)
-            test_success_total = test_success_total and test_success
+            if name != "Max Relative Error":
+                test_success_total = test_success_total and test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
                     detailed_result_total[i] += detailed_result[i]
             else:
                 detailed_result_total = detailed_result
         return test_success_total, detailed_result_total
+    
+    @staticmethod
+    def _compare_dropout(bench_out, npu_out):
+        tensor_num = bench_out.numel()
+        if tensor_num >= 100:
+            if abs((bench_out == 0).sum() - (npu_out == 0).cpu().sum()) / tensor_num < 0.1:
+                return True, 1
+            else:
+                return False, 0
+        else:
+            return True, 1

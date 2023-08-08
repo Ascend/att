@@ -108,7 +108,7 @@ def compare_uint8_data(n_value, b_value):
 
 def compare_builtin_type(bench_out, npu_out):
     if not isinstance(bench_out, (bool, int, float, str)):
-        return CompareConst.NA, True, f"The data is not builtin type: {type(bench_out)}"
+        return CompareConst.NA, True, ""
     if bench_out != npu_out:
         return CompareConst.NAN, False, ""
     return True, True, ""
@@ -127,11 +127,11 @@ def flatten_compare_result(result):
 def compare_core(bench_out, npu_out, alg):
     msg = ""
     if not isinstance(bench_out, type(npu_out)):
-        compare_result, test_success, msg = CompareConst.NAN, False, "bench and npu output type is different."
+        return CompareConst.NAN, False, "bench and npu output type is different."
     if isinstance(bench_out, (list, tuple)):
         compare_result, test_success = [], True
         if len(bench_out) != len(npu_out):
-            compare_result, test_success, msg = CompareConst.NAN, False, "bench and npu output structure is different"
+            return CompareConst.NAN, False, "bench and npu output structure is different"
         for b_out_i, n_out_i in zip(bench_out, npu_out):
             compare_result_i, test_success_i = compare_core(b_out_i, n_out_i, alg)
             compare_result.append(compare_result_i)
