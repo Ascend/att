@@ -85,7 +85,7 @@ class Const:
     }
 
     CONVERT_API = {
-        "fp16_to_fp32": ["conv2d", "batch_norm", "relu", "max_pool2d", "interpolate", "group_norm"]
+        "fp16_to_fp32": ["conv2d", "batch_norm", "relu", "max_pool2d", "interpolate", "group_norm", "layer_norm", "bmm", "tanh",  "cross_entropy", "linear", "numel"]
     }
 
 class CompareConst:
