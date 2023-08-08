@@ -8,7 +8,8 @@ from api_accuracy_checker.common.utils import Const
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if cpu_output.dtype == torch.bool or cpu_output.dtype == torch.uint8:
         if npu_output.dtype != cpu_output.dtype:
-            return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but npu output dtype is {npu_output.dtype}, cannot compare."
+            return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but\
+                 npu output dtype is {npu_output.dtype}, cannot compare."
         return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output.detach().numpy(), npu_output.detach().cpu().numpy())
 
@@ -39,7 +40,7 @@ def get_max_rel_err(n_value, b_value):
         msg = f"Dtype of npu and bench outputs don't match. NPU: {n_value.dtype}, bench: {b_value.dtype}."
 
     if b_value.dtype in Const.FLOAT_TYPE:
-        zero_mask  = (b_value == 0)
+        zero_mask = (b_value == 0)
         # 给0的地方加上eps防止除0
         b_value[zero_mask] += np.finfo(b_value.dtype).eps 
         # 根据b_value为0的位置给n_value也加上eps，否则两者都是0的情况下相对误差会是1
@@ -47,7 +48,7 @@ def get_max_rel_err(n_value, b_value):
     else:
         # int type + float eps 会报错，所以这里要强转
         n_value, b_value = n_value.astype(float), b_value.astype(float)
-        zero_mask  = (b_value == 0)
+        zero_mask = (b_value == 0)
         b_value[zero_mask] += np.finfo(float).eps 
         n_value[zero_mask] += np.finfo(float).eps 
     rel_err = np.abs((n_value - b_value) / b_value).max()
@@ -74,7 +75,7 @@ def cosine_sim(cpu_output, npu_output):
     np.seterr(divide="ignore", invalid="ignore")
     if n_value.shape != b_value.shape:
         msg = f"Shape of npu and bench outputs don't match. NPU: {n_value.shape}, bench: {b_value.shape}."
-        return  -1, False, msg
+        return -1, False, msg
     if len(n_value) == 1:
         msg = "All the data in npu dump data is scalar. Please refer to other compare algorithms."
         return cos, True, msg 
@@ -124,7 +125,7 @@ def flatten_compare_result(result):
 # 本函数
 def compare_core(bench_out, npu_out, alg):
     msg = ""
-    if type(bench_out) != type(npu_out):
+    if not isinstance(bench_out, type(npu_out)):
         compare_result, test_success, msg = CompareConst.NAN, False, "bench and npu output type is different."
     if isinstance(bench_out, (list, tuple)):
         compare_result, test_success = [], True

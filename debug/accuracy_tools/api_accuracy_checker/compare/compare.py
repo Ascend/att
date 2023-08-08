@@ -24,13 +24,13 @@ class Comparator:
         else:
             self.stack_info = None
         self.compare_alg = {}
-        self.compare_alg_names = []
         self.register_compare_algorithm("Cosine Similarity", cosine_sim, cosine_standard)
         self.register_compare_algorithm("Max Relative Error", get_max_rel_err, None)
         self.register_compare_algorithm("Default: isEqual", compare_builtin_type, None)
         self.test_results = []
-        self.test_result_cnt = {"forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0,
-                                "success_num": 0}
+        self.test_result_cnt = {
+            "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0
+            }
 
     def print_pretest_result(self):
         res_dict = {
@@ -63,10 +63,12 @@ class Comparator:
         write_csv(test_rows, self.save_path)
 
     def write_detail_csv(self):
-        test_rows = [["Subject", "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
-                      "Max Rel Error", "Max Rel Err Pass", "Max Rel Err Message",
-                      "Default isEqual", "Default isEqual Pass",
-                      "Default isEqual Message"]]  # "Max Absolute Error", "Max Relative Error"
+        test_rows = [[
+                "Subject", "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
+                "Max Rel Error", "Max Rel Err Pass", "Max Rel Err Message",
+                "Default isEqual", "Default isEqual Pass",
+                "Default isEqual Message"
+            ]]  
         for test_result in self.test_results:
             subject_prefix = test_result[0]
             fwd_result = test_result[3]
@@ -87,7 +89,6 @@ class Comparator:
 
     def register_compare_algorithm(self, name, compare_func, standard):
         self.compare_alg.update({name: (compare_func, standard)})
-        self.compare_alg_names.append(name)
 
     def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None):
         is_fwd_success, fwd_compare_alg_results = self._compare_core_wrapper(bench_out, npu_out)
@@ -108,7 +109,7 @@ class Comparator:
     def _compare_core_wrapper(self, bench_out, npu_out):
         detailed_result_total = []
         test_success_total = True
-        for name in self.compare_alg_names:
+        for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
             detailed_result, test_success = compare_core(bench_out, npu_out, alg)
             test_success_total = test_success_total and test_success
