@@ -3,13 +3,14 @@
 import torch
 import numpy as np
 from api_accuracy_checker.compare.compare_utils import CompareConst
+from api_accuracy_checker.common.utils import Const 
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if cpu_output.dtype == torch.bool or cpu_output.dtype == torch.uint8:
         if npu_output.dtype != cpu_output.dtype:
             return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but npu output dtype is {npu_output.dtype}, cannot compare."
         return compare_bool_tensor(cpu_output, npu_output)
-    return compare_alg(cpu_output.detach().numpy(), npu_output.detach().numpy())
+    return compare_alg(cpu_output.detach().numpy(), npu_output.detach().cpu().numpy())
 
 
 def compare_bool_tensor(cpu_output, npu_output):
@@ -120,7 +121,7 @@ def flatten_compare_result(result):
             flatten_result.append(result_i)
     return flatten_result
 
-
+# 本函数
 def compare_core(bench_out, npu_out, alg):
     msg = ""
     if type(bench_out) != type(npu_out):
@@ -150,7 +151,7 @@ def compare_core(bench_out, npu_out, alg):
     if isinstance(compare_result, list):
         compare_result = flatten_compare_result(compare_result)
     else:
-        compare_result = [(compare_result, test_success, msg)]
+        compare_result = [(compare_result, str(test_success), msg)]
     return compare_result, test_success
 
 

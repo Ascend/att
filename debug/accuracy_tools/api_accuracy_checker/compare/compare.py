@@ -71,14 +71,13 @@ class Comparator:
             subject_prefix = test_result[0]
             fwd_result = test_result[3]
             bwd_result = test_result[4]
-            print(fwd_result, bwd_result)
             if isinstance(fwd_result, list):
                 for i, test_subject in enumerate(fwd_result):
-                    subject = subject_prefix + ".forward.output" + str(i)
+                    subject = subject_prefix + ".forward.output." + str(i)
                     test_rows.append([subject] + list(test_subject))
             if isinstance(bwd_result, list):
                 for i, test_subject in enumerate(bwd_result):
-                    subject = subject_prefix + ".backward.output" + str(i)
+                    subject = subject_prefix + ".backward.output." + str(i)
                     test_rows.append([subject] + list(test_subject))
 
         write_csv(test_rows, self.detail_save_path)
