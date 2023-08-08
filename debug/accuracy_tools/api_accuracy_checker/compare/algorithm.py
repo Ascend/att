@@ -2,16 +2,16 @@
 
 import torch
 import numpy as np
-from api_accuracy_checker.compare.compare_utils import CompareConst
+from api_accuracy_checker.compare.compare_utils import CompareConst, check_dtype
 from api_accuracy_checker.common.utils import Const 
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
-    if cpu_output.dtype == torch.bool or cpu_output.dtype == torch.uint8:
-        if npu_output.dtype != cpu_output.dtype:
-            return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but\
+    if not check_dtype(cpu_output, npu_output):
+        return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but\
                  npu output dtype is {npu_output.dtype}, cannot compare."
+    if cpu_output.dtype == np.bool or cpu_output.dtype == np.uint8:
         return compare_bool_tensor(cpu_output, npu_output)
-    return compare_alg(cpu_output.detach().numpy(), npu_output.detach().cpu().numpy())
+    return compare_alg(cpu_output, npu_output)
 
 
 def compare_bool_tensor(cpu_output, npu_output):
@@ -20,8 +20,8 @@ def compare_bool_tensor(cpu_output, npu_output):
     npu_shape = npu_output.shape
     if cpu_shape != npu_shape:
         return error_rate, False, ""
-    npu_data = npu_output.cpu().detach().numpy()
-    bench_data = cpu_output.detach().numpy()
+    npu_data = npu_output
+    bench_data = cpu_output
     data_size = bench_data.size
     error_nums = (bench_data != npu_data).sum()
     error_rate = float(error_nums / data_size)
@@ -141,7 +141,7 @@ def compare_core(bench_out, npu_out, alg):
             compare_result, test_success, msg = CompareConst.NAN, False, "bench and npu output dict keys are different"
         compare_result, test_success = compare_core(list(bench_out.values()), list(npu_out.values()))
     elif isinstance(bench_out, torch.Tensor):
-        compare_result, test_success, msg = compare_torch_tensor(bench_out, npu_out, alg)
+        compare_result, test_success, msg = compare_torch_tensor(bench_out.detach().numpy(), npu_out.detach().cpu().numpy(), alg)
     elif isinstance(bench_out, (bool, int, float, str)):
         compare_result, test_success, msg = compare_builtin_type(bench_out, npu_out)
     elif bench_out is None:
