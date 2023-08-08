@@ -62,7 +62,9 @@ class Const:
     OFF = 'OFF'
     BACKWARD = 'backward'
     FORWARD = 'forward'
-    FLOAT_TYPE = [np.half, np.single, np.double, np.float64, np.longdouble]
+    FLOAT_TYPE = [np.half, np.single, float, np.double, np.float64, np.longdouble]
+    BOOL_TYPE = [bool, np.uint8]
+    INT_TYPE = [np.int32, np.int64]
 
     # dump mode
     ALL = "all"
