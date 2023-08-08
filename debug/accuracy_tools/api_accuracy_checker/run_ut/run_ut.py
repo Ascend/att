@@ -148,8 +148,7 @@ def _run_ut():
     parser = argparse.ArgumentParser()
     _run_ut_parser(parser)
     args = parser.parse_args(sys.argv[1:])
-    if args.jit_compile:
-        torch.npu.set_compile_mode(jit_compile=True)
+    torch.npu.set_compile_mode(jit_compile=args.jit_compile)
     npu_device = "npu:" + str(args.device_id)
     try:
         torch.npu.set_device(npu_device)
