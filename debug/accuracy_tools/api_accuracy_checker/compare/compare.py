@@ -96,7 +96,10 @@ class Comparator:
         else:
             is_fwd_success, fwd_compare_alg_results = self._compare_core_wrapper(bench_out, npu_out)
         if bench_grad and npu_grad:
-            is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
+            if "dropout" in api_name:
+                is_bwd_success, bwd_compare_alg_results = self._compare_dropout(bench_grad[0], npu_grad[0])
+            else:
+                is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
             is_bwd_success, bwd_compare_alg_results = CompareConst.NA, None
         self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
