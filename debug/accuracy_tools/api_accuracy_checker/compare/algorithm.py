@@ -2,11 +2,12 @@
 
 import torch
 import numpy as np
-from api_accuracy_checker.compare.compare_utils import CompareConst, check_dtype
+from api_accuracy_checker.compare.compare_utils import CompareConst, check_dtype_comparable
 from api_accuracy_checker.common.utils import Const 
 
+
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
-    if not check_dtype(cpu_output, npu_output):
+    if not check_dtype_comparable(cpu_output, npu_output):
         return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but\
                  npu output dtype is {npu_output.dtype}, cannot compare."
     if cpu_output.dtype == np.bool or cpu_output.dtype == np.uint8:
