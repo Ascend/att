@@ -1,15 +1,6 @@
 import os
-import shutil
-import sys
-from pathlib import Path
 import numpy as np
-from api_accuracy_checker.common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
-    check_mode_valid, get_api_name_from_matcher
 
-class DumpConst:
-    delimiter = '*'
-    forward = 'forward'
-    backward = 'backward' 
 
 def create_folder(path):
     if not os.path.exists(path):
@@ -22,17 +13,3 @@ def write_npy(file_path, tensor):
     np.save(file_path, tensor)
     full_path = os.path.abspath(file_path)
     return full_path
-
-def set_dump_switch(switch):
-    DumpUtil.set_dump_switch(switch)
-
-class DumpUtil(object):
-    dump_switch = None
-
-    @staticmethod
-    def set_dump_switch(switch):
-        DumpUtil.dump_switch = switch
-
-    @staticmethod
-    def get_dump_switch():
-        return DumpUtil.dump_switch == "ON"
