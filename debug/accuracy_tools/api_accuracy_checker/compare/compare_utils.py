@@ -1,8 +1,11 @@
 from api_accuracy_checker.common.utils import Const, print_warn_log
 import numpy as np
+
+
 class CompareConst:
     NAN = np.nan
     NA = "N/A"
+
 
 def check_dtype_comparable(x, y):
     if x.dtype in Const.FLOAT_TYPE:
