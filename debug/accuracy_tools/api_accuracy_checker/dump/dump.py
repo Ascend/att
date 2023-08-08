@@ -38,6 +38,8 @@ def set_dump_switch(switch):
 
 class DumpUtil(object):
     dump_switch = None
+    target_iter = 1
+    call_num = 0
 
     @staticmethod
     def set_dump_switch(switch):
@@ -46,6 +48,16 @@ class DumpUtil(object):
     @staticmethod
     def get_dump_switch():
         return DumpUtil.dump_switch == "ON"
+    
+    @staticmethod 
+    def incr_iter_num_maybe_exit():
+        if DumpUtil.call_num == DumpUtil.target_iter:
+            set_dump_switch("ON")
+        elif DumpUtil.call_num > DumpUtil.target_iter:
+            raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.target_iter))
+        else:
+            set_dump_switch("OFF")
+        DumpUtil.call_num += 1 
 
 
 class DumpConst:
