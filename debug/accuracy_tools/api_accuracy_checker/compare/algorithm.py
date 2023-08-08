@@ -123,7 +123,7 @@ def flatten_compare_result(result):
             flatten_result.append(result_i)
     return flatten_result
 
-# 本函数
+# 本函数用alg比对bench_out 和npu_out，返回详细比对结果compare_result和标志比对是否通过的布尔变量test_success
 def compare_core(bench_out, npu_out, alg):
     msg = ""
     if not isinstance(bench_out, type(npu_out)):
