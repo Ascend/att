@@ -30,7 +30,7 @@ class Comparator:
         self.test_results = []
         self.test_result_cnt = {
             "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0
-            }
+        }
 
     def print_pretest_result(self):
         res_dict = {
@@ -64,11 +64,11 @@ class Comparator:
 
     def write_detail_csv(self):
         test_rows = [[
-                "Subject", "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
-                "Max Rel Error", "Max Rel Err Pass", "Max Rel Err Message",
-                "Default isEqual", "Default isEqual Pass",
-                "Default isEqual Message"
-            ]]  
+            "Subject", "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
+            "Max Rel Error", "Max Rel Err Pass", "Max Rel Err Message",
+            "Default isEqual", "Default isEqual Pass",
+            "Default isEqual Message"
+        ]]  
         for test_result in self.test_results:
             subject_prefix = test_result[0]
             fwd_result = test_result[3]
