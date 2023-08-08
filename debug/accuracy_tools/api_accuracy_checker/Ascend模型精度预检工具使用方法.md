@@ -17,10 +17,15 @@
    export PYTHONPATH=$PYTHONPATH:{att_root}/debug/accuracy_tools/
    ```
 
-2. 在工具中加入以下代码使用工具dump模块，启动训练抓取网络所有API信息，目前工具仅支持抓取训练的第一个迭代并且在第一个迭代后会退出训练进程。
+2. 在工具中加入以下代码使用工具dump模块，启动训练抓取网络所有API信息
 
    ```
-   from api_accuracy_checker.dump import set_dump_switch
+   import api_accuracy_checker.dump
+   ```
+
+   目前工具仅支持抓取训练的**第二个迭代**并且在第二个迭代后会报错退出训练进程。报错信息如下，这个报错仅用于停止训练，属于正常现象：
+   ```
+   Exception: Model pretest: exit after iteration 1.
    ```
 
 ​	dump信息默认会存盘到./路径下，包括前向API信息forward_info_{pid}.json, 反向API信息backward_info_{pid}.json, 调用栈信息stack_info_{pid}.json。真实数据模式下还有forward_real_data和backward_real_data文件夹，里面有每个api输入的具体数值。forward_info与stack_info中的key值一一对应，用户可根据forward_info中API的key在stack_info中查询到其调用栈及代码行位置。
@@ -46,7 +51,7 @@
 
 
 
-   
+
 
 
 
