@@ -9,11 +9,14 @@ from api_accuracy_checker.common.config import msCheckerConfig
 from api_accuracy_checker.dump.utils import write_npy
 
 class APIInfo:
-    def __init__(self, api_name):
+    def __init__(self, api_name, is_forward):
         self.rank = os.getpid()
         self.api_name = api_name
         self.save_real_data = msCheckerConfig.real_data
-
+        self.torch_object_key = {'device' : self.analyze_device_in_kwargs, 'dtype' : self.analyze_dtype_in_kwargs}
+        self.is_forward = is_forward
+        self.args_num = 0
+        
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
             out = []
@@ -22,7 +25,11 @@ class APIInfo:
         elif isinstance(element, dict):
             out = {}
             for key, value in element.items():
-                out[key] = self.analyze_element(value)
+                if key in self.torch_object_key.keys():
+                    fun = self.torch_object_key[key]
+                    out[key] = fun(value)
+                else:
+                    out[key] = self.analyze_element(value)
 
         elif isinstance(element, torch.Tensor):
             out = self.analyze_tensor(element, self.save_real_data)
@@ -50,8 +57,15 @@ class APIInfo:
             
         else:
             dump_path = msCheckerConfig.dump_path
-            real_data_path = os.path.join(dump_path, 'real_data')
-            file_path = os.path.join(real_data_path, self.api_name)
+            api_args = self.api_name + '*' + str(self.args_num)
+            if self.is_forward:
+                forward_real_data_path = os.path.join(dump_path, 'forward_real_data')
+
+                file_path = os.path.join(forward_real_data_path, f'{api_args}.npy')
+            else:
+                backward_real_data_path = os.path.join(dump_path, 'backward_real_data')
+                file_path = os.path.join(backward_real_data_path, f'{api_args}.npy')
+            self.args_num += 1
             npy_path = write_npy(file_path, arg.contiguous().cpu().detach().numpy())
             single_arg.update({'type' : 'torch.Tensor'})
             single_arg.update({'datapath' : npy_path})
@@ -78,7 +92,26 @@ class APIInfo:
         if element is None or isinstance(element, (bool,int,float,str,slice)):
             return True
         return False
-
+        
+    def analyze_device_in_kwargs(self, element):
+        single_arg = {}
+        single_arg.update({'type' : 'torch.device'})
+        if not isinstance(element, str):
+            
+            if hasattr(element, "index"):
+                device_value = element.type + ":" + str(element.index)
+                single_arg.update({'value' : device_value})
+            else:
+                device_value = element.type
+        else:
+            single_arg.update({'value' : element})
+        return single_arg
+    
+    def analyze_dtype_in_kwargs(self, element):
+        single_arg = {}
+        single_arg.update({'type' : 'torch.dtype'})
+        single_arg.update({'value' : str(element)})
+        return single_arg
     
     def get_tensor_extremum(self, data, operator):
         if data.dtype is torch.bool:
@@ -101,7 +134,7 @@ class APIInfo:
 
 class ForwardAPIInfo(APIInfo):
     def __init__(self, name, args, kwargs):
-        super().__init__(name)
+        super().__init__(name, is_forward=True)
         self.analyze_api_input(args, kwargs)
         self.analyze_api_call_stack() 
     
@@ -123,7 +156,7 @@ class ForwardAPIInfo(APIInfo):
 
 class BackwardAPIInfo(APIInfo):
     def __init__(self, name, grads):
-        super().__init__(name)
+        super().__init__(name, is_forward=False)
         self.analyze_api_input(grads)
     
     def analyze_api_input(self, grads):
