@@ -64,7 +64,7 @@ class Comparator:
 
     def write_detail_csv(self):
         test_rows = [["Subject", "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
-                      "Max Rel Err Similarity", "Max Rel Err Pass", "Max Rel Err Message",
+                      "Max Rel Error", "Max Rel Err Pass", "Max Rel Err Message",
                       "Default isEqual", "Default isEqual Pass",
                       "Default isEqual Message"]]  # "Max Absolute Error", "Max Relative Error"
         for test_result in self.test_results:

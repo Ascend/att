@@ -1,8 +1,15 @@
 # Ascend模型精度预检工具
+模型精度预检工具会提取模型中所有的API前反向的信息，构造相应的API单元测试，将NPU输出与标杆比对，从而检测出精度有问题的API。
+
+## 工具优势
+1. 落盘数据小
+2. 不依赖标杆侧GPU训练资源，本地即可完成预检
+3. 支持随机生成模式和真实数据模式
+4. 单API测试，排除整网中的累计误差问题
 
 ## 使用方式
 
-1. 安装遇见工具
+1. 安装预检工具
 
    将att仓代码下载到本地，并配置环境变量。假设att仓本地路径为 {att_root}，环境变量应配置为
 
@@ -17,7 +24,13 @@
    set_dump_switch("ON")
    ```
 
-​	dump信息默认会存盘到./api_info/路径下，后缀的数字代表进程pid
+​	dump信息默认会存盘到./路径下，包括前向API信息forward_info_{pid}.json, 反向API信息backward_info_{pid}.json, 调用栈信息stack_info_{pid}.json。真实数据模式下还有forward_real_data和backward_real_data文件夹，里面有每个api输入的具体数值。forward_info与stack_info中的key值一一对应，用户可根据forward_info中API的key在stack_info中查询到其调用栈及代码行位置。
+
+   有需要的话，用户可以通过msCheckerConfig.update_config来配置dump路径以及启用真实数据模式（默认为关）。注意启用真实数据模式会存盘较多数据，可能对磁盘空间有较大冲击。
+   ```
+      from api_accuracy_checker.dump import msCheckerConfig
+      msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True) # my/dump/path需配置为用户想要的api信息存盘路径，并且需要提前创建好
+   ```
 
 3. 将上述信息输入给run_ut模块运行精度检测并比对
 
@@ -26,5 +39,6 @@
    python run_ut.py --forward ./api_info/forward_info_0.json --backward ./api_info/backward_info_0.json
    ```
 
-   forward和backward两个命令行参数根据实际情况配置。比对结果存盘位置会打屏显示，默认是'./'，可以在运行run_ut.py时通过 --out_path命令行参数配置。
+   forward和backward两个命令行参数根据实际情况配置。比对结果存盘位置会打屏显示，默认是'./'，可以在运行run_ut.py时通过 --out_path命令行参数配置。结果包括pretest_result.csv和pretest_details.csv两个文件。前者是api粒度的，标明每个api是否通过测试。建议用户先查看前者，对于其中没有通过测试的或者特定感兴趣的api，根据其API name字段在pretest_details.csv中查询其各个输出的达标情况。
+
 

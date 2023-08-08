@@ -37,7 +37,19 @@ def get_max_rel_err(n_value, b_value):
     if n_value.dtype != b_value.dtype:
         msg = f"Dtype of npu and bench outputs don't match. NPU: {n_value.dtype}, bench: {b_value.dtype}."
 
-    rel_err = np.abs((n_value - b_value) / (b_value + np.finfo(b_value.dtype).eps)).max()
+    if b_value.dtype in Const.FLOAT_TYPE:
+        zero_mask  = (b_value == 0)
+        # 给0的地方加上eps防止除0
+        b_value[zero_mask] += np.finfo(b_value.dtype).eps 
+        # 根据b_value为0的位置给n_value也加上eps，否则两者都是0的情况下相对误差会是1
+        n_value[zero_mask] += np.finfo(b_value.dtype).eps 
+    else:
+        # int type + float eps 会报错，所以这里要强转
+        n_value, b_value = n_value.astype(float), b_value.astype(float)
+        zero_mask  = (b_value == 0)
+        b_value[zero_mask] += np.finfo(float).eps 
+        n_value[zero_mask] += np.finfo(float).eps 
+    rel_err = np.abs((n_value - b_value) / b_value).max()
     bool_result = rel_err < 0.001
     
     return rel_err, bool_result, msg
@@ -76,8 +88,8 @@ def cosine_sim(cpu_output, npu_output):
         msg = "All the data is zero in bench dump data."
         return CompareConst.NAN, False, msg 
     else:
-        n_value /= n_value_max 
-        b_value /= b_value_max 
+        n_value = n_value_max.astype(float) / n_value_max 
+        b_value = b_value_max.astype(float) / b_value_max
         cos = np.dot(n_value, b_value) / (np.linalg.norm(n_value) * np.linalg.norm(b_value))
         if np.isnan(cos):
             msg = "Dump data has NaN when comparing with Cosine Similarity."
