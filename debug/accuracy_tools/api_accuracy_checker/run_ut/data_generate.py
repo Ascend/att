@@ -239,6 +239,6 @@ def gen_api_params(api_info, need_grad=True, convert_type=None):
     if api_info.get("args"):
         args_params = gen_args(api_info.get("args"), need_grad, convert_type)
     else:
-        print_error_log(f'Warning: No args in {api_info} ')
-        raise NotImplementedError()
+        print_warn_log(f'Warning: No args in {api_info} ')
+        args_params = []
     return args_params, kwargs_params

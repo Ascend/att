@@ -73,6 +73,8 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
     [api_type, api_name, _] = api_full_name.split("*")
     convert_type = check_need_convert(api_name)
     need_grad = True
+    if value.get("kwargs") and "out" in value.get("kwargs"):
+        need_grad = False
     if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
         need_grad = False
     args, kwargs = gen_api_params(value, need_grad, convert_type)
@@ -137,7 +139,7 @@ def _run_ut_parser(parser):
     parser.add_argument('-save_error_data', dest="save_error_data", action="store_true",
                         help="<optional> Save compare failed api output.", required=False)
     parser.add_argument("-c", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
-                        default=True, required=False)
+                        default=False, required=False)
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
                         default=0, required=False)
 
@@ -146,8 +148,7 @@ def _run_ut():
     parser = argparse.ArgumentParser()
     _run_ut_parser(parser)
     args = parser.parse_args(sys.argv[1:])
-    if not args.jit_compile:
-        torch.npu.set_compile_mode(jit_compile=False)
+    torch.npu.set_compile_mode(jit_compile=args.jit_compile)
     npu_device = "npu:" + str(args.device_id)
     try:
         torch.npu.set_device(npu_device)
