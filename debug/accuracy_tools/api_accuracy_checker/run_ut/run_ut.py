@@ -61,9 +61,17 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     api_setting_dict = get_json_contents("torch_ut_setting.json")
     compare = Comparator(out_path)
     for api_full_name, api_info_dict in forward_content.items():
-        grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
-                                                             api_info_dict)
-        compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
+        try:
+            grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
+                                                                api_info_dict)
+            compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
+        except Exception as err:
+            if "not implemented for 'Half'" in str(err):
+                [_, api_name, _] = api_full_name.split("*")
+                print_warn_log(f"API {api_name} not support half tensor in CPU, please add {api_name} to CONVERT_API "
+                               f"'fp16_to_fp32' list in accuracy_tools/api_accuracy_check/common/utils.py file.")
+            else:
+                print_error_log(f"Run {api_full_name} UT Error: %s" % str(err))
 
     compare.print_pretest_result()
     compare.write_compare_csv()
