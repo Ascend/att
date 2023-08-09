@@ -79,7 +79,7 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
     [api_type, api_name, _] = api_full_name.split("*")
-    convert_type = check_need_convert(api_name)
+    convert_type,value = check_need_convert(api_name, value)
     need_grad = True
     if value.get("kwargs") and "out" in value.get("kwargs"):
         need_grad = False
