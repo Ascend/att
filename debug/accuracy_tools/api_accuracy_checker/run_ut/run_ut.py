@@ -5,7 +5,7 @@ import torch_npu
 import yaml
 import torch
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
-from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert, \
+from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
     print_error_log
 from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
@@ -79,7 +79,7 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
     [api_type, api_name, _] = api_full_name.split("*")
-    convert_type,value = check_need_convert(api_name, value)
+    convert_type,value = api_info_preprocess(api_name, value)
     need_grad = True
     if value.get("kwargs") and "out" in value.get("kwargs"):
         need_grad = False

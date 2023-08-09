@@ -549,13 +549,17 @@ def check_input_file_valid(input_path, max_file_size=MAX_JSON_FILE_SIZE):
         raise ValueError(f'The file is too large, exceeds {max_file_size // 1024 ** 2}MB')
 
 
-def check_need_convert(api_name,value):
+def check_need_convert(api_name):
     convert_type = None
     for key, item in Const.CONVERT_API.items():
         if api_name not in item:
             continue
         else:
             convert_type = key
+    return convert_type
+
+def api_info_preprocess(api_name,value):
+    convert_type=check_need_convert(api_name)
     if api_name=='cross_entropy' and value['args'][1]['Min'] <=0:
         value['args'][1]['Min'] = 0
     return convert_type, value
