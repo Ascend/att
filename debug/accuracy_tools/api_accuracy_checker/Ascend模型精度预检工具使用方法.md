@@ -11,10 +11,10 @@
 
 1. 安装预检工具
 
-   将att仓代码下载到本地，并配置环境变量。假设att仓本地路径为 {att_root}，环境变量应配置为
+   将att仓代码下载到本地，并配置环境变量。假设下载后att仓路径为 $ATT_HOME，环境变量应配置为
 
    ```
-   export PYTHONPATH=$PYTHONPATH:{att_root}/debug/accuracy_tools/
+   export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
 
 2. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
@@ -33,13 +33,15 @@
    有需要的话，用户可以通过msCheckerConfig.update_config来配置dump路径以及启用真实数据模式（默认为关）。注意启用真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。
    ```
       from api_accuracy_checker.dump import msCheckerConfig
-      msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True) # my/dump/path需配置为用户想要的api信息存盘路径，并且需要提前创建好
+      msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True)
    ```
+
+"my/dump/path" 需配置为用户想要的api信息存盘路径，并且需要提前创建好
 
 3. 将上述信息输入给run_ut模块运行精度检测并比对，运行如下命令：
 
    ```
-   cd run_ut
+   cd $ATT_HOME/debug/accuracy_tools/api_accuracy_checker/run_ut
    python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json
    ```
 
