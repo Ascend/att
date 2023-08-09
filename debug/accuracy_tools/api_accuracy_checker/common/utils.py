@@ -571,5 +571,5 @@ def api_info_preprocess(api_name, value):
     """
     convert_type = check_need_convert(api_name)
     if api_name == 'cross_entropy' and value['args'][1]['Min'] <=0:
-        value['args'][1]['Min'] = 0#The second value in cross_entropy only can be -100 or larger than 0.
+        value['args'][1]['Min'] = 0 #The second value in cross_entropy should be -100 or not less than 0.
     return convert_type, value
