@@ -570,6 +570,20 @@ def api_info_preprocess(api_name, api_info_dict):
         api_info_dict: Processed argument of the API.
     """
     convert_type = check_need_convert(api_name)
-    if api_name == 'cross_entropy' and api_info_dict['args'][1]['Min'] <=0:
-        api_info_dict['args'][1]['Min'] = 0 #The second argument in cross_entropy should be -100 or not less than 0.
+    if api_name == 'cross_entropy':
+        api_info_dict = cross_entropy_process(api_info_dict)
     return convert_type, api_info_dict
+
+def cross_entropy_process(api_info_dict):
+    """
+    Function Description:
+        Preprocesses the cross_entropy API information.
+    Parameter:
+        api_info_dict: argument of the API.
+    Return api_info_dict:
+        api_info_dict: Processed argument of the API.
+    """
+    if 'args' in api_info_dict and len(api_info_dict['args']) > 1 and 'Min' in api_info_dict['args'][1]:
+        if api_info_dict['args'][1]['Min'] <= 0:
+            api_info_dict['args'][1]['Min'] = 0 #The second argument in cross_entropy should be -100 or not less than 0.
+    return api_info_dict
