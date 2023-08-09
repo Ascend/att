@@ -62,25 +62,55 @@ def natural_sort(files):
     return sorted(files, key=alphanum_key)
 
 
-def get_timeline_info(input_path, prof_dirs):
+def get_timeline_info(args, prof_dirs):
     timeline_info = {}
 
     for prof in prof_dirs:
-        pro_path = os.path.join(input_path, prof)
+        pro_path = os.path.join(args.data, prof)
 
         # 从info.json读取rank_id
         rank_id = get_rank_id_from_info_json(pro_path)
+        ts_difference_us = get_absolute_ts_start_info(pro_path)
         if rank_id is None:
             print(f"WARN, There is not rank id info in {pro_path}")
             continue
 
-        tmp_path = os.path.realpath(os.path.join(pro_path, "timeline", "msprof.json"))
-        if os.path.exists(tmp_path):
-            timeline_info[rank_id] = tmp_path
+        timeline_path = get_timeline_path(pro_path, args.type)
+
+        if os.path.exists(timeline_path):
+            timeline_info[rank_id] = (timeline_path, ts_difference_us)
         else:
-            print(f"WARN, The file \"{tmp_path}\" does not exist.")
+            print(f"WARN, The file \"{timeline_path}\" does not exist.")
     return timeline_info
 
+
+def get_timeline_path(pro_path, type):
+    for root, dirs, files in os.walk(pro_path):
+        for dir_ in dirs:
+            if 'ASCEND_PROFILER_OUTPUT' == dir_ and type == 'pytorch':
+                timeline_path = os.path.realpath(os.path.join(root, dir_, 'trace_view.json'))
+                return timeline_path
+
+        for file_ in sorted(files, reverse=True):
+            if 'msprof' in file_:
+                timeline_path = os.path.join(root, file_)
+                return timeline_path
+    return
+
+def get_absolute_ts_start_info(pro_path) -> float:
+    for root, dirs, files in os.walk(pro_path):
+        for file in files:
+            if "start_info" in file and ".done" not in file:
+                start_json = os.path.join(root, file)
+                break
+    if start_json:
+        with open(start_json, "r+") as f:
+            info = json.load(f)
+        ts_us = float(info.get("collectionTimeBegin"), 0)
+        ts_ns = float(info.get("clockMonotonicRaw"), 0)
+        if not ts_us and not ts_ns:
+            return 0
+    return ts_us-ts_ns/1000
 
 def get_rank_id_from_info_json(pro_path):
     info_json = ""
@@ -98,11 +128,11 @@ def get_rank_id_from_info_json(pro_path):
     return rank_id
 
 
-def merge_timeline_general(timeline_info, args):
-
+def merge_timeline_general(args):
+    """合并e2e profiling生成的msprof*.json"""
+    prof_dir = get_path_dir(args.data)
+    timeline_info = get_timeline_info(args, prof_dir)
     timeline_files_dict = {}
-
-    node_time_diff = get_node_time_diff(args.timediff) if args.timediff else None
 
     # 合并部分profiling items
     process_list = args.items.split(",") if args.items else None
@@ -115,7 +145,7 @@ def merge_timeline_general(timeline_info, args):
 
     for rank_id in rank_ids:
         timeline_files_dict[rank_id] = timeline_info.get(rank_id)
-    merge_timeline_events(timeline_files_dict, process_list, node_time_diff)
+    merge_timeline_events(timeline_files_dict, process_list)
 
 
 def merge_timeline_custom(args):
@@ -123,25 +153,24 @@ def merge_timeline_custom(args):
     timeline_files = natural_sort(os.listdir(args.data))
     timeline_files_dict = {}
     for idx, timeline_file in enumerate(timeline_files):
-        timeline_files_dict[idx] = os.path.join(args.data, timeline_file)
-    node_time_diff = get_node_time_diff(args.timediff) if args.timediff else None
+        timeline_files_dict[idx] = (os.path.join(args.data, timeline_file),0)
     # 合并部分profiling items
     process_list = args.items.split(",") if args.items else None
-    merge_timeline_events(timeline_files_dict, process_list, node_time_diff)
+    merge_timeline_events(timeline_files_dict, process_list)
 
 
-def merge_timeline_events(timeline_file_dict, process_list, node_time_diff=None):
+def merge_timeline_events(timeline_file_dict, process_list):
     """
     输入需要合并的timeline文件路径及对应的rank_id/id、需要合并的process_list、校准时间差node_time_diff
     输出合并timeline
     """
     new_events = []
-    for rank_id, timeline_file_path in timeline_file_dict.items():
+    for rank_id, data_tuple in timeline_file_dict.items():
+        timeline_file_path = data_tuple[0]
+        ts_difference_us = data_tuple[1]
         node = rank_id // 8
         print("rank id: ", rank_id, "timeline file: ", timeline_file_path)
 
-        # 获取相应的时间差异
-        node_time = node_time_diff[node] if node_time_diff else None
         try:
             with open(timeline_file_path, 'r+') as f:
                 cur_events = json.load(f)
@@ -172,15 +201,14 @@ def merge_timeline_events(timeline_file_dict, process_list, node_time_diff=None)
                 continue
 
             # 当前节点间时间误差可用时，进行时间校准
-            if event.get("ts") and node_time:
-                event["ts"] = event["ts"] - node_time * 1000000
+            if event.get("ts") and ts_difference_us:
+                event["ts"] = event["ts"] + ts_difference_us
 
             # 区分不同rank的同一进程的pid
             if isinstance(event.get("pid"), (str, int)):
                 # 合并GPU profiling/ after timeline pid modify
-                # event["pid"] = int(event["pid"]) if event["pid"].isdigit() else event["pid"] + str(rank_id)
                 event["pid"] = int(''.join(x for x in str(event.get("pid")) if x.isdigit()) +
-                                   str(rank_id * MAX_INDEX_COUNT))
+                                   str(rank_id))
 
             # convert tid to int
             if isinstance(event.get("tid"), str):
@@ -206,20 +234,18 @@ def parse_args():
     parser.add_argument("--output", "-o", default=None, help="save path of msprof_merged.json ")
     parser.add_argument("--rank", default=None, help="List of ranks to be merged. By default, all ranks are merged")
     parser.add_argument("--items", default=None, help="Specify the data items to be merged. in the timeline.")
-    parser.add_argument("--custom", action="store_true", help="Customize the timeline file to be merged.")
+    parser.add_argument("--type", choices=('pytorch', 'e2e', 'custom'), help="Customize the timeline file to be merged.")
     arg = parser.parse_args()
     return arg
 
 
 if __name__ == "__main__":
     args = parse_args()
-    prof_dir = get_path_dir(args.data)
 
-    timeline_info = get_timeline_info(args.data, prof_dir)
     if not args.output:
         args.output = args.data
     print("========================== start merge timeline ====================")
-    if args.custom:
+    if args.type == "custom":
         merge_timeline_custom(args)
     else:
-        merge_timeline_general(timeline_info, args)
+        merge_timeline_general(args)
