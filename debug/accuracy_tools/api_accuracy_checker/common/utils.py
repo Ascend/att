@@ -558,18 +558,18 @@ def check_need_convert(api_name):
             convert_type = key
     return convert_type
 
-def api_info_preprocess(api_name, value):
+def api_info_preprocess(api_name, argument):
     """
     Function Description:
         Preprocesses the API information.
     Parameter:
         api_name: Name of the API.
-        value: Value of the API.
-    Return Value:
+        argument: argument of the API.
+    Return argument:
         convert_type: Type of conversion.
-        value: Processed value of the API.
+        argument: Processed argument of the API.
     """
     convert_type = check_need_convert(api_name)
-    if api_name == 'cross_entropy' and value['args'][1]['Min'] <=0:
-        value['args'][1]['Min'] = 0 #The second value in cross_entropy should be -100 or not less than 0.
-    return convert_type, value
+    if api_name == 'cross_entropy' and argument['args'][1]['Min'] <=0:
+        argument['args'][1]['Min'] = 0 #The second argument in cross_entropy should be -100 or not less than 0.
+    return convert_type, argument
