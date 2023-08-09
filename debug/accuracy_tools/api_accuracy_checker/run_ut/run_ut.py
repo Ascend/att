@@ -77,15 +77,15 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare.write_compare_csv()
 
 
-def run_torch_api(api_full_name, api_setting_dict, backward_content, argument):
+def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
     [api_type, api_name, _] = api_full_name.split("*")
-    convert_type, argument = api_info_preprocess(api_name, argument)
+    convert_type, api_info_dict = api_info_preprocess(api_name, api_info_dict)
     need_grad = True
-    if argument.get("kwargs") and "out" in argument.get("kwargs"):
+    if api_info_dict.get("kwargs") and "out" in api_info_dict.get("kwargs"):
         need_grad = False
     if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
         need_grad = False
-    args, kwargs = gen_api_params(argument, need_grad, convert_type)
+    args, kwargs = gen_api_params(api_info_dict, need_grad, convert_type)
     inplace = kwargs.get("inplace") if kwargs.get("inplace") else None
     need_backward = api_full_name in backward_content and api_name[-1] != "_" and inplace is not True
     need_backward = need_backward and need_grad
