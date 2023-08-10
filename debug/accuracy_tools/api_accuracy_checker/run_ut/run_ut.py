@@ -45,7 +45,8 @@ def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
         elif isinstance(arg_in, torch.Tensor):
             if need_backward and arg_in.requires_grad:
                 arg_in = arg_in.clone().detach().to("npu").requires_grad_()
-                arg_in = arg_in * 1
+                temp_arg_in = arg_in * 1
+                arg_in = temp_arg_in.type_as(arg_in)
                 arg_in.retain_grad()
                 return arg_in
             else:
