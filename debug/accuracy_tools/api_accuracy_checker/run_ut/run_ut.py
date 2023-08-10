@@ -4,6 +4,7 @@ import sys
 import torch_npu
 import yaml
 import torch
+from tqdm import tqdm
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert, \
     print_error_log
@@ -60,7 +61,7 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     backward_content = get_json_contents(backward_file)
     api_setting_dict = get_json_contents("torch_ut_setting.json")
     compare = Comparator(out_path)
-    for api_full_name, api_info_dict in forward_content.items():
+    for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
             grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
                                                                 api_info_dict)

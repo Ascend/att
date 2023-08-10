@@ -16,6 +16,10 @@
    ```
    export PYTHONPATH=$PYTHONPATH:{att_root}/debug/accuracy_tools/
    ```
+   安装依赖tqdm
+   ```
+   pip install tqdm
+   ```
 
 2. 在工具中加入以下代码使用工具dump模块，启动训练抓取网络所有API信息
 
