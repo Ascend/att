@@ -47,6 +47,7 @@ def gen_data(info, need_grad, convert_type):
             data = gen_random_tensor(info, convert_type)
         if info.get('requires_grad') and need_grad:
             data.requires_grad_(True)
+            data = data * 1
             data.retain_grad()
     else:
         data = info.get('value')
