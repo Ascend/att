@@ -81,11 +81,13 @@ class Const:
     WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
 
     CONVERT = {
-        "fp16_to_fp32": ["torch.float16", "torch.float32"]
+        "fp16_to_fp32": ["torch.float16", "torch.float32"],
+        "int32_to_int64": ["torch.int32", "torch.int64"]
     }
 
     CONVERT_API = {
-        "fp16_to_fp32": ["conv2d", "batch_norm", "relu", "max_pool2d", "interpolate", "group_norm", "layer_norm", "bmm", "tanh",  "cross_entropy", "linear", "numel"]
+        "fp16_to_fp32": ["conv2d", "batch_norm", "relu", "max_pool2d", "interpolate", "group_norm", "layer_norm", "bmm", "tanh",  "cross_entropy", "linear", "numel"],
+        "int32_to_int64": ["cross_entropy"]
     }
 
 class CompareConst:
