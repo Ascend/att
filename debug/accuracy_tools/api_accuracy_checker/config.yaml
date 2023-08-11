@@ -1,4 +1,4 @@
-dump_path: './api_info'
+dump_path: './'
 jit_compile: True
 compile_option: -O3
 compare_algorithm: cosine_similarity

@@ -22,6 +22,7 @@ import numpy as np
 from api_accuracy_checker.common.utils import Const, check_file_or_directory_path, check_object_type, print_warn_log, print_error_log, \
     CompareException
 
+TORCH_TYPE = ["torch.device", "torch.dtype"]
 TENSOR_DATA_LIST = ["torch.Tensor", "torch.nn.parameter.Parameter"]
 FLOAT_TYPE = ['torch.float32', 'torch.float', 'torch.float64', 'torch.double', 'torch.float16',
               'torch.half', 'torch.bfloat16']
@@ -46,6 +47,8 @@ def gen_data(info, need_grad, convert_type):
             data = gen_random_tensor(info, convert_type)
         if info.get('requires_grad') and need_grad:
             data.requires_grad_(True)
+            temp_data = data * 1
+            data = temp_data.type_as(data)
             data.retain_grad()
     else:
         data = info.get('value')
@@ -187,11 +190,18 @@ def gen_kwargs(api_info, convert_type=None):
             kwargs_params[key] = gen_list_kwargs(value, convert_type)
         elif value.get('type') in TENSOR_DATA_LIST:
             kwargs_params[key] = gen_data(value, False, convert_type)
-        elif value.get('type') == "torch.device":
-            kwargs_params[key] = torch.device(value.get('value'))
+        elif value.get('type') in TORCH_TYPE:
+            gen_torch_kwargs(kwargs_params, key, value)
         else:
             kwargs_params[key] = value.get('value')
     return kwargs_params
+
+
+def gen_torch_kwargs(kwargs_params, key, value):
+    if value.get('type') == "torch.device":
+        kwargs_params[key] = eval(value.get('type'))(value.get('value'))
+    else:
+        kwargs_params[key] = eval(value.get('value'))
 
 
 def gen_list_kwargs(kwargs_item_value, convert_type):
@@ -231,6 +241,6 @@ def gen_api_params(api_info, need_grad=True, convert_type=None):
     if api_info.get("args"):
         args_params = gen_args(api_info.get("args"), need_grad, convert_type)
     else:
-        print_error_log(f'Warning: No args in {api_info} ')
-        raise NotImplementedError()
+        print_warn_log(f'Warning: No args in {api_info} ')
+        args_params = []
     return args_params, kwargs_params

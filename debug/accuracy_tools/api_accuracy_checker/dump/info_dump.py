@@ -53,8 +53,19 @@ def initialize_output_json():
     check_file_or_directory_path(dump_path,True)
     files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
     if msCheckerConfig.real_data:
-        real_data_path = os.path.join(dump_path, 'real_data')
-        check_file_or_directory_path(real_data_path, True)
+        forward_real_data_path = os.path.join(dump_path, 'forward_real_data')
+        if os.path.exists(forward_real_data_path):
+            raise ValueError(f"file {forward_real_data_path} already exists, please remove it first")
+        else:
+            os.mkdir(forward_real_data_path, mode = 0o750)
+        check_file_or_directory_path(forward_real_data_path, True)
+
+        backward_real_data_path = os.path.join(dump_path, 'backward_real_data')
+        if os.path.exists(backward_real_data_path):
+            raise ValueError(f"file {backward_real_data_path} already exists, please remove it first")
+        else:
+            os.mkdir(backward_real_data_path, mode = 0o750)
+        check_file_or_directory_path(backward_real_data_path, True)
     for file in files:
         file_path = os.path.join(dump_path, file)
         if os.path.exists(file_path):

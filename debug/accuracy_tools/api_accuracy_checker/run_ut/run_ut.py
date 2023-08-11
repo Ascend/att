@@ -4,9 +4,14 @@ import sys
 import torch_npu
 import yaml
 import torch
+from tqdm import tqdm
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
-from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert
+from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
+    print_error_log
 from api_accuracy_checker.compare.compare import Comparator
+from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
+from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
+from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
 
 NO_GRAD_APIS = ["hardtanh"]
 
@@ -22,43 +27,36 @@ for f in dir(torch.nn.functional):
 
 def exec_api(api_type, api_name, args, kwargs):
     if api_type == "Functional":
-        out = eval(api_name)(*args, **kwargs)
+        functional_api = FunctionalOPTemplate(api_name, str, False)
+        out = functional_api.forward(*args, **kwargs)
     if api_type == "Tensor":
-        out = getattr(torch._C._TensorBase, str(api_name))(*args, **kwargs)
+        tensor_api = TensorOPTemplate(api_name, str, False)
+        out = tensor_api.forward(*args, **kwargs)
     if api_type == "Torch":
-        out = getattr(torch._C._VariableFunctionsClass, str(api_name))(*args, **kwargs)
+        torch_api = TorchOPTemplate(api_name, str, False)
+        out = torch_api.forward(*args, **kwargs)
     return out
 
 
 def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
-    npu_args = []
-    npu_kwargs = {}
-    if need_backward:
-        for arg_in in cpu_args:
-            arg_in = arg_to_npu(arg_in)
-            npu_args.append(arg_in)
-        for key, value in cpu_kwargs.items():
-            value = arg_to_npu(value)
-            npu_kwargs[key] = value
-    else:
-        for arg_in in cpu_args:
-            if isinstance(arg_in, torch.Tensor):
-                arg_in = arg_in.clone().detach().to("npu")
-            npu_args.append(arg_in)
-        for key, value in cpu_kwargs.items():
-            if isinstance(value, torch.Tensor):
-                value = value.clone().detach().to("npu")
-            npu_kwargs[key] = value
+    def recursive_arg_to_npu(arg_in):
+        if isinstance(arg_in, (list, tuple)):
+            return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
+        elif isinstance(arg_in, torch.Tensor):
+            if need_backward and arg_in.requires_grad:
+                arg_in = arg_in.clone().detach().to("npu").requires_grad_()
+                temp_arg_in = arg_in * 1
+                arg_in = temp_arg_in.type_as(arg_in)
+                arg_in.retain_grad()
+                return arg_in
+            else:
+                return arg_in.clone().detach().to("npu")
+        else:
+            return arg_in
+
+    npu_args = recursive_arg_to_npu(cpu_args)
+    npu_kwargs = {key: recursive_arg_to_npu(value) for key, value in cpu_kwargs.items()}
     return npu_args, npu_kwargs
-
-
-def arg_to_npu(arg_in):
-    if isinstance(arg_in, torch.Tensor) and arg_in.dtype in [torch.float, torch.float16,
-                                                             torch.float64] and arg_in.requires_grad:
-        arg_in = arg_in.clone().detach().to("npu").requires_grad_()
-    elif isinstance(arg_in, torch.Tensor):
-        arg_in = arg_in.clone().detach().to("npu")
-    return arg_in
 
 
 def run_ut(forward_file, backward_file, out_path, save_error_data):
@@ -67,22 +65,35 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     backward_content = get_json_contents(backward_file)
     api_setting_dict = get_json_contents("torch_ut_setting.json")
     compare = Comparator(out_path)
-    for api_full_name, api_info_dict in forward_content.items():
-        grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
-                                                             api_info_dict)
-        compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
+    for api_full_name, api_info_dict in tqdm(forward_content.items()):
+        try:
+            grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
+                                                                api_info_dict)
+            compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
+        except Exception as err:
+            [_, api_name, _] = api_full_name.split("*")
+            if "not implemented for 'Half'" in str(err):
+                print_warn_log(f"API {api_name} not support half tensor in CPU, please add {api_name} to CONVERT_API "
+                               f"'fp16_to_fp32' list in accuracy_tools/api_accuracy_check/common/utils.py file.")
+            elif "expected scalar type Long" in str(err):
+                print_warn_log(f"API {api_name} not support int32 tensor in CPU, please add {api_name} to CONVERT_API "
+                               f"'int32_to_int64' list in accuracy_tools/api_accuracy_check/common/utils.py file.")
+            else:
+                print_error_log(f"Run {api_full_name} UT Error: %s" % str(err))
 
     compare.print_pretest_result()
     compare.write_compare_csv()
 
 
-def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
+def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
     [api_type, api_name, _] = api_full_name.split("*")
-    convert_type = check_need_convert(api_name)
+    convert_type, api_info_dict = api_info_preprocess(api_name, api_info_dict)
     need_grad = True
+    if api_info_dict.get("kwargs") and "out" in api_info_dict.get("kwargs"):
+        need_grad = False
     if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
         need_grad = False
-    args, kwargs = gen_api_params(value, need_grad, convert_type)
+    args, kwargs = gen_api_params(api_info_dict, need_grad, convert_type)
     inplace = kwargs.get("inplace") if kwargs.get("inplace") else None
     need_backward = api_full_name in backward_content and api_name[-1] != "_" and inplace is not True
     need_backward = need_backward and need_grad
@@ -90,6 +101,8 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
         print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     grad_out, npu_grad_out = None, None
+    if kwargs.get("device"):
+        del kwargs["device"]
     out = exec_api(api_type, api_name, args, kwargs)
     npu_out = exec_api(api_type, api_name, npu_args, npu_kwargs)
     grad_input_index = api_setting_dict.get(api_name)
@@ -142,15 +155,22 @@ def _run_ut_parser(parser):
     parser.add_argument('-save_error_data', dest="save_error_data", action="store_true",
                         help="<optional> Save compare failed api output.", required=False)
     parser.add_argument("-c", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
-                        default=True, required=False)
+                        default=False, required=False)
+    parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
+                        default=0, required=False)
 
 
 def _run_ut():
     parser = argparse.ArgumentParser()
     _run_ut_parser(parser)
     args = parser.parse_args(sys.argv[1:])
-    if not args.jit_compile:
-        torch.npu.set_compile_mode(jit_compile=False)
+    torch.npu.set_compile_mode(jit_compile=args.jit_compile)
+    npu_device = "npu:" + str(args.device_id)
+    try:
+        torch.npu.set_device(npu_device)
+    except Exception:
+        print_error_log(f"Set NPU device id failed. device id is: {args.device_id}")
+        raise NotImplementedError
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
     if not forward_file.endswith(".json") or not backward_file.endswith(".json"):
