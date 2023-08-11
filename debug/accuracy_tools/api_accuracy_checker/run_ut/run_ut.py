@@ -76,7 +76,7 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
                 print_warn_log(f"API {api_name} not support half tensor in CPU, please add {api_name} to CONVERT_API "
                                f"'fp16_to_fp32' list in accuracy_tools/api_accuracy_check/common/utils.py file.")
             elif "expected scalar type Long" in str(err):
-                print_warn_log(f"API {api_name} not support half tensor in CPU, please add {api_name} to CONVERT_API "
+                print_warn_log(f"API {api_name} not support int32 tensor in CPU, please add {api_name} to CONVERT_API "
                                f"'int32_to_int64' list in accuracy_tools/api_accuracy_check/common/utils.py file.")
             else:
                 print_error_log(f"Run {api_full_name} UT Error: %s" % str(err))
