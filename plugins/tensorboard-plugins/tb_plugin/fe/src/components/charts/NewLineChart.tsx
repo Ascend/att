@@ -62,8 +62,8 @@ export const LineChart: React.FC<IProps> = (props) => {
     if (!element) return
     element.oncontextmenu = () => { return false }
 
+    echarts.init(element).dispose()
     let myChart = echarts.init(element)
-    myChart.clear()
 
     let option: echarts.EChartsOption = {
       title: {
@@ -99,16 +99,45 @@ export const LineChart: React.FC<IProps> = (props) => {
 
     if (deviceTarget === 'Ascend') {
       if (tag === 'Component') {
-        if (graph.columns.length === 3) {
+        const mixedTooltip: echarts.TooltipComponentOption = {
+          trigger: 'axis',
+          formatter: function (params: any) {
+            var res = `${params[0].name} <br/>`
+            for (const item of params) {
+              if (typeof item.value[item.encode.y[0]] === 'number') {
+                res += `<span style="background: ${item.color}; 
+                height:10px; 
+                width: 10px; 
+                border-radius: 50%;
+                display: inline-block;
+                margin-right:10px;">
+                </span> 
+                ${item.seriesName}: ${item.value[item.encode.y[0]]}<br/>`
+              }
+            }
+            return res
+          }
+        }
+        if (graph.columns.length <= 4) {
+          let finalRows = graph.rows['PTA']
+          if (graph.columns.length === 4) {
+            const mergedAPPRows = graph.rows['APP'].map((item: Array<number | null>) => {
+              return [item[0], null, null, item[1]]
+            })
+            finalRows = finalRows.concat(mergedAPPRows).sort((a: any, b: any) => {
+              return a[0] - b[0]
+            })
+          }
           option = {
             ...option,
+            tooltip: mixedTooltip,
             dataset: {
               source: [
                 graph.columns.map(column => column.name),
-                ...(graph.rows['PTA'] ?? graph.rows['GE'])
+                ...finalRows
               ]
             },
-            series: Array(2).fill(
+            series: Array(graph.columns.length - 1).fill(
               {
                 type: 'line',
                 select: {
@@ -127,35 +156,23 @@ export const LineChart: React.FC<IProps> = (props) => {
               }
             )
           }
-        } else if (graph.columns.length === 5) {
+        } else if (graph.columns.length <= 6) {
           const datasetTitle = graph.columns.map(item => item.name)
-          const mergedGERows = graph.rows['GE'].map((item: Array<number | null>) => {
+          let mergedGERows = graph.rows['GE'].map((item: Array<number | null>) => {
             return [item[0], null, null, item[1], item[2]]
           })
+          if (graph.columns.length === 6) {
+            const mergedAPPRows = graph.rows['APP'].map((item: Array<number | null>) => {
+              return [item[0], null, null, null, null, item[2]]
+            })
+            mergedGERows = mergedGERows.concat(mergedAPPRows)
+          }
           const finalRows = graph.rows['PTA'].concat(mergedGERows).sort((a: any, b: any) => {
             return a[0] - b[0]
           })
           option = {
             ...option,
-            tooltip: {
-              trigger: 'axis',
-              formatter: function (params: any) {
-                var res = `${params[0].name} <br/>`
-                for (const item of params) {
-                  if (typeof item.value[item.encode.y[0]] === 'number') {
-                    res += `<span style="background: ${item.color}; 
-                    height:10px; 
-                    width: 10px; 
-                    border-radius: 50%;
-                    display: inline-block;
-                    margin-right:10px;">
-                    </span> 
-                    ${item.seriesName}: ${item.value[item.encode.y[0]]}<br/>`
-                  }
-                }
-                return res
-              }
-            },
+            tooltip: mixedTooltip,
             dataset:
             {
               source: [
@@ -163,7 +180,7 @@ export const LineChart: React.FC<IProps> = (props) => {
                 ...finalRows
               ]
             },
-            series: Array(4).fill(
+            series: Array(graph.columns.length - 1).fill(
               {
                 type: 'line',
                 connectNulls: true,
@@ -310,14 +327,12 @@ export const LineChart: React.FC<IProps> = (props) => {
       dataZoomSelectActive: true
     })
 
-    myChart.off('dataZoom')
     myChart.on('dataZoom', (param: any) => {
       if (onSelectionChanged) {
         onSelectionChanged(param.batch[0].startValue, param.batch[0].endValue)
       }
     })
 
-    myChart.off('restore')
     myChart.on('restore', () => {
       if (onSelectionChanged) {
         // Set startId greater than endId to query all memory events.
@@ -325,7 +340,6 @@ export const LineChart: React.FC<IProps> = (props) => {
       }
     })
 
-    myChart.off('click')
     myChart.on('click', (param) => {
       myChart.dispatchAction({
         type: 'unselect',
@@ -341,7 +355,6 @@ export const LineChart: React.FC<IProps> = (props) => {
       selectedPoints.current = [param.dataIndex]
     })
 
-    myChart.off('contextmenu')
     myChart.getZr().on('contextmenu', () => {
       myChart.dispatchAction({
         type: 'restore'
