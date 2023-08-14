@@ -20,10 +20,6 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    ```
    pip3 install tqdm
    ```
-   安装依赖tqdm
-   ```
-   pip install tqdm
-   ```
 
 2. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
 
@@ -57,6 +53,17 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    注意：目前API通过测试的标准是每个输出与标杆比对的余弦相似度大于0.99，pretest_details.csv中的相对误差供用户分析时使用。
 
+
+## FAQ 
+1. 多卡训练dump结果只有一组json，这正确吗？
+答：正常来说，多卡训练应该能dump下来与卡数相当的数组json文件，每组都包含forward backward和stack信息。目前在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，用户需要在训练代码中添加打开工具开关的调用：
+
+```
+import api_accuracy_checker.dump as DP
+DP.dump.set_dump_switch("ON")
+```
+
+上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
 
 
 
