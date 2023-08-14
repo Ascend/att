@@ -47,7 +47,8 @@ class RunLoader(object):
         spans_by_workers = defaultdict(list)
         if self.device_target == 'Ascend':
             for path in io.listdir(self.run_dir):
-                if io.isdir(io.join(self.run_dir, path)) and utils.is_worker_span_dir(path):
+                if io.isdir(io.join(self.run_dir, path)) and utils.is_worker_span_dir(path) and io.isdir(
+                        io.join(self.run_dir, path, 'ASCEND_PROFILER_OUTPUT')):
                     data_path = io.join(self.run_dir, path, 'ASCEND_PROFILER_OUTPUT')
                     for file in io.listdir(data_path):
                         if utils.is_npu_trace_path(file) or str(file) in (

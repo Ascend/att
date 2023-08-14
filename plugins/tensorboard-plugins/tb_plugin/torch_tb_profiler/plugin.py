@@ -168,6 +168,9 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         view = request.args.get('view')
         self._validate(run=name, view=view)
         run = self._get_run(name)
+        # Required datas are in file 'trace_view.json' in Ascend.
+        if run.device_target == 'Ascend' and view == 'Overview':
+            view = 'Trace'
         return self.respond_as_json(run.get_workers(view))
 
     @wrappers.Request.application
