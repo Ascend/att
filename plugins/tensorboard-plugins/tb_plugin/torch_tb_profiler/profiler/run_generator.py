@@ -18,11 +18,16 @@
 #
 # Modifications: Add visualization of PyTorch Ascend profiling.
 # --------------------------------------------------------------------------
-from collections import OrderedDict, defaultdict
-from typing import Dict, Iterable, List
 import csv
+import json
+import re
+import io as sysio
+from collections import OrderedDict, defaultdict
+from json import JSONDecodeError
+from typing import Dict, Iterable, List
+import numpy as np
 
-from .. import consts, utils
+from .. import consts, utils, io
 from ..run import DistributedRunProfile, RunProfile
 from .data import DistributedRunProfileData, RunProfileData
 from .module_op import aggegate_module_view, aggegate_pl_module_view
@@ -100,6 +105,11 @@ class RunGenerator(object):
                 profile_run.memory_all_curve = self._get_memory_all_curve()
                 profile_run.memory_events = self._get_memory_event(peak_memory_events)
 
+            if self.profile_data.has_communication:
+                profile_run.views.append(consts.DISTRIBUTED_VIEW)
+                profile_run.step_to_overlap = self._npu_get_overlap()
+                profile_run.step_to_wait, profile_run.comm_op = self._npu_get_wait_table()
+
         if self.profile_data.has_trace:
             profile_run.views.append(consts.TRACE_VIEW)
             profile_run.trace_file_path = self.profile_data.trace_file_path
@@ -126,6 +136,99 @@ class RunGenerator(object):
             profile_run.views.append(consts.MODULE_VIEW)
 
         return profile_run
+
+    def _npu_get_overlap(self):
+        path = self.profile_data.distributed_csv_path
+        overlap_by_steps: Dict[str, List[float]] = OrderedDict()
+        data = RunGenerator._get_csv_data(path)
+        if len(data) <= 1:
+            return overlap_by_steps
+        title = [x.lower() for x in data[0]]
+        title_name = RunGenerator._check_overlap_data(title)
+        if title_name is None:
+            logger.error("Incomplete content of CSV file.")
+            return overlap_by_steps
+
+        for step in data[1:]:
+            key = step[0]
+            overlap = [float(step[int(title_name[0])]), float(step[int(title_name[1])]),
+                       float(step[int(title_name[2])]), float(step[int(title_name[3])])]
+            if key in overlap_by_steps:
+                overlap_by_steps[key] = list(np.add(overlap, overlap_by_steps[key]))
+            else:
+                overlap_by_steps[key] = list(overlap)
+        return overlap_by_steps
+
+    @staticmethod
+    def _check_overlap_data(title):
+        # csv: step / compute time / communication_not_overlap / overlap / communication / free time
+        length = len(title)
+        if length < 5:
+            return
+        key = ["compute time", "overlapped time", "communication time not overlapped", "free time"]
+        get_key = list()
+        for j in key:
+            for i in range(length):
+                if j == title[i]:
+                    get_key.append(i)
+        if len(get_key) < 4:
+            return None
+        return get_key
+
+    def _npu_get_wait_table(self):
+        path = self.profile_data.communication_json_path
+        if not io.exists(path):
+            raise FileNotFoundError(path)
+        data = io.read(path)
+        try:
+            communication_json = json.loads(data, strict=False)
+        except JSONDecodeError as e:
+            try:
+                communication_json = json.loads(data, strict=False)
+            except JSONDecodeError:
+                with sysio.StringIO() as fout:
+                    str_data = data.decode('utf-8')
+                    # only replace the N/A without surrounding double quote
+                    fout.write(re.sub(r'(?<!")N/A(?!")', "\"N/A\"", str_data))
+                    communication_json = json.loads(fout.getvalue())
+                    logger.warning('Get JSONDecodeError: %s, Re-encode it to temp file' % e.msg)
+
+        wait_by_step: Dict[str, Dict[str, float]] = OrderedDict()
+        table_ops: Dict[str, List[float]] = OrderedDict()
+        if len(communication_json) <= 0:
+            return wait_by_step, table_ops
+        for data in communication_json:
+            step = data.get("step_id")
+            collection_ops = data.get("collective")
+            p2p_ops = data.get("p2p")
+            coll_total_trans, coll_total_synchronize = RunGenerator._get_wait_table_by_ops(collection_ops, table_ops)
+            p2p_total_trans, p2p_total_synchronize = RunGenerator._get_wait_table_by_ops(p2p_ops, table_ops)
+
+            wait_by_step[step] = {
+                "trans": coll_total_trans + p2p_total_trans,
+                "Synchronize": coll_total_synchronize + p2p_total_synchronize
+            }
+        return wait_by_step, table_ops
+
+    @staticmethod
+    def _get_wait_table_by_ops(op, ops):
+        total_trans = 0
+        total_synchronize = 0
+        for key, data in op.items():
+            if str(key) == "Total Op Info" and data.get("Communication Time Info"):
+                total_trans += float(data.get("Communication Time Info").get("Transit Time(ms)"))
+                total_synchronize += float(data.get("Communication Time Info").get("Synchronization Time(ms)"))
+                continue
+            k = re.sub(r'[0-9]+', ' ', key).split(" ")[0]
+            if k not in ops:
+                ops[k] = [0, 0, 0, 0]
+            ops[k][0] += 1
+            for _, band in data.get("Communication Bandwidth Info").items():
+                ops[k][1] += float(band.get("Transit Size(MB)"))
+            if data.get("Communication Time Info") is not None:
+                ops[k][2] += data.get("Communication Time Info").get("Elapse Time(ms)")
+                ops[k][3] += data.get("Communication Time Info").get("Transit Time(ms)")
+        return total_trans, total_synchronize
 
     def _get_operator_details_by_name(self):
         operator_by_name = defaultdict(list)
@@ -967,9 +1070,10 @@ class RunGenerator(object):
 
 
 class DistributedRunGenerator(object):
-    def __init__(self, all_profile_data: Iterable[DistributedRunProfileData], span):
+    def __init__(self, all_profile_data: Iterable[DistributedRunProfileData], span, device_target):
         self.all_profile_data = all_profile_data
         self.span = span
+        self.device_target = device_target
 
     def generate_run_profile(self):
         profile_run = DistributedRunProfile(self.span)
@@ -1030,22 +1134,73 @@ class DistributedRunGenerator(object):
         for data in self.all_profile_data:
             steps_to_overlap['all'][data.worker] = [0, 0, 0, 0]
             step_number = len(data.steps_names)
-            for i, step_name in enumerate(data.steps_names):
-                steps_to_overlap.setdefault(step_name, OrderedDict())
-                costs = data.comm_overlap_costs[i]
-                steps_to_overlap[step_name][data.worker] = [
-                    costs.computation - costs.overlap,
-                    costs.overlap,
-                    costs.communication - costs.overlap,
-                    costs.other
-                ]
-                steps_to_overlap['all'][data.worker] = [
-                    sum(x) for x in zip(steps_to_overlap['all'][data.worker], steps_to_overlap[step_name][data.worker])]
+            if step_number <= 0:
+                return
+            if self.device_target != 'Ascend':
+                DistributedRunGenerator._get_gpu_overlap_data(data, steps_to_overlap)
+            else:
+                DistributedRunGenerator._get_npu_overlap_data(data, steps_to_overlap)
+
             steps_to_overlap['all'][data.worker] = [x / step_number for x in steps_to_overlap['all'][data.worker]]
         for k, v in steps_to_overlap.items():
             steps_to_overlap[k] = OrderedDict(sorted(v.items()))
         result['data'] = steps_to_overlap
         return result
+
+    @staticmethod
+    def _get_gpu_overlap_data(data, steps_to_overlap):
+        for i, step_name in enumerate(data.steps_names):
+            steps_to_overlap.setdefault(step_name, OrderedDict())
+            costs = data.comm_overlap_costs[i]
+            steps_to_overlap[step_name][data.worker] = [
+                costs.computation - costs.overlap,
+                costs.overlap,
+                costs.communication - costs.overlap,
+                costs.other
+            ]
+            steps_to_overlap['all'][data.worker] = [
+                sum(x) for x in zip(steps_to_overlap['all'][data.worker], steps_to_overlap[step_name][data.worker])]
+
+    @staticmethod
+    def _get_npu_overlap_data(data, steps_to_overlap):
+        steps = data.step_to_overlap
+        for k, v in steps.items():
+            steps_to_overlap.setdefault(k, OrderedDict())
+            # v: computation / overlap / communication_not_overlap / free time
+            # steps_to_overlap: computation_not_overlap / overlap / communication_not_overlap / other
+            steps_to_overlap[k][data.worker] = list([v[0] - v[1], v[1], v[2], v[3]])
+            steps_to_overlap['all'][data.worker] = [
+                sum(x) for x in zip(steps_to_overlap['all'][data.worker], steps_to_overlap[k][data.worker])]
+
+    @staticmethod
+    def _get_npu_wait_data(data, steps_to_wait):
+        step_number = len(data.step_to_wait)
+        if step_number <= 0:
+            return
+        steps = data.step_to_wait
+        for k, v in steps.items():
+            steps_to_wait.setdefault(k, OrderedDict())
+
+            trans = v.get('trans') * 1000  # 1ms = 1000us
+            wait = v.get('Synchronize') * 1000  # 1ms = 1000us
+            steps_to_wait[k][data.worker] = list([trans, wait])
+            steps_to_wait['all'][data.worker] = [
+                sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[k][data.worker])]
+        steps_to_wait['all'][data.worker] = [x / step_number for x in steps_to_wait['all'][data.worker]]
+
+    @staticmethod
+    def _get_gpu_wait_data(data, steps_to_wait):
+        step_number = len(data.step_comm_stats.values())
+        if step_number <= 0:
+            return
+        for step, comm_stats in data.step_comm_stats.items():
+            steps_to_wait.setdefault(step, OrderedDict())[data.worker] = [
+                comm_stats[1],
+                comm_stats[0] - comm_stats[1]
+            ]
+            steps_to_wait['all'][data.worker] = [
+                sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[step][data.worker])]
+        steps_to_wait['all'][data.worker] = [x / step_number for x in steps_to_wait['all'][data.worker]]
 
     def _generate_wait_graph(self):
         result = dict()
@@ -1059,16 +1214,10 @@ class DistributedRunGenerator(object):
         steps_to_wait['all'] = OrderedDict()
         for data in self.all_profile_data:
             steps_to_wait['all'][data.worker] = [0, 0]
-            step_number = len(data.step_comm_stats.values())
-            for step, comm_stats in data.step_comm_stats.items():
-                steps_to_wait.setdefault(step, OrderedDict())[data.worker] = [
-                    comm_stats[1],
-                    comm_stats[0] - comm_stats[1]
-                ]
-                steps_to_wait['all'][data.worker] = [
-                    sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[step][data.worker])]
-            steps_to_wait['all'][data.worker] = [x / step_number for x in steps_to_wait['all'][data.worker]]
-
+            if self.device_target != 'Ascend':
+                DistributedRunGenerator._get_gpu_wait_data(data, steps_to_wait)
+            else:
+                DistributedRunGenerator._get_npu_wait_data(data, steps_to_wait)
         for k, v in steps_to_wait.items():
             steps_to_wait[k] = OrderedDict(sorted(v.items()))
         result['data'] = steps_to_wait
@@ -1081,31 +1230,67 @@ class DistributedRunGenerator(object):
         # Ignore the span for distributed view
         for data in self.all_profile_data:
             table = {}
-            table['columns'] = [{'type': 'string', 'name': 'Name'}]
-            col_names = [
-                'Calls',
-                'Total Size (bytes)',
-                'Avg Size (bytes)',
-                'Total Latency (us)',
-                'Avg Latency (us)',
-                'Data Transfer Time (us)',
-                'Avg Data Transfer Time (us)'
-            ]
-            for column in col_names:
-                table['columns'].append({'type': 'number', 'name': column})
-            table['rows'] = []
-            for op, stats in data.total_comm_stats.items():
-                row = [
-                    op,
-                    stats[0],
-                    stats[1],
-                    round(stats[1] / stats[0]),
-                    stats[2],
-                    round(stats[2] / stats[0]),
-                    stats[3],
-                    round(stats[3] / stats[0])
-                ]
-                table['rows'].append(row)
+            if self.device_target != 'Ascend':
+                DistributedRunGenerator._get_gpu_table(data, table)
+            else:
+                DistributedRunGenerator._get_npu_table(data, table)
             workers_to_comm_ops[data.worker] = table
         result['data'] = OrderedDict(sorted(workers_to_comm_ops.items()))
         return result
+
+    @staticmethod
+    def _get_npu_table(data, table):
+        table['columns'] = [{'type': 'string', 'name': 'Name'}]
+        col_names = [
+            'Calls',
+            'Total Transit Size (bytes)',
+            'Avg Transit Size (bytes)',
+            'Elapse Time (us)',
+            'Avg Elapse Time (us)',
+            'Transit Time (us)',
+            'Avg Transit Time (us)'
+        ]
+        for column in col_names:
+            table['columns'].append({'type': 'number', 'name': column})
+        table['rows'] = []
+        ops = data.comm_op
+        for op, stats in ops.items():
+            row = [
+                op,
+                stats[0],
+                stats[1],
+                round(stats[1] * 1024 * 1024 / stats[0]),  # 1MB = 1024 * 1024 bytes
+                stats[2],
+                round(stats[2] * 1000 / stats[0]),  # 1ms = 1000us
+                stats[3],
+                round(stats[3] * 1000 / stats[0])  # 1ms = 1000us
+            ]
+            table['rows'].append(row)
+
+    @staticmethod
+    def _get_gpu_table(data, table):
+        table['columns'] = [{'type': 'string', 'name': 'Name'}]
+        col_names = [
+            'Calls',
+            'Total Size (bytes)',
+            'Avg Size (bytes)',
+            'Total Latency (us)',
+            'Avg Latency (us)',
+            'Data Transfer Time (us)',
+            'Avg Data Transfer Time (us)'
+        ]
+        for column in col_names:
+            table['columns'].append({'type': 'number', 'name': column})
+        table['rows'] = []
+        for op, stats in data.total_comm_stats.items():
+            row = [
+                op,
+                stats[0],
+                stats[1],
+                round(stats[1] / stats[0]),
+                stats[2],
+                round(stats[2] / stats[0]),
+                stats[3],
+                round(stats[3] / stats[0])
+            ]
+            table['rows'].append(row)

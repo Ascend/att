@@ -128,6 +128,14 @@ class RunProfileData(object):
         # npu operator data
         self.operator_path: str = None
 
+        # npu communication data
+        self.distributed_csv_path: str = None
+        self.communication_json_path: str = None
+
+        self.step_to_overlap = None
+        self.step_to_wait = None
+        self.comm_op = None
+
     @staticmethod
     def parse_gpu(worker, span, path, cache_dir):
         trace_path, trace_json, _ = RunProfileData._preprocess_file(path, cache_dir, 'GPU')
@@ -145,6 +153,8 @@ class RunProfileData(object):
         has_kernel = False
         has_memory_record = False
         has_memory_operator = False
+        has_communication_overlap = False
+        has_communication_wait_ops = False
         for file in io.listdir(path):
             if utils.is_npu_trace_path(file):
                 has_trace = True
@@ -170,8 +180,16 @@ class RunProfileData(object):
             if str(file) == 'operator_details.csv':
                 profile.has_operator_view = True
                 profile.operator_path = io.join(path, file)
+            if str(file) == 'step_trace_time.csv':
+                has_communication_overlap = True
+                profile.distributed_csv_path = io.join(path, file)
+            if str(file) == 'communication.json':
+                has_communication_wait_ops = True
+                profile.communication_json_path = io.join(path, file)
+
         profile.has_kernel = has_kernel
         profile.has_memory = has_memory_operator and has_memory_record
+        profile.has_communication = has_communication_wait_ops and has_communication_overlap
         return profile
 
     @staticmethod
@@ -424,6 +442,10 @@ class DistributedRunProfileData:
         self.used_devices = run_profile_data.used_devices
         self.device_props = run_profile_data.device_props
         self.distributed_info = run_profile_data.distributed_info
+
+        self.step_to_overlap = run_profile_data.step_to_overlap
+        self.step_to_wait = run_profile_data.step_to_wait
+        self.comm_op = run_profile_data.comm_op
 
         self.total_comm_stats = None
         self.step_comm_stats = None

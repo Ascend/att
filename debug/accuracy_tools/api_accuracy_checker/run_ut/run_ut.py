@@ -4,8 +4,9 @@ import sys
 import torch_npu
 import yaml
 import torch
+from tqdm import tqdm
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
-from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, check_need_convert, \
+from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
     print_error_log
 from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
@@ -43,7 +44,11 @@ def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
             return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
         elif isinstance(arg_in, torch.Tensor):
             if need_backward and arg_in.requires_grad:
-                return arg_in.clone().detach().to("npu").requires_grad_()
+                arg_in = arg_in.clone().detach().to("npu").requires_grad_()
+                temp_arg_in = arg_in * 1
+                arg_in = temp_arg_in.type_as(arg_in)
+                arg_in.retain_grad()
+                return arg_in
             else:
                 return arg_in.clone().detach().to("npu")
         else:
@@ -60,16 +65,19 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     backward_content = get_json_contents(backward_file)
     api_setting_dict = get_json_contents("torch_ut_setting.json")
     compare = Comparator(out_path)
-    for api_full_name, api_info_dict in forward_content.items():
+    for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
             grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
                                                                 api_info_dict)
             compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
         except Exception as err:
+            [_, api_name, _] = api_full_name.split("*")
             if "not implemented for 'Half'" in str(err):
-                [_, api_name, _] = api_full_name.split("*")
                 print_warn_log(f"API {api_name} not support half tensor in CPU, please add {api_name} to CONVERT_API "
                                f"'fp16_to_fp32' list in accuracy_tools/api_accuracy_check/common/utils.py file.")
+            elif "expected scalar type Long" in str(err):
+                print_warn_log(f"API {api_name} not support int32 tensor in CPU, please add {api_name} to CONVERT_API "
+                               f"'int32_to_int64' list in accuracy_tools/api_accuracy_check/common/utils.py file.")
             else:
                 print_error_log(f"Run {api_full_name} UT Error: %s" % str(err))
 
@@ -77,15 +85,15 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare.write_compare_csv()
 
 
-def run_torch_api(api_full_name, api_setting_dict, backward_content, value):
+def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
     [api_type, api_name, _] = api_full_name.split("*")
-    convert_type = check_need_convert(api_name)
+    convert_type, api_info_dict = api_info_preprocess(api_name, api_info_dict)
     need_grad = True
-    if value.get("kwargs") and "out" in value.get("kwargs"):
+    if api_info_dict.get("kwargs") and "out" in api_info_dict.get("kwargs"):
         need_grad = False
     if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
         need_grad = False
-    args, kwargs = gen_api_params(value, need_grad, convert_type)
+    args, kwargs = gen_api_params(api_info_dict, need_grad, convert_type)
     inplace = kwargs.get("inplace") if kwargs.get("inplace") else None
     need_backward = api_full_name in backward_content and api_name[-1] != "_" and inplace is not True
     need_backward = need_backward and need_grad
