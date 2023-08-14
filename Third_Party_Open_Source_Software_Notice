@@ -13,6 +13,19 @@ Copyright (c) Facebook, Inc. and its affiliates. All rights reserved.
 All contributions by Microsoft:
 Copyright (c) Microsoft Corporation. (The Azure AI Platform team)
 
+Copyright Notice and License Texts 
+Software: PyTorch 1.8.1
+
+Copyright (c) 2016-     Facebook, Inc            (Adam Paszke)
+Copyright (c) 2014-     Facebook, Inc            (Soumith Chintala)
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
@@ -26,143 +39,7 @@ are permitted provided that the following conditions are met:
  * Neither the name Facebook nor the names of its contributors may be used to
    endorse or promote products derived from this software without specific
    prior written permission.
-
-Copyright Notice and License Texts 
-Software: pytorch v2.0.0
-Copyright notice:
-(C) Copyright John Maddock 2006.
-Copyright (c) 2017-2018 Advanced Micro Devices, Inc. 
-Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
-Copyright (C) 2000-2017 Julian Seward.
-Copyright (C) 2001-2019 Free Software Foundation, Inc.
-Copyright (C) 2003-2017 Josef Weidendorfer.
-Copyright (C) 2006 The Android Open Source Project
-Copyright (C) 2007-2017 Free Software Foundation, Inc.
-Copyright (C) 2011 - 2012 Andrzej Krzemienski.
-Copyright (C) 2012 Giovanni Garberoglio Interdisciplinary Laboratory for Computational Science (LISC)
-Copyright (C) 2017 The Android Open Source Project
-Copyright (C) 2018 Marat Dukhan
-Copyright (C) Björn Fahller
-Copyright (c) 1994 Hewlett-Packard Company
-Copyright (c) 1996-1998 Silicon Graphics Computer Systems, Inc.
-Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 Python Software Foundation; All Rights Reserved
-Copyright (c) 2001-2002 Enthought, Inc.  2003-2019, SciPy Developers.
-Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
-Copyright (c) 2005-2010 ActiveState Software Inc.
-Copyright (c) 2005-2017, NumPy Developers.
-Copyright (c) 2005-2022 NVIDIA Corporation Built on ThuFeb1018:23:41PST2022 Cuda compilation tools, release 11.6, V11.6.112
-Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
-Copyright (c) 2006, Laurent Montel, <montel@kde.org>
-Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
-Copyright (c) 2007-2009 Scientific Computing and Imaging Institute, University of Utah
-Copyright (c) 2008 - 2009 NVIDIA Corporation.
-Copyright (c) 2008 - 2012 The Khronos Group Inc.
-Copyright (c) 2008-2012 The Khronos Group Inc.
-Copyright (c) 2008-2013 The Khronos Group Inc.
-Copyright (c) 2008-2015 The Khronos Group Inc.
-Copyright (c) 2010 ActiveState Software Inc.
-Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
-Copyright (c) 2011-2013 NYU                      (Clement Farabet)
-Copyright (c) 2011-2013 NYU (Clement Farabet)
-Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
-Copyright (c) 2011-2019 Stephan Brumme.
-Copyright (c) 2011-2021, NVIDIA CORPORATION.
-Copyright (c) 2012 Massachusetts Institute of Technology
-Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
-Copyright (c) 2013 Eddy Petrișor
-Copyright (c) 2014 Indiana University
-Copyright (c) 2014 Matthew Rocklin
-Copyright (c) 2014, 2015, The Regents of the University of California (Regents)
-Copyright (c) 2014, 2015, the respective contributors
-Copyright (c) 2014, The Regents of the University of California (Regents)
-Copyright (c) 2014, the respective contributors
-Copyright (c) 2014-     Facebook, Inc            (Soumith Chintala)
-Copyright (c) 2014-2015 The Khronos Group Inc.
-Copyright (c) 2014-2017 The Regents of the University of California (Regents)
-Copyright (c) 2014-2017, the respective contributors
-Copyright (c) 2015 Google Inc.
-Copyright (c) 2015 Melissa E. O'Neill
-Copyright (c) 2015 Yangqing Jia
-Copyright (c) 2015-2016 Advanced Micro Devices, Inc.
-Copyright (c) 2015-2017 The Khronos Group Inc.
-Copyright (c) 2016 Facebook Inc.
-Copyright (c) 2016 Microsoft Licensed under The MIT License [see r-fcnLICENSE for details]
-Copyright (c) 2016, NVIDIA CORPORATION, All rights reserved
-Copyright (c) 2016, NVIDIA CORPORATION, All rights reserved Distributed under 2-clause BSD license; see accompanying LICENSE file
-Copyright (c) 2016-     Facebook, Inc            (Adam Paszke)
-Copyright (c) 2016-2017, ARM Limited and Contributors
-Copyright (c) 2016-present, Facebook Inc.
-Copyright (c) 2016-present, Facebook, Inc.
-Copyright (c) 2017 - 2022 NVIDIA CORPORATION & AFFILIATES.  SPDX-License-Identifier: BSD-3-Clause
-Copyright (c) 2017 Georgia Institute of Technology
-Copyright (c) 2017 Microsoft Licensed under The Apache-2.0 License [see LICENSE for details]
-Copyright (c) 2017 by Contributors \file dlpack.h \brief The common header of DLPack.
-Copyright (c) 2017-2018 Facebook Inc.
-Copyright (c) 2017-present, Facebook, Inc.
-Copyright (c) 2018 MathInf GmbH, Thomas Viehmann Licensed under the BSD-3-Clause license This is the CPU implementation of the Connectionist Temporal Loss.
-Copyright (c) 2018 MathInf GmbH, Thomas Viehmann Licensed under the BSD-3-Clause license This is the GPU implementation of the Connectionist Temporal Loss.
-Copyright (c) 2018, Steven Moshier
-Copyright (c) 2018-present, Facebook, Inc.
-Copyright (c) 2019 NumPy Developers
-Copyright (c) 2022 Cruise LLC.
-Copyright (c) 2022, Tri Dao.
-Copyright (c) Edward Z. Yang <ezyang@mit.edu>
-Copyright (c) Facebook Inc. and Microsoft Corporation.
-Copyright (c) Facebook, Inc. and its affiliates.
-Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-Copyright (c) Meta Platforms, Inc. and affiliates
-Copyright (c) Meta Platforms, Inc. and affiliates Owner(s): ["oncall: distributed"]
-Copyright (c) Meta Platforms, Inc. and affiliates flake8: noqa
-Copyright (c) Meta Platforms, Inc. and affiliates from .matrixops import    noqa: F403
-Copyright (c) Meta Platforms, Inc. and affiliates from abc import ABC, abstractmethod from typing import Optional, Union
-Copyright (c) Meta Platforms, Inc. and affiliates from dataclasses import dataclass from typing import Callable, cast, Dict, Iterable, Optional, Sequence, Set, Tuple, Union
-Copyright (c) Meta Platforms, Inc. and affiliates from torch.distributed.tensor.parallel.api import parallelizemodule from torch.distributed.tensor.parallel.multiheadattentiontp import (
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import Callable, cast, Dict, Tuple, Union, Optional
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import Callable, cast, Optional, Sequence
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import Dict, Tuple
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import Dict, Union
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import Tuple, Union
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import cast
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import cast, Dict, List, Optional, Sequence, Tuple
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import cast, Dict, List, Sequence, Tuple
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import cast, List, Optional, Sequence, Tuple
-Copyright (c) Meta Platforms, Inc. and affiliates from typing import cast, Optional, Sequence
-Copyright (c) Meta Platforms, Inc. and affiliates implement matrix related ops for distributed tensor
-Copyright (c) Meta Platforms, Inc. and affiliates import copy import warnings from typing import Callable, cast, Dict, Optional, Sequence
-Copyright (c) Meta Platforms, Inc. and affiliates import dataclasses import logging from typing import Dict, List
-Copyright (c) Meta Platforms, Inc. and affiliates import functools import operator from typing import Iterable, List, Sequence, Union
-Copyright (c) Meta Platforms, Inc. and affiliates import os import warnings from typing import List, Optional, Sequence, TypeVar, Union
-Copyright (c) Meta Platforms, Inc. and affiliates import torch
-Copyright (c) Meta Platforms, Inc. and affiliates pyre-ignore-all-errors[6]
-Copyright (c) Meta Platforms, Inc. and affiliates.
-Copyright (c) Meta Platforms, Inc. and its affiliates.
-Copyright 2004-present Facebook. All Rights Reserved.
-Copyright 2005 Robert Kern (robert.kern@gmail.com)
-Copyright 2005, Google Inc.
-Copyright 2006, Google Inc.
-Copyright 2008 Google Inc.
-Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
-Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC All Rights Reserved.
-Copyright 2013 Conrad Steenberg <conrad.steenberg@gmail.com>
-Copyright 2013-2014 RAD Game Tools and Valve Software
-Copyright 2015 Google Inc. All Rights Reserved.
-Copyright 2015 The Gemmlowp Authors. All Rights Reserved.
-Copyright 2016 Facebook @author Tudor Bosman (tudorb@fb.com)
-Copyright 2016 Martin Raiber All Rights Reserved.
-Copyright 2019 Kakao Brain
-Copyright 2019-2020 Kakao Brain
-Copyright 2022 Cruise LLC import logging import warnings from collections import OrderedDict from typing import Union, Iterable, Dict
-Copyright Malte Skarupke 2017.
-Copyright Michael Park, 2015-2017
-Copyright © 1995-2011 by Fredrik Lundh
-Copyright © 1997-2011 by Secret Labs AB
-Copyright © 2001-2014 Python Software Foundation; All Rights Reserved
-Copyright © 2005-2020 Rich Felker, et al.
-Copyright © 2010-2022 by Alex Clark and contributors
-Copyright © 2022 Apple Inc.
-Copyright © 2023 Apple Inc.
-Copyright(c) 2013, 2014, 2015, the respective contributors
-Copyright(c) 2015, 2016 the respective contributors
+   
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -174,3 +51,4 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
 ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
