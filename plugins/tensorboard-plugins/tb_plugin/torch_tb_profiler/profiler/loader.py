@@ -52,7 +52,7 @@ class RunLoader(object):
                     data_path = io.join(self.run_dir, path, 'ASCEND_PROFILER_OUTPUT')
                     for file in io.listdir(data_path):
                         if utils.is_npu_trace_path(file) or str(file) in (
-                                'kernel_details.csv', 'memory_record.csv', 'operator_memory.csv',
+                                'kernel_details.csv', 'memory_record.csv', 'memory_record.csv',
                                 'operator_details.csv'):
                             match = consts.WORKER_SPAN_PATTERN.match(path)
                             worker = match.group(1)

@@ -314,6 +314,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
         memoryCurveDataAllRef.current = allCurveData
         setDevice(allCurveData.default_device)
         setDevices(allCurveData.devices)
+        setTag('Operator')
       } else {
         setMemoryCurveData(resp as MemoryCurveData)
       }
