@@ -32,6 +32,7 @@ class Comparator:
         self.register_compare_algorithm("Max Relative Error", get_max_rel_err, None)
         self.register_compare_algorithm("Default: isEqual", compare_builtin_type, None)
         self.test_results = []
+        self.test_seg_results = []
         self.test_result_cnt = {
             "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0
         }
