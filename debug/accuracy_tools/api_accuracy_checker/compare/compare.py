@@ -3,13 +3,15 @@ import os
 from prettytable import PrettyTable
 from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, \
     compare_builtin_type
-from api_accuracy_checker.common.utils import get_json_contents, print_error_log, print_info_log, write_csv
+from api_accuracy_checker.common.utils import get_json_contents, print_error_log, print_info_log, write_csv, write_seg_csv
 from api_accuracy_checker.compare.compare_utils import CompareConst 
 
 
 class Comparator:
     TEST_FILE_NAME = "pretest_result.csv"
     DETAIL_TEST_FILE_NAME = "pretest_details.csv"
+    TEST_SEG_FILE_NAME = "pretest_result_seg.csv"
+    DETAIL_TEST_SEG_FILE_NAME = "pretest_details_seg.csv"
     # consts for result csv 
     COLUMN_API_NAME = "API name"
     COLUMN_FORWARD_SUCCESS = "Forward Test Success"
@@ -19,6 +21,8 @@ class Comparator:
     def __init__(self, result_save_path, stack_info_json_path=None):
         self.save_path = os.path.join(result_save_path, self.TEST_FILE_NAME)
         self.detail_save_path = os.path.join(result_save_path, self.DETAIL_TEST_FILE_NAME)
+        self.seg_save_path = os.path.join(result_save_path, self.TEST_SEG_FILE_NAME)
+        self.seg_detail_save_path = os.path.join(result_save_path, self.DETAIL_TEST_SEG_FILE_NAME)
         if stack_info_json_path:
             self.stack_info = get_json_contents(stack_info_json_path)
         else:
@@ -84,8 +88,43 @@ class Comparator:
 
         write_csv(test_rows, self.detail_save_path)
 
+    def write_seg_summary_csv(self):
+        test_rows = []
+        if self.stack_info:
+            test_rows[0].append(self.COLUMN_STACK_INFO)
+        for result in self.test_seg_results:
+            name = result[0]
+            df_row = list(result[:3])
+            if self.stack_info:
+                stack_info = "\n".join(self.stack_info[name])
+                df_row.append(stack_info)
+            test_rows.append(df_row)
+        write_seg_csv(test_rows, self.seg_save_path)
+
+    def write_seg_detail_csv(self):
+        test_rows = []
+        for test_result in self.test_seg_results:
+            subject_prefix = test_result[0]
+            fwd_result = test_result[3]
+            bwd_result = test_result[4]
+            if isinstance(fwd_result, list):
+                for i, test_subject in enumerate(fwd_result):
+                    subject = subject_prefix + ".forward.output." + str(i)
+                    test_rows.append([subject] + list(test_subject))
+            if isinstance(bwd_result, list):
+                for i, test_subject in enumerate(bwd_result):
+                    subject = subject_prefix + ".backward.output." + str(i)
+                    test_rows.append([subject] + list(test_subject))
+
+        write_seg_csv(test_rows, self.seg_detail_save_path)
+
     def record_results(self, *args):
         self.test_results.append(args)
+        self.test_seg_results.append(args)
+        if len(self.test_seg_results) == 100:
+            self.write_seg_summary_csv()
+            self.write_seg_detail_csv()
+            self.test_seg_results = []
 
     def register_compare_algorithm(self, name, compare_func, standard):
         self.compare_alg.update({name: (compare_func, standard)})
