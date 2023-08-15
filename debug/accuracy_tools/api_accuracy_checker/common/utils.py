@@ -190,6 +190,10 @@ def write_csv(data, filepath):
     data_frame = pd.DataFrame(columns=data)
     data_frame.to_csv(filepath, index=False)
 
+def write_seg_csv(data, filepath):
+    data_frame = pd.DataFrame(columns=data)
+    data_frame.to_csv(filepath, mode='a', index=False)
+
 def _print_log(level, msg):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
     pid = os.getgid()
