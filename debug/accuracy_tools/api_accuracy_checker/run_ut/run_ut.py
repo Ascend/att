@@ -83,6 +83,8 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
 
     compare.print_pretest_result()
     compare.write_compare_csv()
+    compare.write_seg_summary_csv()
+    compare.write_seg_detail_csv()
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
