@@ -65,9 +65,10 @@ class Run(object):
                 if v.display_name == view:
                     worker_set.add(profile.worker)
                     if not temp_span_view.get(profile.worker):
-                        temp_span_view[profile.worker] = [str(profile.span)]
+                        temp_span_view[profile.worker] = [str(profile.span) if profile.span is not None else 'default']
                     else:
-                        temp_span_view[profile.worker].append(str(profile.span))
+                        temp_span_view[profile.worker].append(
+                            str(profile.span) if profile.span is not None else 'default')
                     break
         self.span_view = temp_span_view
         return sorted(list(worker_set))
@@ -210,7 +211,7 @@ class RunProfile(object):
                 {'name': f'Self Size Increase ({cano.memory_metric})', 'type': 'number',
                  'tooltip': 'The memory increase size associated with the operator itself.'},
                 {'name': 'Allocation Count', 'type': 'number',
-                    'tooltip': 'The allocation count including all chidren operators.'},
+                 'tooltip': 'The allocation count including all chidren operators.'},
                 {'name': 'Self Allocation Count', 'type': 'number',
                  'tooltip': 'The allocation count belonging to the operator itself.'},
                 {'name': f'Allocation Size ({cano.memory_metric})', 'type': 'number',
@@ -496,6 +497,7 @@ class RunProfile(object):
             parent.append(d)
             for child in node.children:
                 traverse_node(d['children'], child)
+
         traverse_node(result, root)
         return result[0]
 
