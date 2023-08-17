@@ -106,7 +106,6 @@ class RunGenerator(object):
                 profile_run.memory_events = self._get_memory_event(peak_memory_events)
 
             if self.profile_data.has_communication:
-                profile_run.views.append(consts.DISTRIBUTED_VIEW)
                 profile_run.step_to_overlap = self._npu_get_overlap()
                 profile_run.step_to_wait, profile_run.comm_op = self._npu_get_wait_table()
 
