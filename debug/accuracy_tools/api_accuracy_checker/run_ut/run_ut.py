@@ -63,7 +63,7 @@ def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
     return npu_args, npu_kwargs
 
 
-def run_ut(forward_file, backward_file, out_path, save_error_data):
+def run_ut(forward_file, backward_file, out_path, save_error_data, save_biased_data):
     print_info_log("start UT test")
     forward_content = get_json_contents(forward_file)
     backward_content = get_json_contents(backward_file)
@@ -73,7 +73,7 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
         try:
             grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
                                                                 api_info_dict)
-            compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
+            compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out, save_biased_data)
         except Exception as err:
             [_, api_name, _] = api_full_name.split("*")
             if "not implemented for 'Half'" in str(err):
@@ -171,6 +171,8 @@ def _run_ut_parser(parser):
                         default=False, required=False)
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
                         default=0, required=False)
+    parser.add_argument('-save_biased_data', dest="save_biased_data", action="store_true",
+                        help="<optional> Save compare biased api output.", required=False)
 
 
 def _run_ut():
@@ -190,7 +192,8 @@ def _run_ut():
         raise ValueError("The forward_input_file and backward_input_file should be a json file!")
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     save_error_data = args.save_error_data
-    run_ut(forward_file, backward_file, out_path, save_error_data)
+    save_biased_data = args.save_biased_data
+    run_ut(forward_file, backward_file, out_path, save_error_data, save_biased_data)
 
 
 if __name__ == '__main__':

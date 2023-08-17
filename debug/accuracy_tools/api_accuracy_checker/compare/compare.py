@@ -2,7 +2,7 @@
 import os
 from prettytable import PrettyTable
 from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, \
-    compare_builtin_type
+    compare_builtin_type, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
 from api_accuracy_checker.common.utils import get_json_contents, print_error_log, print_info_log, write_csv
 from api_accuracy_checker.compare.compare_utils import CompareConst 
 
@@ -26,11 +26,14 @@ class Comparator:
         self.compare_alg = {}
         self.register_compare_algorithm("Cosine Similarity", cosine_sim, cosine_standard)
         self.register_compare_algorithm("Max Relative Error", get_max_rel_err, None)
+        self.register_compare_algorithm("Thousandth Relative Error Ratio", get_rel_err_ratio_thousandth, None)
+        self.register_compare_algorithm("Ten Thousandth Relative Error Ratio", get_rel_err_ratio_ten_thousandth, None)
         self.register_compare_algorithm("Default: isEqual", compare_builtin_type, None)
         self.test_results = []
         self.test_result_cnt = {
             "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0
         }
+        self.result_save_path = result_save_path
 
     def print_pretest_result(self):
         res_dict = {
@@ -66,6 +69,8 @@ class Comparator:
         test_rows = [[
             "Subject", "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
             "Max Rel Error", "Max Rel Err Pass", "Max Rel Err Message",
+            "Thousandth Rel Error Ratio", "Thousandth Rel Error Ratio Pass", "Thousandth Rel Error Ratio Message",
+            "Ten Thousandth Rel Error Ratio", "Ten Thousandth Rel Error Ratio Pass", "Ten Thousandth Rel Error Ratio Message",
             "Compare Builtin Type", "Builtin Type Pass",
             "Builtin Type Message"
         ]]  
@@ -90,7 +95,7 @@ class Comparator:
     def register_compare_algorithm(self, name, compare_func, standard):
         self.compare_alg.update({name: (compare_func, standard)})
 
-    def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None):
+    def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None, save_biased_data=False):
         if "dropout" in api_name:
             is_fwd_success, fwd_compare_alg_results = self._compare_dropout(bench_out, npu_out)    
         else:
@@ -111,6 +116,20 @@ class Comparator:
             self.test_result_cnt['forward_fail_num'] += 1
         else:
             self.test_result_cnt['backward_fail_num'] += 1
+        if (not is_fwd_success or not is_bwd_success) and save_biased_data:
+            self.save_biased_data(self.result_save_path, api_name, bench_out, npu_out)
+
+
+    def save_biased_data(self, save_path, api_name, bench_out, npu_out):
+        biased_data_dir = os.path.join(save_path, 'biased_data_out')
+        if not os.path.exists(biased_data_dir):
+            os.mkdir(biased_data_dir, mode=0o750)
+        bench_out_path = os.path.join(biased_data_dir, f'{api_name}_bench_out.npy')
+        npu_out_path = os.path.join(biased_data_dir, f'{api_name}_npu_out.npy')
+        np.save(bench_out_path, bench_out.contiguous().cpu().detach().numpy())
+        np.save(npu_out_path, npu_out.contiguous().cpu().detach().numpy())
+
+
 
     def _compare_core_wrapper(self, bench_out, npu_out):
         detailed_result_total = []
@@ -118,7 +137,7 @@ class Comparator:
         for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
             detailed_result, test_success = compare_core(bench_out, npu_out, alg)
-            if name != "Max Relative Error":
+            if name not in ["Max Relative Error", "Thousandth Relative Error Ratio", "Ten Thousandth Relative Error Ratio"]:
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):

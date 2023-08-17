@@ -29,7 +29,7 @@ def compare_bool_tensor(cpu_output, npu_output):
     return error_rate, error_rate < 0.001, ""
 
 
-def get_max_rel_err(n_value, b_value):
+def get_msg_and_handle_value(n_value, b_value):
     msg = ""
     if not isinstance(n_value, np.ndarray) or not isinstance(b_value, np.ndarray):
         msg = f"Max rel err only support numpy array! The actual type is {type(n_value)}, {type(b_value)}."
@@ -52,10 +52,30 @@ def get_max_rel_err(n_value, b_value):
         zero_mask = (b_value == 0)
         b_value[zero_mask] += np.finfo(float).eps 
         n_value[zero_mask] += np.finfo(float).eps 
+    return n_value, b_value, msg
+
+
+def get_max_rel_err(n_value, b_value):
+    n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
     rel_err = np.abs((n_value - b_value) / b_value).max()
     bool_result = rel_err < 0.001
-    
     return rel_err, bool_result, msg
+
+
+def get_rel_err_ratio_thousandth(n_value, b_value):
+    n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
+    rel_errs = np.abs((n_value - b_value) / b_value)
+    ratio = np.divide(np.sum(rel_errs < 0.001), np.size(rel_errs))
+    bool_result = ratio > 0.999
+    return ratio, bool_result, msg
+
+
+def get_rel_err_ratio_ten_thousandth(n_value, b_value):
+    n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
+    rel_errs = np.abs((n_value - b_value) / b_value)
+    ratio = np.divide(np.sum(rel_errs < 0.0001), np.size(rel_errs))
+    bool_result = ratio > 0.9999
+    return ratio, bool_result, msg
 
 
 def max_rel_err_standard(max_rel_errs):
