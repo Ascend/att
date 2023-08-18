@@ -95,7 +95,7 @@ class Comparator:
     def register_compare_algorithm(self, name, compare_func, standard):
         self.compare_alg.update({name: (compare_func, standard)})
 
-    def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None, save_biased_data=False):
+    def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None):
         if "dropout" in api_name:
             is_fwd_success, fwd_compare_alg_results = self._compare_dropout(bench_out, npu_out)    
         else:
@@ -116,19 +116,6 @@ class Comparator:
             self.test_result_cnt['forward_fail_num'] += 1
         else:
             self.test_result_cnt['backward_fail_num'] += 1
-        if (not is_fwd_success or not is_bwd_success) and save_biased_data:
-            self.save_biased_data(self.result_save_path, api_name, bench_out, npu_out)
-
-
-    def save_biased_data(self, save_path, api_name, bench_out, npu_out):
-        biased_data_dir = os.path.join(save_path, 'biased_data_out')
-        if not os.path.exists(biased_data_dir):
-            os.mkdir(biased_data_dir, mode=0o750)
-        bench_out_path = os.path.join(biased_data_dir, f'{api_name}_bench_out.npy')
-        npu_out_path = os.path.join(biased_data_dir, f'{api_name}_npu_out.npy')
-        np.save(bench_out_path, bench_out.contiguous().cpu().detach().numpy())
-        np.save(npu_out_path, npu_out.contiguous().cpu().detach().numpy())
-
 
 
     def _compare_core_wrapper(self, bench_out, npu_out):
