@@ -314,22 +314,13 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
         memoryCurveDataAllRef.current = allCurveData
         setDevice(allCurveData.default_device)
         setDevices(allCurveData.devices)
+        setMemoryCurveData(allCurveData.total)
         setTag('Operator')
       } else {
         setMemoryCurveData(resp as MemoryCurveData)
       }
     })
   }, [run, worker, span])
-
-  React.useEffect(() => {
-    if (tag === 'Operator') {
-      setMemoryCurveData(memoryCurveDataAllRef.current?.total)
-      setMemoryEventsData(memoryEventDataAllRef.current?.operator)
-    } else {
-      setMemoryCurveData(memoryCurveDataAllRef.current?.ptaGe)
-      setMemoryEventsData(memoryEventDataAllRef.current?.component)
-    }
-  }, [memoryCurveDataAllRef.current, tag])
 
   React.useEffect(() => {
     if (memoryCurveData !== undefined) {
@@ -355,8 +346,15 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
   }
 
   const onTagChanged: SelectProps['onChange'] = (event) => {
-    event.target.value === 'Operator' && setSelectedRange(undefined)
     setTag(event.target.value as string)
+    if (event.target.value === 'Operator') {
+      setMemoryCurveData(memoryCurveDataAllRef.current?.total)
+      setMemoryEventsData(memoryEventDataAllRef.current?.operator)
+      setSelectedRange(undefined)
+    } else {
+      setMemoryCurveData(memoryCurveDataAllRef.current?.ptaGe)
+      setMemoryEventsData(memoryEventDataAllRef.current?.component)
+    }
   }
 
   const onSelectedRangeChanged = (start: number, end: number) => {
