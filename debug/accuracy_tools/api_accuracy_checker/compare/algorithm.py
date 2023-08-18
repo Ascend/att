@@ -63,18 +63,17 @@ def get_max_rel_err(n_value, b_value):
 
 
 def get_rel_err_ratio_thousandth(n_value, b_value):
-    n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
-    rel_errs = np.abs((n_value - b_value) / b_value)
-    ratio = np.divide(np.sum(rel_errs < 0.001), np.size(rel_errs))
-    bool_result = ratio > 0.999
-    return ratio, bool_result, msg
+    return get_rel_err_ratio(n_value, b_value, 0.001)
 
 
 def get_rel_err_ratio_ten_thousandth(n_value, b_value):
+    return get_rel_err_ratio(n_value, b_value, 0.0001)
+
+def get_rel_err_ratio(n_value, b_value, index):
     n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
     rel_errs = np.abs((n_value - b_value) / b_value)
-    ratio = np.divide(np.sum(rel_errs < 0.0001), np.size(rel_errs))
-    bool_result = ratio > 0.9999
+    ratio = np.divide(np.sum(rel_errs < index), np.size(rel_errs))
+    bool_result = ratio > (1 - index)
     return ratio, bool_result, msg
 
 
