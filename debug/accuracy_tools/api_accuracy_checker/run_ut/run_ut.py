@@ -111,9 +111,9 @@ def do_save_error_data(api_full_name, in_fwd_data_list, in_bwd_data_list, is_fwd
         bench_api_info = APIInfo(api_full_name + '*bench', False)
         npu_api_info = APIInfo(api_full_name + '*npu', False)
         bench_api_info.analyze_element(in_fwd_data_list[0], True, msCheckerConfig.error_data_path, 
-                                       forward_path='backward_error_data')
+                                       backward_path='backward_error_data')
         npu_api_info.analyze_element(in_fwd_data_list[1], True, msCheckerConfig.error_data_path, 
-                                     forward_path='backward_error_data')
+                                     backward_path='backward_error_data')
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
