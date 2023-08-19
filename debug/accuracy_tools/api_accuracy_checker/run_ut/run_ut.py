@@ -110,9 +110,9 @@ def do_save_error_data(api_full_name, in_fwd_data_list, in_bwd_data_list, is_fwd
     if not is_bwd_success and len(in_bwd_data_list) > 0:
         bench_api_info = APIInfo(api_full_name + '*bench', False)
         npu_api_info = APIInfo(api_full_name + '*npu', False)
-        bench_api_info.analyze_element(in_fwd_data_list[0], True, msCheckerConfig.error_data_path, 
+        bench_api_info.analyze_element(in_bwd_data_list[0], True, msCheckerConfig.error_data_path, 
                                        backward_path='backward_error_data')
-        npu_api_info.analyze_element(in_fwd_data_list[1], True, msCheckerConfig.error_data_path, 
+        npu_api_info.analyze_element(in_bwd_data_list[1], True, msCheckerConfig.error_data_path, 
                                      backward_path='backward_error_data')
 
 
