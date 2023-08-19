@@ -13,15 +13,15 @@ class APIInfo:
         self.rank = os.getpid()
         self.api_name = api_name
         self.save_real_data = msCheckerConfig.real_data
-        self.torch_object_key = {'device' : self.analyze_device_in_kwargs, 'dtype' : self.analyze_dtype_in_kwargs}
+        self.torch_object_key = {'device': self.analyze_device_in_kwargs, 'dtype': self.analyze_dtype_in_kwargs}
         self.is_forward = is_forward
         self.args_num = 0
         
-    def analyze_element(self, element):
+    def analyze_element(self, element, is_save_data, save_path, forward_path='forward_real_data', backward_path='backward_real_data'):
         if isinstance(element, (list, tuple)):
             out = []
             for item in element:
-                out.append(self.analyze_element(item))
+                out.append(self.analyze_element(item, is_save_data, save_path, forward_path, backward_path))
         elif isinstance(element, dict):
             out = {}
             for key, value in element.items():
@@ -29,10 +29,10 @@ class APIInfo:
                     fun = self.torch_object_key[key]
                     out[key] = fun(value)
                 else:
-                    out[key] = self.analyze_element(value)
+                    out[key] = self.analyze_element(value, is_save_data, save_path, forward_path, backward_path)
 
         elif isinstance(element, torch.Tensor):
-            out = self.analyze_tensor(element, self.save_real_data)
+            out = self.analyze_tensor(element, is_save_data, save_path, forward_path, backward_path)
 
         elif self.is_builtin_class(element):
             out = self.analyze_builtin(element)
@@ -44,9 +44,9 @@ class APIInfo:
         return out
 
 
-    def analyze_tensor(self, arg, save_real_data):
+    def analyze_tensor(self, arg, is_save_data, save_path, forward_path, backward_path):
         single_arg = {}
-        if not save_real_data:
+        if not is_save_data:
             
             single_arg.update({'type' : 'torch.Tensor'})
             single_arg.update({'dtype' : str(arg.dtype)})
@@ -56,14 +56,13 @@ class APIInfo:
             single_arg.update({'requires_grad': arg.requires_grad})
             
         else:
-            dump_path = msCheckerConfig.dump_path
             api_args = self.api_name + '*' + str(self.args_num)
             if self.is_forward:
-                forward_real_data_path = os.path.join(dump_path, 'forward_real_data')
+                forward_real_data_path = os.path.join(save_path, forward_path)
 
                 file_path = os.path.join(forward_real_data_path, f'{api_args}.npy')
             else:
-                backward_real_data_path = os.path.join(dump_path, 'backward_real_data')
+                backward_real_data_path = os.path.join(save_path, backward_path)
                 file_path = os.path.join(backward_real_data_path, f'{api_args}.npy')
             self.args_num += 1
             npy_path = write_npy(file_path, arg.contiguous().cpu().detach().numpy())
@@ -139,8 +138,8 @@ class ForwardAPIInfo(APIInfo):
         self.analyze_api_call_stack() 
     
     def analyze_api_input(self, args, kwargs):
-        args_info_list = self.analyze_element(args)
-        kwargs_info_dict = self.analyze_element(kwargs)
+        args_info_list = self.analyze_element(args, self.save_real_data, msCheckerConfig.dump_path)
+        kwargs_info_dict = self.analyze_element(kwargs, self.save_real_data, msCheckerConfig.dump_path)
         self.api_info_struct = {self.api_name: {"args":args_info_list, "kwargs":kwargs_info_dict}}
 
     def analyze_api_call_stack(self):
@@ -160,5 +159,5 @@ class BackwardAPIInfo(APIInfo):
         self.analyze_api_input(grads)
     
     def analyze_api_input(self, grads):
-        grads_info_list = self.analyze_element(grads)
+        grads_info_list = self.analyze_element(grads, self.save_real_data, msCheckerConfig.dump_path)
         self.grad_info_struct = {self.api_name:grads_info_list}

@@ -111,6 +111,7 @@ class Comparator:
             self.test_result_cnt['forward_fail_num'] += 1
         else:
             self.test_result_cnt['backward_fail_num'] += 1
+        return is_fwd_success, is_bwd_success
 
     def _compare_core_wrapper(self, bench_out, npu_out):
         detailed_result_total = []

@@ -13,6 +13,7 @@ class Config:
         self.compare_algorithm = self.validate_compare_algorithm(config['compare_algorithm'])
         self.real_data = self.validate_real_data(config['real_data'])
         self.dump_step = self.validate_dump_step(config['dump_step'])
+        self.error_data_path = self.validate_error_data_path(config['error_data_path'])
 
     def validate_dump_path(self, dump_path):
         if not isinstance(dump_path, str):
@@ -43,6 +44,11 @@ class Config:
         if not isinstance(dump_step, int):
             raise ValueError("dump_step mast be int type")
         return dump_step
+    
+    def validate_error_data_path(self, error_data_path):
+        if not isinstance(error_data_path, str):
+            raise ValueError("error_data_path mast be string type")
+        return error_data_path
 
 
     def __str__(self):

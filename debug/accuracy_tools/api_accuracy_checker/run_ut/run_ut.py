@@ -12,6 +12,9 @@ from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
 from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
+from api_accuracy_checker.dump.api_info import APIInfo
+from api_accuracy_checker.dump.info_dump import initialize_save_error_input_data
+from api_accuracy_checker.common.config import msCheckerConfig
 
 NO_GRAD_APIS = ["hardtanh"]
 
@@ -71,9 +74,13 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare = Comparator(out_path)
     for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
-            grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
-                                                                api_info_dict)
-            compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
+            grad_out, npu_grad_out, npu_out, out, in_fwd_data_list, in_bwd_data_list = run_torch_api(api_full_name, 
+                                                                                                     api_setting_dict, 
+                                                                                                     backward_content, 
+                                                                                                     api_info_dict)
+            is_fwd_success, is_bwd_success = compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
+            if save_error_data:
+                do_save_error_data(api_full_name, in_fwd_data_list, in_bwd_data_list, is_fwd_success, is_bwd_success)
         except Exception as err:
             [_, api_name, _] = api_full_name.split("*")
             if "not implemented for 'Half'" in str(err):
@@ -89,14 +96,39 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare.write_compare_csv()
 
 
+def do_save_error_data(api_full_name, in_fwd_data_list, in_bwd_data_list, is_fwd_success, is_bwd_success):
+    if not is_fwd_success and len(in_fwd_data_list) > 0:
+        bench_api_info = APIInfo(api_full_name + '*bench', True)
+        npu_api_info = APIInfo(api_full_name + '*npu', True)
+        for i in range(len(in_fwd_data_list)):
+            if i < 2:
+                bench_api_info.analyze_element(in_fwd_data_list[i], True, msCheckerConfig.error_data_path, 
+                                               forward_path='forward_error_data')
+            else:
+                npu_api_info.analyze_element(in_fwd_data_list[i], True, msCheckerConfig.error_data_path, 
+                                             forward_path='forward_error_data')
+    if not is_bwd_success and len(in_bwd_data_list) > 0:
+        bench_api_info = APIInfo(api_full_name + '*bench', False)
+        npu_api_info = APIInfo(api_full_name + '*npu', False)
+        bench_api_info.analyze_element(in_fwd_data_list[0], True, msCheckerConfig.error_data_path, 
+                                       forward_path='backward_error_data')
+        npu_api_info.analyze_element(in_fwd_data_list[1], True, msCheckerConfig.error_data_path, 
+                                     forward_path='backward_error_data')
+
+
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
+    in_fwd_data_list, in_bwd_data_list = [], []
     [api_type, api_name, _] = api_full_name.split("*")
     args, inplace, kwargs, need_grad = get_api_info(api_info_dict, api_name)
+    in_fwd_data_list.append(args)
+    in_fwd_data_list.append(kwargs)
     need_backward = api_full_name in backward_content and api_name[-1] != "_" and inplace is not True
     need_backward = need_backward and need_grad
     if inplace or not need_grad:
         print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
+    in_fwd_data_list.append(npu_args)
+    in_fwd_data_list.append(npu_kwargs)
     grad_out, npu_grad_out = None, None
     if kwargs.get("device"):
         del kwargs["device"]
@@ -108,10 +140,13 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
         grad_index = grad_input_index.get('grad_index')
 
     if need_backward:
-        grad_out, npu_grad_out = run_backward(api_full_name, args, backward_content, grad_index, npu_args, npu_out, out)
+        grad_out, npu_grad_out, grad, npu_grad = run_backward(api_full_name, args, backward_content, grad_index, npu_args,
+                                                              npu_out, out)
+        in_bwd_data_list.append(grad)
+        in_bwd_data_list.append(npu_grad)
     if grad_index is not None:
-        return grad_out, npu_grad_out, npu_out[grad_index], out[grad_index]
-    return grad_out, npu_grad_out, npu_out, out
+        return grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], in_fwd_data_list, in_bwd_data_list
+    return grad_out, npu_grad_out, npu_out, out, in_fwd_data_list, in_bwd_data_list
 
 
 def get_api_info(api_info_dict, api_name):
@@ -150,7 +185,7 @@ def run_backward(api_full_name, args, backward_content, grad_index, npu_args, np
         if isinstance(arg, torch.Tensor):
             npu_args_grad.append(arg.grad)
     npu_grad_out = npu_args_grad
-    return grad_out, npu_grad_out
+    return grad_out, npu_grad_out, grad, npu_grad
 
 
 def _run_ut_parser(parser):
@@ -190,6 +225,8 @@ def _run_ut():
         raise ValueError("The forward_input_file and backward_input_file should be a json file!")
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     save_error_data = args.save_error_data
+    if save_error_data:
+        initialize_save_error_input_data()
     run_ut(forward_file, backward_file, out_path, save_error_data)
 
 

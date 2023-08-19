@@ -48,25 +48,28 @@ def write_json(file_path, data, indent=None):
             fcntl.flock(f, fcntl.LOCK_UN)
             lock.release()
 
+def initialize_save_path(save_path, dir_name):
+    data_path = os.path.join(save_path, dir_name)
+    if os.path.exists(data_path):
+        raise ValueError(f"file {data_path} already exists, please remove it first")
+    else:
+        os.mkdir(data_path, mode = 0o750)
+    check_file_or_directory_path(data_path, True)
+
 def initialize_output_json():
     dump_path = os.path.realpath(msCheckerConfig.dump_path)
-    check_file_or_directory_path(dump_path,True)
+    check_file_or_directory_path(dump_path, True)
     files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
     if msCheckerConfig.real_data:
-        forward_real_data_path = os.path.join(dump_path, 'forward_real_data')
-        if os.path.exists(forward_real_data_path):
-            raise ValueError(f"file {forward_real_data_path} already exists, please remove it first")
-        else:
-            os.mkdir(forward_real_data_path, mode = 0o750)
-        check_file_or_directory_path(forward_real_data_path, True)
-
-        backward_real_data_path = os.path.join(dump_path, 'backward_real_data')
-        if os.path.exists(backward_real_data_path):
-            raise ValueError(f"file {backward_real_data_path} already exists, please remove it first")
-        else:
-            os.mkdir(backward_real_data_path, mode = 0o750)
-        check_file_or_directory_path(backward_real_data_path, True)
+        initialize_save_path(dump_path, 'forward_real_data')
+        initialize_save_path(dump_path, 'backward_real_data')
     for file in files:
         file_path = os.path.join(dump_path, file)
         if os.path.exists(file_path):
             raise ValueError(f"file {file_path} already exists, please remove it first or use a new dump path")
+        
+def initialize_save_error_input_data():
+    error_data_path = os.path.realpath(msCheckerConfig.error_data_path)
+    check_file_or_directory_path(error_data_path, True)
+    initialize_save_path(error_data_path, 'forward_error_data')
+    initialize_save_path(error_data_path, 'backward_error_data')
