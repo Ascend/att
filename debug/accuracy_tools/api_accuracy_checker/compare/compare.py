@@ -2,7 +2,7 @@
 import os
 from prettytable import PrettyTable
 from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, \
-    compare_builtin_type
+    compare_builtin_type, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
 from api_accuracy_checker.common.utils import get_json_contents, print_error_log, print_info_log, write_csv
 from api_accuracy_checker.compare.compare_utils import CompareConst 
 
@@ -26,11 +26,14 @@ class Comparator:
         self.compare_alg = {}
         self.register_compare_algorithm("Cosine Similarity", cosine_sim, cosine_standard)
         self.register_compare_algorithm("Max Relative Error", get_max_rel_err, None)
+        self.register_compare_algorithm("Thousandth Relative Error Ratio", get_rel_err_ratio_thousandth, None)
+        self.register_compare_algorithm("Ten Thousandth Relative Error Ratio", get_rel_err_ratio_ten_thousandth, None)
         self.register_compare_algorithm("Default: isEqual", compare_builtin_type, None)
         self.test_results = []
         self.test_result_cnt = {
             "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0
         }
+        self.result_save_path = result_save_path
 
     def print_pretest_result(self):
         res_dict = {
@@ -64,8 +67,11 @@ class Comparator:
 
     def write_detail_csv(self):
         test_rows = [[
-            "Subject", "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
+            "Subject", "Bench Dtype", "NPU Dtype",
+            "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
             "Max Rel Error", "Max Rel Err Pass", "Max Rel Err Message",
+            "Thousandth Rel Error Ratio", "Thousandth Rel Error Ratio Pass", "Thousandth Rel Error Ratio Message",
+            "Ten Thousandth Rel Error Ratio", "Ten Thousandth Rel Error Ratio Pass", "Ten Thousandth Rel Error Ratio Message",
             "Compare Builtin Type", "Builtin Type Pass",
             "Builtin Type Message"
         ]]  
@@ -112,19 +118,30 @@ class Comparator:
         else:
             self.test_result_cnt['backward_fail_num'] += 1
 
+
     def _compare_core_wrapper(self, bench_out, npu_out):
         detailed_result_total = []
+        bench_dtype_total = []
+        npu_dtype_total = []
         test_success_total = True
         for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
-            detailed_result, test_success = compare_core(bench_out, npu_out, alg)
-            if name != "Max Relative Error":
+            detailed_result, test_success, bench_dtype, npu_dtype = compare_core(bench_out, npu_out, alg)
+            bench_dtype_total = bench_dtype
+            npu_dtype_total = npu_dtype
+            if name != "Max Relative Error" and test_success != CompareConst.NA:
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
                     detailed_result_total[i] += detailed_result[i]
             else:
                 detailed_result_total = detailed_result
+        # dtype加到所有指标的前面
+        for i in range(len(detailed_result_total)):
+            detailed_result = list(detailed_result_total[i])
+            detailed_result.insert(0, bench_dtype_total[i])
+            detailed_result.insert(1, npu_dtype_total[i])
+            detailed_result_total[i] = tuple(detailed_result)
         return test_success_total, detailed_result_total
     
     @staticmethod
