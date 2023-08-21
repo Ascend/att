@@ -7,7 +7,7 @@
 1. 插件方式安装
 
 * 安装相关依赖：
-  pandas >= 1.0.0 ，tensorboard >= 1.15, != 2.1.0
+  pandas >= 1.0.0 ，tensorboard >= 2.11.0
 * 使用依赖：
   torch >= 1.8，
   torchvision >= 0.8
@@ -20,16 +20,16 @@
 
 * 从仓库下载源码:
 
-  `git clone https://gitee.com/ascend/amtt`
+  `git clone https://gitee.com/ascend/att.git`
 
-*  进入目录 `/tb_plugins/profiling/tb_plugin` 下.
+*  进入目录 `/plugins/tensorboard_plugins/tb_plugin` 下.
 
 *  执行安装命令:
 
   `pip install .`
 * 构建whl包
   - `python setup.py build_fe sdist bdist_wheel` \
-   注意: build_fe步骤需要setup yarn和Node.js
+   注意: build_fe步骤需要安装yarn和Node.js环境
   - `python setup.py sdist bdist_wheel`
 
   在 `/tb_plugins/profiling/tb_plugin/dist` 目录下取出whl包，使用方式1进行安装
@@ -38,20 +38,20 @@
 * 准备profiling数据
   
   需要在读取的目录下放置指定格式的profiling数据。格式为包含3个层级的目录结构：runs层级为最外层目录（我们将一个完整的Profiling数据视为一个runs\
-  进行可视化处理），其子目录为worker_span层级（命名格式为{worker}_{span}），下一层级为规定命名的ASCEND_PROFILER_OUTPUT目录，此目录中包含\
+  进行可视化处理），其子目录为worker_span层级（命名格式为{worker}_{span}_ascend_pt），下一层级为规定命名的ASCEND_PROFILER_OUTPUT目录，此目录中包含\
   此插件加载展示的数据文件，如trace_view.json、kernel_details.csv、operator_details.csv等。目录结构如下：
 *  E.g. there are 2 runs: run1, run2 \
             `run1` \
-                `--[worker1]_[span1]` \
+                `--[worker1]_[span1]_ascend_pt` \
                     `----ASCEND_PROFILER_OUTPUT` \
                         `------trace_view.json` \
                         `------kernel_details.csv` \
-                `--[worker2]_[span1]` \
+                `--[worker2]_[span1]_ascend_pt` \
                     `----ASCEND_PROFILER_OUTPUT` \
                         `------trace_view.json` \
                         `------operator_details.csv` \
             `run2` \
-                `--[worker1]_[span1]` \
+                `--[worker1]_[span1]_ascend_pt` \
                     `----ASCEND_PROFILER_OUTPUT` \
                         `------memory_record.csv` \
                         `------operator_memory.csv` 
@@ -66,7 +66,7 @@
 
   注意：确保默认端口6006对浏览器的主机打开。
 
-  如果需要切换端口号需要在尾部加上指定的端口号`--port=6007`
+  如果需要切换端口号需要在尾部加上指定的端口号，如`--port=6007`
 
   `tensorboard --logdir=./samples --port=6007`
 
