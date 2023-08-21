@@ -187,7 +187,7 @@ def compare_core(bench_out, npu_out, alg):
     if isinstance(compare_result, list):
         compare_result = flatten_compare_result(compare_result)
     else:
-        compare_result = [(compare_result, str(test_success), msg)]
+        compare_result = [(compare_result, msg)]
     if isinstance(bench_dtype, list):
         bench_dtype = flatten_compare_result(bench_dtype)
         npu_dtype = flatten_compare_result(npu_dtype)
