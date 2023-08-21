@@ -73,11 +73,11 @@ def get_rel_err_ratio_ten_thousandth(n_value, b_value):
         return ratio, CompareConst.NA, msg
     return ratio, bool_result, msg
 
-def get_rel_err_ratio(n_value, b_value, index):
+def get_rel_err_ratio(n_value, b_value, thresholding):
     n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
     rel_errs = np.abs((n_value - b_value) / b_value)
-    ratio = np.divide(np.sum(rel_errs < index), np.size(rel_errs))
-    bool_result = ratio > (1 - index)
+    ratio = np.divide(np.sum(rel_errs < thresholding), np.size(rel_errs))
+    bool_result = ratio > (1 - thresholding)
     return ratio, bool_result, msg
 
 
