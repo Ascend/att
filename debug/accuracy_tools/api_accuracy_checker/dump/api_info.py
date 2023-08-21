@@ -161,3 +161,20 @@ class BackwardAPIInfo(APIInfo):
     def analyze_api_input(self, grads):
         grads_info_list = self.analyze_element(grads, self.save_real_data, msCheckerConfig.dump_path)
         self.grad_info_struct = {self.api_name:grads_info_list}
+
+
+class ForwardErrorAPIInfo(APIInfo):
+    def __init__(self, name, args, kwargs):
+        super().__init__(name, is_forward=True)
+        self.analyze_api_input(args, kwargs)
+    
+    def analyze_api_input(self, args, kwargs):
+        self.analyze_element(args, True, msCheckerConfig.error_data_path, forward_path='forward_error_data')
+        self.analyze_element(kwargs, True, msCheckerConfig.error_data_path, forward_path='forward_error_data')
+
+
+class BackwardErrorAPIInfo(APIInfo):
+    def __init__(self, name, grads):
+        super().__init__(name, is_forward=False)
+        self.analyze_element(grads, True, msCheckerConfig.error_data_path, backward_path='backward_error_data')
+

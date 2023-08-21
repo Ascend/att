@@ -12,7 +12,7 @@ from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
 from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
-from api_accuracy_checker.dump.api_info import APIInfo
+from api_accuracy_checker.dump.api_info import ForwardErrorAPIInfo, BackwardErrorAPIInfo
 from api_accuracy_checker.dump.info_dump import initialize_save_error_input_data
 from api_accuracy_checker.common.config import msCheckerConfig
 
@@ -97,23 +97,12 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
 
 
 def do_save_error_data(api_full_name, in_fwd_data_list, in_bwd_data_list, is_fwd_success, is_bwd_success):
-    if not is_fwd_success and len(in_fwd_data_list) > 0:
-        bench_api_info = APIInfo(api_full_name + '*bench', True)
-        npu_api_info = APIInfo(api_full_name + '*npu', True)
-        for i in range(len(in_fwd_data_list)):
-            if i < 2:
-                bench_api_info.analyze_element(in_fwd_data_list[i], True, msCheckerConfig.error_data_path, 
-                                               forward_path='forward_error_data')
-            else:
-                npu_api_info.analyze_element(in_fwd_data_list[i], True, msCheckerConfig.error_data_path, 
-                                             forward_path='forward_error_data')
-    if not is_bwd_success and len(in_bwd_data_list) > 0:
-        bench_api_info = APIInfo(api_full_name + '*bench', False)
-        npu_api_info = APIInfo(api_full_name + '*npu', False)
-        bench_api_info.analyze_element(in_bwd_data_list[0], True, msCheckerConfig.error_data_path, 
-                                       backward_path='backward_error_data')
-        npu_api_info.analyze_element(in_bwd_data_list[1], True, msCheckerConfig.error_data_path, 
-                                     backward_path='backward_error_data')
+    if not is_fwd_success and len(in_fwd_data_list) == 4:
+        ForwardErrorAPIInfo(api_full_name + '*bench', in_fwd_data_list[0], in_fwd_data_list[1])
+        ForwardErrorAPIInfo(api_full_name + '*npu', in_fwd_data_list[2], in_fwd_data_list[3])
+    if not is_bwd_success and len(in_bwd_data_list) == 2:
+        BackwardErrorAPIInfo(api_full_name + '*bench', in_bwd_data_list[0])
+        BackwardErrorAPIInfo(api_full_name + '*npu', in_bwd_data_list[1])
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
