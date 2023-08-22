@@ -129,7 +129,7 @@ class Comparator:
             detailed_result, test_success, bench_dtype, npu_dtype = compare_core(bench_out, npu_out, alg)
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
-            if name not in ["Cosine Similarity", "Max Relative Error"] and test_success != CompareConst.NA:
+            if name != "Max Relative Error":
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):

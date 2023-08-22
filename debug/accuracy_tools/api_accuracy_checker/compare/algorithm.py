@@ -70,7 +70,7 @@ def get_rel_err_ratio_ten_thousandth(n_value, b_value):
     ratio, bool_result, msg = get_rel_err_ratio(n_value, b_value, 0.0001)
     if b_value.dtype == np.float16:
         msg = f"This indicator is not used to evaluate {b_value.dtype} data"
-        return ratio, CompareConst.NA, msg
+        return ratio, True, msg
     return ratio, bool_result, msg
 
 def get_rel_err_ratio(n_value, b_value, thresholding):
