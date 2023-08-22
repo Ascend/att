@@ -106,7 +106,6 @@ class RunGenerator(object):
                 profile_run.memory_events = self._get_memory_event(peak_memory_events)
 
             if self.profile_data.has_communication:
-                profile_run.views.append(consts.DISTRIBUTED_VIEW)
                 profile_run.step_to_overlap = self._npu_get_overlap()
                 profile_run.step_to_wait, profile_run.comm_op = self._npu_get_wait_table()
 
@@ -151,6 +150,8 @@ class RunGenerator(object):
 
         for step in data[1:]:
             key = step[0]
+            if key == '':
+                key = 'all'
             overlap = [float(step[int(title_name[0])]), float(step[int(title_name[1])]),
                        float(step[int(title_name[2])]), float(step[int(title_name[3])])]
             if key in overlap_by_steps:
@@ -165,7 +166,7 @@ class RunGenerator(object):
         length = len(title)
         if length < 5:
             return
-        key = ["compute time", "overlapped time", "communication time not overlapped", "free time"]
+        key = ["computing", "overlapped", "communication(not overlapped)", "free"]
         get_key = list()
         for j in key:
             for i in range(length):
@@ -197,14 +198,17 @@ class RunGenerator(object):
         table_ops: Dict[str, List[float]] = OrderedDict()
         if len(communication_json) <= 0:
             return wait_by_step, table_ops
-        for data in communication_json:
-            step = data.get("step_id")
+        for step in communication_json:
+            step_id = re.sub(r'step', '', step)
+            if step_id == '':
+                step_id = 'all'
+            data = communication_json.get(step)
             collection_ops = data.get("collective")
             p2p_ops = data.get("p2p")
             coll_total_trans, coll_total_synchronize = RunGenerator._get_wait_table_by_ops(collection_ops, table_ops)
             p2p_total_trans, p2p_total_synchronize = RunGenerator._get_wait_table_by_ops(p2p_ops, table_ops)
 
-            wait_by_step[step] = {
+            wait_by_step[step_id] = {
                 "trans": coll_total_trans + p2p_total_trans,
                 "Synchronize": coll_total_synchronize + p2p_total_synchronize
             }

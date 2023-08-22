@@ -15,14 +15,18 @@ from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
 
 NO_GRAD_APIS = ["hardtanh"]
 
-cur_path = os.path.dirname(os.path.realpath(__file__))
-yaml_path = os.path.join(cur_path, "../hook_module/support_wrap_ops.yaml")
-with open(yaml_path, 'r') as f:
-    WrapFunctionalOps = yaml.safe_load(f).get('functional')
 
-for f in dir(torch.nn.functional):
-    if f != "__name__":
-        locals().update({f: getattr(torch.nn.functional, f)})
+def init_environment():
+    cur_path = os.path.dirname(os.path.realpath(__file__))
+    yaml_path = os.path.join(cur_path, "../hook_module/support_wrap_ops.yaml")
+    with open(yaml_path, 'r') as f:
+        WrapFunctionalOps = yaml.safe_load(f).get('functional')
+    for f in dir(torch.nn.functional):
+        if f != "__name__":
+            locals().update({f: getattr(torch.nn.functional, f)})
+
+
+init_environment()
 
 
 def exec_api(api_type, api_name, args, kwargs):
@@ -89,14 +93,7 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
     [api_type, api_name, _] = api_full_name.split("*")
-    convert_type, api_info_dict = api_info_preprocess(api_name, api_info_dict)
-    need_grad = True
-    if api_info_dict.get("kwargs") and "out" in api_info_dict.get("kwargs"):
-        need_grad = False
-    if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
-        need_grad = False
-    args, kwargs = gen_api_params(api_info_dict, need_grad, convert_type)
-    inplace = kwargs.get("inplace") if kwargs.get("inplace") else None
+    args, inplace, kwargs, need_grad = get_api_info(api_info_dict, api_name)
     need_backward = api_full_name in backward_content and api_name[-1] != "_" and inplace is not True
     need_backward = need_backward and need_grad
     if inplace or not need_grad:
@@ -113,33 +110,49 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
         grad_index = grad_input_index.get('grad_index')
 
     if need_backward:
-        backward_args = backward_content[api_full_name]
-        grad = gen_args(backward_args)[0]
-        if grad_index is not None:
-            out[grad_index].backward(grad)
-        elif isinstance(out, (list, tuple)):
-            raise NotImplementedError("Multiple backward is not supported.")
-        else:
-            out.backward(grad)
-        args_grad = []
-        for arg in args:
-            if isinstance(arg, torch.Tensor):
-                args_grad.append(arg.grad)
-        grad_out = args_grad
-
-        npu_grad = grad.clone().detach().npu()
-        if grad_index is not None:
-            npu_out[grad_index].backward(npu_grad)
-        else:
-            npu_out.backward(npu_grad)
-        npu_args_grad = []
-        for arg in npu_args:
-            if isinstance(arg, torch.Tensor):
-                npu_args_grad.append(arg.grad)
-        npu_grad_out = npu_args_grad
+        grad_out, npu_grad_out = run_backward(api_full_name, args, backward_content, grad_index, npu_args, npu_out, out)
     if grad_index is not None:
         return grad_out, npu_grad_out, npu_out[grad_index], out[grad_index]
     return grad_out, npu_grad_out, npu_out, out
+
+
+def get_api_info(api_info_dict, api_name):
+    convert_type, api_info_dict = api_info_preprocess(api_name, api_info_dict)
+    need_grad = True
+    if api_info_dict.get("kwargs") and "out" in api_info_dict.get("kwargs"):
+        need_grad = False
+    if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
+        need_grad = False
+    args, kwargs = gen_api_params(api_info_dict, need_grad, convert_type)
+    inplace = kwargs.get("inplace") if kwargs.get("inplace") else None
+    return args, inplace, kwargs, need_grad
+
+
+def run_backward(api_full_name, args, backward_content, grad_index, npu_args, npu_out, out):
+    backward_args = backward_content[api_full_name]
+    grad = gen_args(backward_args)[0]
+    if grad_index is not None:
+        out[grad_index].backward(grad)
+    elif isinstance(out, (list, tuple)):
+        raise NotImplementedError("Multiple backward is not supported.")
+    else:
+        out.backward(grad)
+    args_grad = []
+    for arg in args:
+        if isinstance(arg, torch.Tensor):
+            args_grad.append(arg.grad)
+    grad_out = args_grad
+    npu_grad = grad.clone().detach().npu()
+    if grad_index is not None:
+        npu_out[grad_index].backward(npu_grad)
+    else:
+        npu_out.backward(npu_grad)
+    npu_args_grad = []
+    for arg in npu_args:
+        if isinstance(arg, torch.Tensor):
+            npu_args_grad.append(arg.grad)
+    npu_grad_out = npu_args_grad
+    return grad_out, npu_grad_out
 
 
 def _run_ut_parser(parser):

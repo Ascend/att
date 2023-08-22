@@ -5,7 +5,7 @@ Ascend Training Tools，昇腾训练工具链
 针对训练&大模型场景，提供端到端命令行&可视化调试调优工具，帮助用户快速提高模型开发效率
 
 #### 模型训练迁移全流程
-![输入图片说明](https://foruda.gitee.com/images/1688630725924321015/4c9b3290_11551447.png "屏幕截图")
+![输入图片说明](resources/model_training_migration_process.png)
 
 #### 使用说明
 
@@ -31,7 +31,7 @@ Ascend Training Tools，昇腾训练工具链
 
         **性能拆解工具**：提供GPU与NPU的性能分析拆解能力。
     
-2.  tensorboard支持npu可视化插件[tb-plugin](https://gitee.com/ascend/att/tree/master/tb_plugins/profiling/tb_plugin)
+2.  tensorboard支持npu可视化插件[tb-plugin](https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin)
 
     **PyTorch profiling数据可视化的TensorBoard的插件**： 它支持将Ascend平台采集、解析的Pytorch Profiling数据可视化呈现，也兼容GPU数据采集、解析可视化。
 

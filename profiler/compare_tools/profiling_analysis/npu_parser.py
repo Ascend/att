@@ -16,7 +16,7 @@
 import sys
 import pandas as pd
 from collections import defaultdict
-import parser_helper
+import profiling_analysis.parser_helper as parser_helper
 
 
 class NpuProfilingParser:
@@ -48,7 +48,7 @@ class NpuProfilingParser:
         ai_core_res = defaultdict(float)
         for dic in data:
             self.get_ts_by_task_type(dic, event_wait_sqe, ai_core_dict, event_wait_sqe_res, ai_core_res)
-            if ('name' in dic) and (dic.get('name') == 'Compute'):
+            if ('name' in dic) and (dic.get('name') == 'compute_time'):
                 ts_flag = True
                 ts = dic.get('ts')
                 dur = dic.get('dur')
