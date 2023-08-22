@@ -141,7 +141,7 @@ class Comparator:
             detailed_result = list(detailed_result_total[i])
             detailed_result.insert(0, bench_dtype_total[i])
             detailed_result.insert(1, npu_dtype_total[i])
-            detailed_result.append(test_success_total)
+            detailed_result.append(str(test_success_total))
             detailed_result_total[i] = tuple(detailed_result)
         return test_success_total, detailed_result_total
     
