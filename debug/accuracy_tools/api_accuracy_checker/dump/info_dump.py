@@ -68,8 +68,7 @@ def initialize_output_json():
         if os.path.exists(file_path):
             raise ValueError(f"file {file_path} already exists, please remove it first or use a new dump path")
         
-def initialize_save_error_input_data():
+def initialize_save_error_data():
     error_data_path = os.path.realpath(msCheckerConfig.error_data_path)
     check_file_or_directory_path(error_data_path, True)
-    initialize_save_path(error_data_path, 'forward_error_data')
-    initialize_save_path(error_data_path, 'backward_error_data')
+    initialize_save_path(error_data_path, 'error_data')

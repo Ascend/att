@@ -12,8 +12,8 @@ from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
 from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
-from api_accuracy_checker.dump.api_info import ForwardErrorAPIInfo, BackwardErrorAPIInfo
-from api_accuracy_checker.dump.info_dump import initialize_save_error_input_data
+from api_accuracy_checker.dump.api_info import ErrorAPIInfo
+from api_accuracy_checker.dump.info_dump import initialize_save_error_data
 from api_accuracy_checker.common.config import msCheckerConfig
 
 NO_GRAD_APIS = ["hardtanh"]
@@ -74,13 +74,13 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare = Comparator(out_path)
     for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
-            grad_out, npu_grad_out, npu_out, out, in_fwd_data_list, in_bwd_data_list = run_torch_api(api_full_name, 
-                                                                                                     api_setting_dict, 
-                                                                                                     backward_content, 
-                                                                                                     api_info_dict)
+            grad_out, npu_grad_out, npu_out, out, error_data_info = run_torch_api(api_full_name, 
+                                                                                  api_setting_dict, 
+                                                                                  backward_content, 
+                                                                                  api_info_dict)
             is_fwd_success, is_bwd_success = compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
             if save_error_data:
-                do_save_error_data(api_full_name, in_fwd_data_list, in_bwd_data_list, is_fwd_success, is_bwd_success)
+                do_save_error_data(api_full_name, error_data_info, is_fwd_success, is_bwd_success)
         except Exception as err:
             [_, api_name, _] = api_full_name.split("*")
             if "not implemented for 'Half'" in str(err):
@@ -96,17 +96,23 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare.write_compare_csv()
 
 
-def do_save_error_data(api_full_name, in_fwd_data_list, in_bwd_data_list, is_fwd_success, is_bwd_success):
-    if not is_fwd_success and len(in_fwd_data_list) == 4:
-        ForwardErrorAPIInfo(api_full_name + '*bench', in_fwd_data_list[0], in_fwd_data_list[1])
-        ForwardErrorAPIInfo(api_full_name + '*npu', in_fwd_data_list[2], in_fwd_data_list[3])
-    if not is_bwd_success and len(in_bwd_data_list) == 2:
-        BackwardErrorAPIInfo(api_full_name + '*bench', in_bwd_data_list[0])
-        BackwardErrorAPIInfo(api_full_name + '*npu', in_bwd_data_list[1])
+def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success):
+    if not is_fwd_success or not is_bwd_success:
+        for element in data_info.in_fwd_data_list:
+            ErrorAPIInfo(api_full_name + '*forward*input', element)
+        if len(data_info.out_fwd_data_list) == 2:
+            ErrorAPIInfo(api_full_name + '*forward*output*bench', data_info.out_fwd_data_list[0])
+            ErrorAPIInfo(api_full_name + '*forward*output*npu', data_info.out_fwd_data_list[1])
+        if len(data_info.in_bwd_data_list) == 1:
+            ErrorAPIInfo(api_full_name + '*backward*input', data_info.in_bwd_data_list[0])
+        if len(data_info.out_bwd_data_list) == 2:
+            ErrorAPIInfo(api_full_name + '*backward*output*bench', data_info.out_bwd_data_list[0])
+            ErrorAPIInfo(api_full_name + '*backward*output*npu', data_info.out_bwd_data_list[1])
+
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
-    in_fwd_data_list, in_bwd_data_list = [], []
+    in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, out_bwd_data_list = [], [], [], []
     [api_type, api_name, _] = api_full_name.split("*")
     args, inplace, kwargs, need_grad = get_api_info(api_info_dict, api_name)
     in_fwd_data_list.append(args)
@@ -116,13 +122,13 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     if inplace or not need_grad:
         print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
-    in_fwd_data_list.append(npu_args)
-    in_fwd_data_list.append(npu_kwargs)
     grad_out, npu_grad_out = None, None
     if kwargs.get("device"):
         del kwargs["device"]
     out = exec_api(api_type, api_name, args, kwargs)
     npu_out = exec_api(api_type, api_name, npu_args, npu_kwargs)
+    out_fwd_data_list.append(out)
+    out_fwd_data_list.append(npu_out)
     grad_input_index = api_setting_dict.get(api_name)
     grad_index = None
     if grad_input_index is not None:
@@ -132,10 +138,12 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
         grad_out, npu_grad_out, grad, npu_grad = run_backward(api_full_name, args, backward_content, grad_index, npu_args,
                                                               npu_out, out)
         in_bwd_data_list.append(grad)
-        in_bwd_data_list.append(npu_grad)
+        out_bwd_data_list.append(grad_out)
+        out_bwd_data_list.append(npu_grad_out)
+    error_data_info = ErrorDataInfo(in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, out_bwd_data_list)
     if grad_index is not None:
-        return grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], in_fwd_data_list, in_bwd_data_list
-    return grad_out, npu_grad_out, npu_out, out, in_fwd_data_list, in_bwd_data_list
+        return grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], error_data_info
+    return grad_out, npu_grad_out, npu_out, out, error_data_info
 
 
 def get_api_info(api_info_dict, api_name):
@@ -215,9 +223,16 @@ def _run_ut():
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     save_error_data = args.save_error_data
     if save_error_data:
-        initialize_save_error_input_data()
+        initialize_save_error_data()
     run_ut(forward_file, backward_file, out_path, save_error_data)
 
+
+class ErrorDataInfo:
+    def __init__(self, in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, out_bwd_data_list):
+        self.in_fwd_data_list = in_fwd_data_list
+        self.in_bwd_data_list = in_bwd_data_list
+        self.out_fwd_data_list = out_fwd_data_list
+        self.out_bwd_data_list = out_bwd_data_list
 
 if __name__ == '__main__':
     _run_ut()
