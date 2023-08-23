@@ -51,7 +51,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    forward和backward两个命令行参数根据实际存盘的json文件名配置。比对结果存盘路径默认是'./'（相对于run_ut的路径），可以在运行run_ut.py时通过 --out_path命令行参数配置。结果包括pretest_result.csv和pretest_details.csv两个文件。前者是api粒度的，标明每个api是否通过测试。建议用户先查看前者，对于其中没有通过测试的或者特定感兴趣的api，根据其API name字段在pretest_details.csv中查询其各个输出的达标情况以及比较指标。
 
-   注意：目前API通过测试的标准是每个输出与标杆比对的余弦相似度大于0.99，pretest_details.csv中的相对误差供用户分析时使用。
+   注意：目前API通过测试的标准是每个输出与标杆比对的余弦相似度大于0.99，并且float16数据要通过双千分之一标准，float32数据要通过双万分之一标准，pretest_details.csv中的相对误差供用户分析时使用。
 
 
 ## FAQ 

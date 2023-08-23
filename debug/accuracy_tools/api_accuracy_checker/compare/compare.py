@@ -64,12 +64,15 @@ class Comparator:
         summary_test_rows = [[self.COLUMN_API_NAME, self.COLUMN_FORWARD_SUCCESS, self.COLUMN_BACKWARD_SUCCESS]]
         write_csv(summary_test_rows, self.save_path)
         write_csv(summary_test_rows, self.seg_save_path)
-        detail_test_rows = [[
-            "Subject", "Cosine Similarity", "Cosine Similarity Pass", "Cosine Similarity Message",
-            "Max Rel Error", "Max Rel Err Pass", "Max Rel Err Message",
-            "Compare Builtin Type", "Builtin Type Pass",
-            "Builtin Type Message"
-        ]]
+        test_rows = [[
+            "Subject", "Bench Dtype", "NPU Dtype",
+            "Cosine Similarity", "Cosine Similarity Message",
+            "Max Rel Error", "Max Rel Err Message",
+            "Thousandth Rel Error Ratio", "Thousandth Rel Error Ratio Message",
+            "Ten Thousandth Rel Error Ratio", "Ten Thousandth Rel Error Ratio Message",
+            "Compare Builtin Type", "Builtin Type Message",
+            "Pass"
+        ]]  
         write_csv(detail_test_rows, self.detail_save_path)
         write_csv(detail_test_rows, self.seg_detail_save_path)
 
@@ -148,18 +151,19 @@ class Comparator:
             detailed_result, test_success, bench_dtype, npu_dtype = compare_core(bench_out, npu_out, alg)
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
-            if name != "Max Relative Error" and test_success != CompareConst.NA:
+            if name != "Max Relative Error":
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
                     detailed_result_total[i] += detailed_result[i]
             else:
                 detailed_result_total = detailed_result
-        # dtype加到所有指标的前面
+        # dtype加到所有指标的前面, 是否pass放到所有指标的后面
         for i in range(len(detailed_result_total)):
             detailed_result = list(detailed_result_total[i])
             detailed_result.insert(0, bench_dtype_total[i])
             detailed_result.insert(1, npu_dtype_total[i])
+            detailed_result.append(str(test_success_total))
             detailed_result_total[i] = tuple(detailed_result)
         return test_success_total, detailed_result_total
     
