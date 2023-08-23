@@ -35,7 +35,7 @@ class Comparator:
             "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0
         }
         self.result_save_path = result_save_path
-	    self.write_csv_title()
+        self.write_csv_title()
 
     def print_pretest_result(self):
         res_dict = {
