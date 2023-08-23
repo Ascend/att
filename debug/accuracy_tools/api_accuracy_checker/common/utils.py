@@ -187,12 +187,14 @@ def read_json(file):
     return obj
 
 def write_csv(data, filepath):
-    data_frame = pd.DataFrame(columns=data)
-    data_frame.to_csv(filepath, index=False)
+    with open(filepath, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerows(data)
 
 def write_seg_csv(data, filepath):
-    data_frame = pd.DataFrame(columns=data)
-    data_frame.to_csv(filepath, mode='a', index=False)
+    with open(filepath, 'a') as f:
+        writer = csv.writer(f)
+        writer.writerows(data)
 
 def _print_log(level, msg):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
