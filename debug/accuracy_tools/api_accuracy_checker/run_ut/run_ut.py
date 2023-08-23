@@ -12,7 +12,7 @@ from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
 from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
-from ut_api_info import ErrorAPIInfo
+from ut_api_info import UtAPIInfo
 from api_accuracy_checker.common.config import msCheckerConfig
 
 NO_GRAD_APIS = ["hardtanh"]
@@ -96,15 +96,15 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
 def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success):
     if not is_fwd_success or not is_bwd_success:
         for element in data_info.in_fwd_data_list:
-            ErrorAPIInfo(api_full_name + '*forward*input', element)
+            UtAPIInfo(api_full_name + '*forward*input', element)
         if len(data_info.out_fwd_data_list) == 2:
-            ErrorAPIInfo(api_full_name + '*forward*output*bench', data_info.out_fwd_data_list[0])
-            ErrorAPIInfo(api_full_name + '*forward*output*npu', data_info.out_fwd_data_list[1])
+            UtAPIInfo(api_full_name + '*forward*output*bench', data_info.out_fwd_data_list[0])
+            UtAPIInfo(api_full_name + '*forward*output*npu', data_info.out_fwd_data_list[1])
         if len(data_info.in_bwd_data_list) == 1:
-            ErrorAPIInfo(api_full_name + '*backward*input', data_info.in_bwd_data_list[0])
+            UtAPIInfo(api_full_name + '*backward*input', data_info.in_bwd_data_list[0])
         if len(data_info.out_bwd_data_list) == 2:
-            ErrorAPIInfo(api_full_name + '*backward*output*bench', data_info.out_bwd_data_list[0])
-            ErrorAPIInfo(api_full_name + '*backward*output*npu', data_info.out_bwd_data_list[1])
+            UtAPIInfo(api_full_name + '*backward*output*bench', data_info.out_bwd_data_list[0])
+            UtAPIInfo(api_full_name + '*backward*output*npu', data_info.out_bwd_data_list[1])
 
 
 
