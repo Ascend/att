@@ -20,8 +20,6 @@ class Comparator:
     def __init__(self, result_save_path, stack_info_json_path=None):
         self.save_path = os.path.join(result_save_path, self.TEST_FILE_NAME)
         self.detail_save_path = os.path.join(result_save_path, self.DETAIL_TEST_FILE_NAME)
-
-
         if stack_info_json_path:
             self.stack_info = get_json_contents(stack_info_json_path)
         else:
@@ -57,7 +55,7 @@ class Comparator:
     def write_csv_title(self):
         summary_test_rows = [[self.COLUMN_API_NAME, self.COLUMN_FORWARD_SUCCESS, self.COLUMN_BACKWARD_SUCCESS]]
         write_csv(summary_test_rows, self.save_path)
-        write_csv(summary_test_rows, self.seg_save_path)
+
         detail_test_rows = [[
             "Subject", "Bench Dtype", "NPU Dtype",
             "Cosine Similarity", "Cosine Similarity Message",
@@ -68,8 +66,6 @@ class Comparator:
             "Pass"
         ]]  
         write_csv(detail_test_rows, self.detail_save_path)
-
-
 
     def write_summary_csv(self, test_result):
         test_rows = []
