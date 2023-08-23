@@ -7,13 +7,12 @@ import torch
 from tqdm import tqdm
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
-    print_error_log
+    print_error_log, check_file_or_directory_path, initialize_save_path
 from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
 from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
-from api_accuracy_checker.dump.api_info import ErrorAPIInfo
-from api_accuracy_checker.dump.info_dump import initialize_save_error_data
+from ut_api_info import ErrorAPIInfo
 from api_accuracy_checker.common.config import msCheckerConfig
 
 NO_GRAD_APIS = ["hardtanh"]
@@ -74,13 +73,11 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare = Comparator(out_path)
     for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
-            grad_out, npu_grad_out, npu_out, out, error_data_info = run_torch_api(api_full_name, 
-                                                                                  api_setting_dict, 
-                                                                                  backward_content, 
-                                                                                  api_info_dict)
-            is_fwd_success, is_bwd_success = compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
+            data_info = run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict)
+            is_fwd_success, is_bwd_success = compare.compare_output(api_full_name, data_info.out, data_info.npu_out, 
+                                                                    data_info.grad_out, data_info.npu_grad_out)
             if save_error_data:
-                do_save_error_data(api_full_name, error_data_info, is_fwd_success, is_bwd_success)
+                do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         except Exception as err:
             [_, api_name, _] = api_full_name.split("*")
             if "not implemented for 'Half'" in str(err):
@@ -140,10 +137,11 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
         in_bwd_data_list.append(grad)
         out_bwd_data_list.append(grad_out)
         out_bwd_data_list.append(npu_grad_out)
-    error_data_info = ErrorDataInfo(in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, out_bwd_data_list)
     if grad_index is not None:
-        return grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], error_data_info
-    return grad_out, npu_grad_out, npu_out, out, error_data_info
+        return UtDataInfo(grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], in_fwd_data_list, 
+                          in_bwd_data_list, out_fwd_data_list, out_bwd_data_list)
+    return UtDataInfo(grad_out, npu_grad_out, npu_out, out, in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, 
+                      out_bwd_data_list)
 
 
 def get_api_info(api_info_dict, api_name):
@@ -183,6 +181,12 @@ def run_backward(api_full_name, args, backward_content, grad_index, npu_args, np
             npu_args_grad.append(arg.grad)
     npu_grad_out = npu_args_grad
     return grad_out, npu_grad_out, grad, npu_grad
+
+
+def initialize_save_error_data():
+    error_data_path = os.path.realpath(msCheckerConfig.error_data_path)
+    check_file_or_directory_path(error_data_path, True)
+    initialize_save_path(error_data_path, 'error_data')
 
 
 def _run_ut_parser(parser):
@@ -227,8 +231,13 @@ def _run_ut():
     run_ut(forward_file, backward_file, out_path, save_error_data)
 
 
-class ErrorDataInfo:
-    def __init__(self, in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, out_bwd_data_list):
+class UtDataInfo:
+    def __init__(self, grad_out, npu_grad_out, npu_out, out, in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, 
+                 out_bwd_data_list):
+        self.grad_out = grad_out
+        self.npu_grad_out = npu_grad_out
+        self.npu_out = npu_out
+        self.out = out
         self.in_fwd_data_list = in_fwd_data_list
         self.in_bwd_data_list = in_bwd_data_list
         self.out_fwd_data_list = out_fwd_data_list
