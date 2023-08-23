@@ -64,7 +64,7 @@ class Comparator:
         summary_test_rows = [[self.COLUMN_API_NAME, self.COLUMN_FORWARD_SUCCESS, self.COLUMN_BACKWARD_SUCCESS]]
         write_csv(summary_test_rows, self.save_path)
         write_csv(summary_test_rows, self.seg_save_path)
-        test_rows = [[
+        detail_test_rows = [[
             "Subject", "Bench Dtype", "NPU Dtype",
             "Cosine Similarity", "Cosine Similarity Message",
             "Max Rel Error", "Max Rel Err Message",
