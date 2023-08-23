@@ -110,10 +110,9 @@ class Comparator:
     def record_results(self, *args):
         self.test_results.append(args)
         self.test_seg_results.append(args)
-        if len(self.test_seg_results) == 100:
-            self.write_summary_csv(self.test_seg_results, self.seg_save_path)
-            self.write_detail_csv(self.test_seg_results, self.seg_detail_save_path)
-            self.test_seg_results = []
+        self.write_summary_csv(self.test_seg_results, self.seg_save_path)
+        self.write_detail_csv(self.test_seg_results, self.seg_detail_save_path)
+        self.test_seg_results = []
 
     def register_compare_algorithm(self, name, compare_func, standard):
         self.compare_alg.update({name: (compare_func, standard)})
