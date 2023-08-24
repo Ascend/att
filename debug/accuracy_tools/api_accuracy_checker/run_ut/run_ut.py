@@ -74,8 +74,9 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
             data_info = run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict)
-            is_fwd_success, is_bwd_success = compare.compare_output(api_full_name, data_info.out, data_info.npu_out, 
-                                                                    data_info.grad_out, data_info.npu_grad_out)
+            is_fwd_success, is_bwd_success = compare.compare_output(api_full_name, data_info.bench_out,
+                                                                    data_info.npu_out, data_info.bench_grad_out,
+                                                                    data_info.npu_grad_out)
             if save_error_data:
                 do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         except Exception as err:
@@ -97,19 +98,19 @@ def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
     if not is_fwd_success or not is_bwd_success:
         for element in data_info.in_fwd_data_list:
             UtAPIInfo(api_full_name + '*forward*input', element)
-        if len(data_info.out_fwd_data_list) == 2:
-            UtAPIInfo(api_full_name + '*forward*output*bench', data_info.out_fwd_data_list[0])
-            UtAPIInfo(api_full_name + '*forward*output*npu', data_info.out_fwd_data_list[1])
-        if len(data_info.in_bwd_data_list) == 1:
-            UtAPIInfo(api_full_name + '*backward*input', data_info.in_bwd_data_list[0])
-        if len(data_info.out_bwd_data_list) == 2:
-            UtAPIInfo(api_full_name + '*backward*output*bench', data_info.out_bwd_data_list[0])
-            UtAPIInfo(api_full_name + '*backward*output*npu', data_info.out_bwd_data_list[1])
+        if data_info.bench_out is not None:
+            UtAPIInfo(api_full_name + '*forward*output*bench', data_info.bench_out)
+            UtAPIInfo(api_full_name + '*forward*output*npu', data_info.npu_out)
+        if data_info.grad_in is not None:
+            UtAPIInfo(api_full_name + '*backward*input', data_info.grad_in)
+        if data_info.bench_grad_out is not None:
+            UtAPIInfo(api_full_name + '*backward*output*bench', data_info.bench_grad_out)
+            UtAPIInfo(api_full_name + '*backward*output*npu', data_info.npu_grad_out)
 
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
-    in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, out_bwd_data_list = [], [], [], []
+    in_fwd_data_list = []
     [api_type, api_name, _] = api_full_name.split("*")
     args, inplace, kwargs, need_grad = get_api_info(api_info_dict, api_name)
     in_fwd_data_list.append(args)
@@ -124,24 +125,18 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
         del kwargs["device"]
     out = exec_api(api_type, api_name, args, kwargs)
     npu_out = exec_api(api_type, api_name, npu_args, npu_kwargs)
-    out_fwd_data_list.append(out)
-    out_fwd_data_list.append(npu_out)
     grad_input_index = api_setting_dict.get(api_name)
     grad_index = None
+    grad = None
     if grad_input_index is not None:
         grad_index = grad_input_index.get('grad_index')
 
     if need_backward:
         grad_out, npu_grad_out, grad, npu_grad = run_backward(api_full_name, args, backward_content, grad_index, npu_args,
                                                               npu_out, out)
-        in_bwd_data_list.append(grad)
-        out_bwd_data_list.append(grad_out)
-        out_bwd_data_list.append(npu_grad_out)
     if grad_index is not None:
-        return UtDataInfo(grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], in_fwd_data_list, 
-                          in_bwd_data_list, out_fwd_data_list, out_bwd_data_list)
-    return UtDataInfo(grad_out, npu_grad_out, npu_out, out, in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, 
-                      out_bwd_data_list)
+        return UtDataInfo(grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], grad, in_fwd_data_list)
+    return UtDataInfo(grad_out, npu_grad_out, npu_out, out, grad, in_fwd_data_list)
 
 
 def get_api_info(api_info_dict, api_name):
@@ -232,16 +227,13 @@ def _run_ut():
 
 
 class UtDataInfo:
-    def __init__(self, grad_out, npu_grad_out, npu_out, out, in_fwd_data_list, in_bwd_data_list, out_fwd_data_list, 
-                 out_bwd_data_list):
-        self.grad_out = grad_out
+    def __init__(self, bench_grad_out, npu_grad_out, npu_out, bench_out, grad_in, in_fwd_data_list):
+        self.bench_grad_out = bench_grad_out
         self.npu_grad_out = npu_grad_out
         self.npu_out = npu_out
-        self.out = out
+        self.bench_out = bench_out
+        self.grad_in = grad_in
         self.in_fwd_data_list = in_fwd_data_list
-        self.in_bwd_data_list = in_bwd_data_list
-        self.out_fwd_data_list = out_fwd_data_list
-        self.out_bwd_data_list = out_bwd_data_list
 
 if __name__ == '__main__':
     _run_ut()
