@@ -91,7 +91,6 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
                 print_error_log(f"Run {api_full_name} UT Error: %s" % str(err))
 
     compare.print_pretest_result()
-    compare.write_compare_csv()
 
 
 def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success):
