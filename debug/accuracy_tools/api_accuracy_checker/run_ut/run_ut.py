@@ -180,7 +180,7 @@ def run_backward(api_full_name, args, backward_content, grad_index, npu_args, np
 def initialize_save_error_data():
     error_data_path = os.path.realpath(msCheckerConfig.error_data_path)
     check_file_or_directory_path(error_data_path, True)
-    initialize_save_path(error_data_path, 'error_data')
+    initialize_save_path(error_data_path, 'ut_error_data')
 
 
 def _run_ut_parser(parser):
