@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 
 import numpy as np
 import torch
-import pandas as pd
+import csv
 
 try:
     import torch_npu
