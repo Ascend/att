@@ -3,7 +3,7 @@ import os
 from prettytable import PrettyTable
 from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, \
     compare_builtin_type, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
-from api_accuracy_checker.common.utils import get_json_contents, print_error_log, print_info_log, write_csv, write_seg_csv
+from api_accuracy_checker.common.utils import get_json_contents, print_error_log, print_info_log, write_csv
 from api_accuracy_checker.compare.compare_utils import CompareConst 
 
 
@@ -78,7 +78,7 @@ class Comparator:
             stack_info = "\n".join(self.stack_info[name])
             df_row.append(stack_info)
         test_rows.append(df_row)
-        write_seg_csv(test_rows, self.save_path)
+        write_csv(test_rows, self.save_path)
 
     def write_detail_csv(self, test_result):
         test_rows = []
@@ -95,7 +95,7 @@ class Comparator:
                 subject = subject_prefix + ".backward.output." + str(i)
                 test_rows.append([subject] + list(test_subject))
 
-        write_seg_csv(test_rows, self.detail_save_path)
+        write_csv(test_rows, self.detail_save_path)
 
     def record_results(self, *args):
         self.write_summary_csv(args)
