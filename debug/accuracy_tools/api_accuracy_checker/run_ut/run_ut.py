@@ -7,11 +7,13 @@ import torch
 from tqdm import tqdm
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
-    print_error_log
+    print_error_log, check_file_or_directory_path, initialize_save_path
 from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
 from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
+from ut_api_info import UtAPIInfo
+from api_accuracy_checker.common.config import msCheckerConfig
 
 NO_GRAD_APIS = ["hardtanh"]
 
@@ -71,9 +73,12 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare = Comparator(out_path)
     for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
-            grad_out, npu_grad_out, npu_out, out = run_torch_api(api_full_name, api_setting_dict, backward_content,
-                                                                api_info_dict)
-            compare.compare_output(api_full_name, out, npu_out, grad_out, npu_grad_out)
+            data_info = run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict)
+            is_fwd_success, is_bwd_success = compare.compare_output(api_full_name, data_info.bench_out,
+                                                                    data_info.npu_out, data_info.bench_grad_out,
+                                                                    data_info.npu_grad_out)
+            if save_error_data:
+                do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         except Exception as err:
             [_, api_name, _] = api_full_name.split("*")
             if "not implemented for 'Half'" in str(err):
@@ -89,9 +94,27 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare.write_compare_csv()
 
 
+def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success):
+    if not is_fwd_success or not is_bwd_success:
+        for element in data_info.in_fwd_data_list:
+            UtAPIInfo(api_full_name + '*forward*input', element)
+        if data_info.bench_out is not None:
+            UtAPIInfo(api_full_name + '*forward*output*bench', data_info.bench_out)
+            UtAPIInfo(api_full_name + '*forward*output*npu', data_info.npu_out)
+        if data_info.grad_in is not None:
+            UtAPIInfo(api_full_name + '*backward*input', data_info.grad_in)
+        if data_info.bench_grad_out is not None:
+            UtAPIInfo(api_full_name + '*backward*output*bench', data_info.bench_grad_out)
+            UtAPIInfo(api_full_name + '*backward*output*npu', data_info.npu_grad_out)
+
+
+
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
+    in_fwd_data_list = []
     [api_type, api_name, _] = api_full_name.split("*")
     args, inplace, kwargs, need_grad = get_api_info(api_info_dict, api_name)
+    in_fwd_data_list.append(args)
+    in_fwd_data_list.append(kwargs)
     need_backward = api_full_name in backward_content and api_name[-1] != "_" and inplace is not True
     need_backward = need_backward and need_grad
     if inplace or not need_grad:
@@ -104,14 +127,16 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     npu_out = exec_api(api_type, api_name, npu_args, npu_kwargs)
     grad_input_index = api_setting_dict.get(api_name)
     grad_index = None
+    grad = None
     if grad_input_index is not None:
         grad_index = grad_input_index.get('grad_index')
 
     if need_backward:
-        grad_out, npu_grad_out = run_backward(api_full_name, args, backward_content, grad_index, npu_args, npu_out, out)
+        grad_out, npu_grad_out, grad, npu_grad = run_backward(api_full_name, args, backward_content, grad_index, npu_args,
+                                                              npu_out, out)
     if grad_index is not None:
-        return grad_out, npu_grad_out, npu_out[grad_index], out[grad_index]
-    return grad_out, npu_grad_out, npu_out, out
+        return UtDataInfo(grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], grad, in_fwd_data_list)
+    return UtDataInfo(grad_out, npu_grad_out, npu_out, out, grad, in_fwd_data_list)
 
 
 def get_api_info(api_info_dict, api_name):
@@ -150,7 +175,13 @@ def run_backward(api_full_name, args, backward_content, grad_index, npu_args, np
         if isinstance(arg, torch.Tensor):
             npu_args_grad.append(arg.grad)
     npu_grad_out = npu_args_grad
-    return grad_out, npu_grad_out
+    return grad_out, npu_grad_out, grad, npu_grad
+
+
+def initialize_save_error_data():
+    error_data_path = os.path.realpath(msCheckerConfig.error_data_path)
+    check_file_or_directory_path(error_data_path, True)
+    initialize_save_path(error_data_path, 'error_data')
 
 
 def _run_ut_parser(parser):
@@ -190,8 +221,19 @@ def _run_ut():
         raise ValueError("The forward_input_file and backward_input_file should be a json file!")
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     save_error_data = args.save_error_data
+    if save_error_data:
+        initialize_save_error_data()
     run_ut(forward_file, backward_file, out_path, save_error_data)
 
+
+class UtDataInfo:
+    def __init__(self, bench_grad_out, npu_grad_out, npu_out, bench_out, grad_in, in_fwd_data_list):
+        self.bench_grad_out = bench_grad_out
+        self.npu_grad_out = npu_grad_out
+        self.npu_out = npu_out
+        self.bench_out = bench_out
+        self.grad_in = grad_in
+        self.in_fwd_data_list = in_fwd_data_list
 
 if __name__ == '__main__':
     _run_ut()

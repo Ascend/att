@@ -5,7 +5,7 @@ import threading
 import numpy as np
 
 from .api_info import ForwardAPIInfo, BackwardAPIInfo
-from ..common.utils import check_file_or_directory_path
+from ..common.utils import check_file_or_directory_path, initialize_save_path
 from ..common.config import msCheckerConfig
 
 lock = threading.Lock()
@@ -48,24 +48,14 @@ def write_json(file_path, data, indent=None):
             fcntl.flock(f, fcntl.LOCK_UN)
             lock.release()
 
+
 def initialize_output_json():
     dump_path = os.path.realpath(msCheckerConfig.dump_path)
-    check_file_or_directory_path(dump_path,True)
+    check_file_or_directory_path(dump_path, True)
     files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
     if msCheckerConfig.real_data:
-        forward_real_data_path = os.path.join(dump_path, 'forward_real_data')
-        if os.path.exists(forward_real_data_path):
-            raise ValueError(f"file {forward_real_data_path} already exists, please remove it first")
-        else:
-            os.mkdir(forward_real_data_path, mode = 0o750)
-        check_file_or_directory_path(forward_real_data_path, True)
-
-        backward_real_data_path = os.path.join(dump_path, 'backward_real_data')
-        if os.path.exists(backward_real_data_path):
-            raise ValueError(f"file {backward_real_data_path} already exists, please remove it first")
-        else:
-            os.mkdir(backward_real_data_path, mode = 0o750)
-        check_file_or_directory_path(backward_real_data_path, True)
+        initialize_save_path(dump_path, 'forward_real_data')
+        initialize_save_path(dump_path, 'backward_real_data')
     for file in files:
         file_path = os.path.join(dump_path, file)
         if os.path.exists(file_path):
