@@ -1,7 +1,7 @@
 # 定义API INFO，保存基本信息，用于后续结构体的落盘，注意考虑random场景及真实数据场景
 import inspect
 from api_accuracy_checker.common.config import msCheckerConfig
-from api_accuracy_checker.common.config import BaseAPIInfo
+from api_accuracy_checker.common.base_api import BaseAPIInfo
 
 
 class APIInfo(BaseAPIInfo):
