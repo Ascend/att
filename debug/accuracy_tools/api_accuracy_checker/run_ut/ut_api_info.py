@@ -1,5 +1,5 @@
 from api_accuracy_checker.common.config import msCheckerConfig
-from api_accuracy_checker.common.config import BaseAPIInfo
+from api_accuracy_checker.common.base_api import BaseAPIInfo
 
 
 class UtAPIInfo(BaseAPIInfo):
