@@ -187,11 +187,6 @@ def read_json(file):
     return obj
 
 def write_csv(data, filepath):
-    with open(filepath, 'w') as f:
-        writer = csv.writer(f)
-        writer.writerows(data)
-
-def write_seg_csv(data, filepath):
     with open(filepath, 'a') as f:
         writer = csv.writer(f)
         writer.writerows(data)
