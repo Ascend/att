@@ -16,9 +16,11 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    ```
    export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
-   安装依赖tqdm
+   安装依赖tqdm、prettytable、yaml
    ```
    pip3 install tqdm
+   pip3 install prettytable
+   pip3 install yaml
    ```
 
 2. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
