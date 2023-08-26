@@ -8,30 +8,38 @@ Ascend Training Tools，昇腾训练工具链
 ![输入图片说明](debug/resources/model_training_migration_process.png)
 
 #### 使用说明
+1.  性能工具[tools](https://gitee.com/ascend/att/tree/master/profiler)
+    b. [compare_tools](https://gitee.com/ascend/att/tree/master/profiler/compare_tools)
 
-1.  训练脚本工具[tools](https://gitee.com/ascend/att/tree/master/debug/tools)
+        **GPU与NPU性能比较工具**：提供NPU与GPU性能拆解功能以及算子、通信、内存性能的比较功能。
 
-    a. [custom](http://https://gitee.com/ascend/att/tree/master/debug/tools/custom)
+    c. [distribute_tools](https://gitee.com/ascend/att/tree/master/profiler/distribute_tools)
 
-        **社区用户贡献工具**：用户可提交自己的脚本代码及使用说明，规则：创建新的文件夹xxx_tool, 下面放脚本文件及相关文件以及README
+        **集群场景脚本集合**：提供集群场景数据一键汇聚功能。
 
-    b. [compare_tools](https://gitee.com/ascend/att/tree/master/debug/tools/compare_tools)
-
-        **GPU与NPU性能比较工具**：提供NPU与GPU算子性能的比较功能。
-
-    c. [distribute_tools](http://https://gitee.com/ascend/att/tree/master/debug/tools/distribute_tools)
-
-        **集群场景脚本集合**：提供集群场景数据一键汇聚功能和一键修改各机hostname功能。
-
-    d. [merge_profiling_timeline](https://gitee.com/ascend/att/tree/master/debug/tools/merge_profiling_timeline)
+    d. [merge_profiling_timeline](https://gitee.com/ascend/att/tree/master/profiler/merge_profiling_timeline)
 
         **合并大json工具**：融合多个profiling的timeline在一个json文件中的功能。
 
     e. [profiling analysis](https://gitee.com/ascend/att/tree/master/debug/tools/profiling_analyse)
 
         **性能拆解工具**：提供GPU与NPU的性能分析拆解能力。
+
+    f. [cluster_analyse](https://gitee.com/ascend/att/tree/master/profiler/cluster_analyse)
+        **集群分析工具**：提供多机多卡的集群分析能力。
+
+2.  精度工具[tools](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools)
+
+    a. [预检功能](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/api_accuracy_checker)
+
+        **社区用户贡献工具**：用户可提交自己的脚本代码及使用说明，规则：创建新的文件夹xxx_tool, 下面放脚本文件及相关文件以及README
+
+    b. [精度比对功能](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend)
+
+        **社区用户贡献工具**：用户可提交自己的脚本代码及使用说明，规则：创建新的文件夹xxx_tool, 下面放脚本文件及相关文件以及README
+
     
-2.  tensorboard支持npu可视化插件[tb-plugin](https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin)
+3.  tensorboard支持npu可视化插件[tb-plugin](https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin)
 
     **PyTorch profiling数据可视化的TensorBoard的插件**： 它支持将Ascend平台采集、解析的Pytorch Profiling数据可视化呈现，也兼容GPU数据采集、解析可视化。
 
