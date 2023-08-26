@@ -4,3 +4,4 @@ compile_option: -O3
 compare_algorithm: cosine_similarity
 real_data: False
 dump_step: 1000
+error_data_path: './'

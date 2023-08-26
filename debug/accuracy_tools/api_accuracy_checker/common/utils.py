@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 
 import numpy as np
 import torch
-import pandas as pd
+import csv
 
 try:
     import torch_npu
@@ -187,8 +187,9 @@ def read_json(file):
     return obj
 
 def write_csv(data, filepath):
-    data_frame = pd.DataFrame(columns=data)
-    data_frame.to_csv(filepath, index=False)
+    with open(filepath, 'a') as f:
+        writer = csv.writer(f)
+        writer.writerows(data)
 
 def _print_log(level, msg):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
@@ -589,3 +590,18 @@ def cross_entropy_process(api_info_dict):
         if api_info_dict['args'][1]['Min'] <= 0:
             api_info_dict['args'][1]['Min'] = 0 #The second argument in cross_entropy should be -100 or not less than 0.
     return api_info_dict
+
+def initialize_save_path(save_path, dir_name):
+    data_path = os.path.join(save_path, dir_name)
+    if os.path.exists(data_path):
+        raise ValueError(f"file {data_path} already exists, please remove it first")
+    else:
+        os.mkdir(data_path, mode = 0o750)
+    check_file_or_directory_path(data_path, True)
+
+def write_pt(file_path, tensor):
+    if os.path.exists(file_path):
+        raise ValueError(f"File {file_path} already exists")
+    torch.save(tensor, file_path)
+    full_path = os.path.abspath(file_path)
+    return full_path
