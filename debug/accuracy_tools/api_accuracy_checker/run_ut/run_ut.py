@@ -7,7 +7,7 @@ import torch
 from tqdm import tqdm
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
-    print_error_log, check_file_or_directory_path, initialize_save_path
+    print_error_log, check_file_or_directory_path, initialize_save_path, Const
 from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
@@ -44,7 +44,7 @@ def exec_api(api_type, api_name, args, kwargs):
     return out
 
 
-def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
+def generate_npu_params(input_args, input_kwargs, need_backward):
     def recursive_arg_to_npu(arg_in):
         if isinstance(arg_in, (list, tuple)):
             return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
@@ -60,10 +60,34 @@ def generate_npu_params(cpu_args, cpu_kwargs, need_backward):
         else:
             return arg_in
 
-    npu_args = recursive_arg_to_npu(cpu_args)
-    npu_kwargs = {key: recursive_arg_to_npu(value) for key, value in cpu_kwargs.items()}
+    npu_args = recursive_arg_to_npu(input_args)
+    npu_kwargs = {key: recursive_arg_to_npu(value) for key, value in input_kwargs.items()}
     return npu_args, npu_kwargs
 
+def generate_cpu_params(input_args, input_kwargs, need_backward):
+    def recursive_arg_to_cpu(arg_in):
+        if isinstance(arg_in, (list, tuple)):
+            return type(arg_in)(recursive_arg_to_cpu(arg) for arg in arg_in)
+        elif isinstance(arg_in, torch.Tensor):
+            if need_backward and arg_in.requires_grad:
+                if str(arg_in.dtype) in Const.CONVERT.keys():
+                    arg_in = arg_in.clone().type(eval(Const.CONVERT[str(arg_in.dtype)])).detach().requires_grad_()
+                else:
+                    arg_in = arg_in.clone().detach().requires_grad_()
+                temp_arg_in = arg_in * 1
+                arg_in = temp_arg_in.type_as(arg_in)
+                arg_in.retain_grad()
+                return arg_in
+            else:
+                if str(arg_in.dtype) in Const.CONVERT.keys():
+                    return arg_in.clone().type(eval(Const.CONVERT[str(arg_in.dtype)])).detach()
+                return arg_in.clone().detach()
+        else:
+            return arg_in
+
+    npu_args = recursive_arg_to_cpu(input_args)
+    npu_kwargs = {key: recursive_arg_to_cpu(value) for key, value in input_kwargs.items()}
+    return npu_args, npu_kwargs
 
 def run_ut(forward_file, backward_file, out_path, save_error_data):
     print_info_log("start UT test")
@@ -118,11 +142,12 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     need_backward = need_backward and need_grad
     if inplace or not need_grad:
         print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
+    cpu_args, cpu_kwargs = generate_cpu_params(args, kwargs, need_backward)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     grad_out, npu_grad_out = None, None
     if kwargs.get("device"):
         del kwargs["device"]
-    out = exec_api(api_type, api_name, args, kwargs)
+    out = exec_api(api_type, api_name, cpu_args, cpu_kwargs)
     npu_out = exec_api(api_type, api_name, npu_args, npu_kwargs)
     grad_input_index = api_setting_dict.get(api_name)
     grad_index = None
@@ -131,7 +156,7 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
         grad_index = grad_input_index.get('grad_index')
 
     if need_backward:
-        grad_out, npu_grad_out, grad, npu_grad = run_backward(api_full_name, args, backward_content, grad_index, npu_args,
+        grad_out, npu_grad_out, grad, npu_grad = run_backward(api_full_name, cpu_args, backward_content, grad_index, npu_args,
                                                               npu_out, out)
     if grad_index is not None:
         return UtDataInfo(grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], grad, in_fwd_data_list)
@@ -153,12 +178,13 @@ def get_api_info(api_info_dict, api_name):
 def run_backward(api_full_name, args, backward_content, grad_index, npu_args, npu_out, out):
     backward_args = backward_content[api_full_name]
     grad = gen_args(backward_args)[0]
+    cpu_grad, _ = generate_cpu_params(grad, {}, False)
     if grad_index is not None:
-        out[grad_index].backward(grad)
+        out[grad_index].backward(cpu_grad)
     elif isinstance(out, (list, tuple)):
         raise NotImplementedError("Multiple backward is not supported.")
     else:
-        out.backward(grad)
+        out.backward(cpu_grad)
     args_grad = []
     for arg in args:
         if isinstance(arg, torch.Tensor):
