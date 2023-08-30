@@ -74,11 +74,12 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
             data_info = run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict)
+            new_data_info = copy.deepcopy(data_info)
             is_fwd_success, is_bwd_success = compare.compare_output(api_full_name, data_info.bench_out,
                                                                     data_info.npu_out, data_info.bench_grad_out,
                                                                     data_info.npu_grad_out)
             if save_error_data:
-                do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
+                do_save_error_data(api_full_name, new_data_info, is_fwd_success, is_bwd_success)
         except Exception as err:
             [_, api_name, _] = api_full_name.split("*")
             if "not implemented for 'Half'" in str(err):
