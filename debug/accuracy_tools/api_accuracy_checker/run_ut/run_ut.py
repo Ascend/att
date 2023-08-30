@@ -85,9 +85,9 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
         else:
             return arg_in
 
-    npu_args = recursive_arg_to_cpu(input_args)
-    npu_kwargs = {key: recursive_arg_to_cpu(value) for key, value in input_kwargs.items()}
-    return npu_args, npu_kwargs
+    cpu_args = recursive_arg_to_cpu(input_args)
+    cpu_kwargs = {key: recursive_arg_to_cpu(value) for key, value in input_kwargs.items()}
+    return cpu_args, cpu_kwargs
 
 def run_ut(forward_file, backward_file, out_path, save_error_data):
     print_info_log("start UT test")
