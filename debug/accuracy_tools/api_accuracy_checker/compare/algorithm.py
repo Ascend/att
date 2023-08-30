@@ -150,7 +150,7 @@ def flatten_compare_result(result):
 def compare_core(bench_out, npu_out, alg):
     msg = ""
     if not isinstance(bench_out, type(npu_out)):
-        return CompareConst.NAN, False, "bench and npu output type is different.", CompareConst.NAN
+        return [(CompareConst.NAN, "bench and npu output type is different.")], False, CompareConst.NA, CompareConst.NA
     if isinstance(bench_out, (list, tuple)):
         compare_result, test_success, bench_dtype, npu_dtype = [], True, [], []
         if len(bench_out) != len(npu_out):
