@@ -79,12 +79,14 @@ class Const:
     API_PATTERN = r"^[A-Za-z0-9]+[_]+([A-Za-z0-9]+[_]*[A-Za-z0-9]+)[_]+[0-9]+[_]+[A-Za-z0-9]+"
     WRITE_FLAGS = os.O_WRONLY | os.O_CREAT
     WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
-
-    CONVERT = {
-        "int32_to_int64": ["torch.int32", "torch.int64"],
+    
+    RAISE_PRECISION = {
         "torch.float16" : "torch.float32",
         "torch.bfloat16" : "torch.float32",
         "torch.float32" : "torch.float64"
+    }
+    CONVERT = {
+        "int32_to_int64": ["torch.int32", "torch.int64"],
     }
 
     CONVERT_API = {

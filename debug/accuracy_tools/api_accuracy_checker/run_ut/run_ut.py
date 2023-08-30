@@ -70,8 +70,8 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
             return type(arg_in)(recursive_arg_to_cpu(arg) for arg in arg_in)
         elif isinstance(arg_in, torch.Tensor):
             if need_backward and arg_in.requires_grad:
-                if str(arg_in.dtype) in Const.CONVERT.keys():
-                    arg_in = arg_in.clone().type(eval(Const.CONVERT[str(arg_in.dtype)])).detach().requires_grad_()
+                if str(arg_in.dtype) in Const.RAISE_PRECISION.keys():
+                    arg_in = arg_in.clone().type(eval(Const.RAISE_PRECISION[str(arg_in.dtype)])).detach().requires_grad_()
                 else:
                     arg_in = arg_in.clone().detach().requires_grad_()
                 temp_arg_in = arg_in * 1
@@ -79,8 +79,8 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
                 arg_in.retain_grad()
                 return arg_in
             else:
-                if str(arg_in.dtype) in Const.CONVERT.keys():
-                    return arg_in.clone().type(eval(Const.CONVERT[str(arg_in.dtype)])).detach()
+                if str(arg_in.dtype) in Const.RAISE_PRECISION.keys():
+                    return arg_in.clone().type(eval(Const.RAISE_PRECISION[str(arg_in.dtype)])).detach()
                 return arg_in.clone().detach()
         else:
             return arg_in
