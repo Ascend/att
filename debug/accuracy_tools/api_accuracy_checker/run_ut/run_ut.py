@@ -1,5 +1,6 @@
 import argparse
 import os
+import copy
 import sys
 import torch_npu
 import yaml
