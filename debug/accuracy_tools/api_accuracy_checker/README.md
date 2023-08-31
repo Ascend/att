@@ -89,7 +89,7 @@ DP.dump.set_dump_switch("ON")
 
 # 溢出API解析工具
 
-针对训练过程中的溢出检测场景，对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，通过该工具进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
+针对训练过程中的溢出检测场景，对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，前向过程溢出的API可通过该工具对`forward_info_{pid}.json`进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
 
 参见[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)中的"溢出检测场景"进行溢出检测dump。
 
@@ -113,8 +113,10 @@ DP.dump.set_dump_switch("ON")
 
    ```bash
    cd $ATT_HOME/debug/accuracy_tools/api_accuracy_checker/run_ut
-   python run_overflow_check.py -forward ./forward_info_0.json -backward ./backward_info_0.json
+   python run_overflow_check.py -forward ./forward_info_0.json
    ```
+
+   反向过程溢出的API暂不支持该功能。
 
 
 具体参数解释请参见“Ascend模型精度预检工具”。
