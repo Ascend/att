@@ -14,7 +14,7 @@ class BaseAPIInfo:
         self.save_path = save_path
         self.forward_path = forward_path
         self.backward_path = backward_path
-        
+
     def analyze_element(self, element):
         if isinstance(element, (list, tuple)):
             out = []
@@ -45,16 +45,16 @@ class BaseAPIInfo:
     def analyze_tensor(self, arg):
         single_arg = {}
         if not self.is_save_data:
-            
+
             single_arg.update({'type' : 'torch.Tensor'})
             single_arg.update({'dtype' : str(arg.dtype)})
             single_arg.update({'shape' : arg.shape})
             single_arg.update({'Max' : self.transfer_types(self.get_tensor_extremum(arg,'max'), str(arg.dtype))})
             single_arg.update({'Min' : self.transfer_types(self.get_tensor_extremum(arg,'min'), str(arg.dtype))})
             single_arg.update({'requires_grad': arg.requires_grad})
-            
+
         else:
-            api_args = self.api_name + '*' + str(self.args_num)
+            api_args = self.api_name + '.' + str(self.args_num)
             if self.is_forward:
                 forward_real_data_path = os.path.join(self.save_path, self.forward_path)
 
@@ -89,12 +89,12 @@ class BaseAPIInfo:
         if element is None or isinstance(element, (bool,int,float,str,slice)):
             return True
         return False
-        
+
     def analyze_device_in_kwargs(self, element):
         single_arg = {}
         single_arg.update({'type' : 'torch.device'})
         if not isinstance(element, str):
-            
+
             if hasattr(element, "index"):
                 device_value = element.type + ":" + str(element.index)
                 single_arg.update({'value' : device_value})
@@ -103,13 +103,13 @@ class BaseAPIInfo:
         else:
             single_arg.update({'value' : element})
         return single_arg
-    
+
     def analyze_dtype_in_kwargs(self, element):
         single_arg = {}
         single_arg.update({'type' : 'torch.dtype'})
         single_arg.update({'value' : str(element)})
         return single_arg
-    
+
     def get_tensor_extremum(self, data, operator):
         if data.dtype is torch.bool:
             if operator == 'max':
@@ -120,7 +120,7 @@ class BaseAPIInfo:
             return torch._C._VariableFunctionsClass.max(data).item()
         else:
             return torch._C._VariableFunctionsClass.min(data).item()
-    
+
     def get_type_name(self, name):
 
         left = name.index("'")
