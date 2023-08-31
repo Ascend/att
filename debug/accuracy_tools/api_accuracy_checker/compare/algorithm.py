@@ -166,7 +166,6 @@ def compare_core(bench_out, npu_out, alg):
         if b_keys != n_keys:
             compare_result, test_success, bench_dtype, npu_dtype = [(CompareConst.NAN, "bench and npu output dict keys are different")], False, \
                 CompareConst.NA, CompareConst.NA
-            return compare_result, test_success, bench_dtype, npu_dtype
         compare_result, test_success, bench_dtype, npu_dtype = compare_core(list(bench_out.values()), list(npu_out.values()), alg)
     elif isinstance(bench_out, torch.Tensor):
         bench_dtype = str(bench_out.dtype)
