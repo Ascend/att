@@ -150,11 +150,11 @@ def flatten_compare_result(result):
 def compare_core(bench_out, npu_out, alg):
     msg = ""
     if not isinstance(bench_out, type(npu_out)):
-        return CompareConst.NAN, False, "bench and npu output type is different.", CompareConst.NAN, CompareConst.NAN
+        return [(CompareConst.NAN, "bench and npu output type is different.")], False, CompareConst.NA, CompareConst.NA
     if isinstance(bench_out, (list, tuple)):
         compare_result, test_success, bench_dtype, npu_dtype = [], True, [], []
         if len(bench_out) != len(npu_out):
-            return CompareConst.NAN, False, "bench and npu output structure is different", CompareConst.NAN, CompareConst.NAN
+            return [(CompareConst.NAN, "bench and npu output structure is different")], False, CompareConst.NA, CompareConst.NA
         for b_out_i, n_out_i in zip(bench_out, npu_out):
             compare_result_i, test_success_i, bench_dtype_i, npu_dtype_i = compare_core(b_out_i, n_out_i, alg)
             compare_result.append(compare_result_i)
@@ -164,15 +164,14 @@ def compare_core(bench_out, npu_out, alg):
     elif isinstance(bench_out, dict):
         b_keys, n_keys = set(bench_out.keys()), set(npu_out.keys())
         if b_keys != n_keys:
-            compare_result, test_success, msg = CompareConst.NAN, False, "bench and npu output dict keys are different", \
-                CompareConst.NAN, CompareConst.NAN
+            compare_result, test_success, bench_dtype, npu_dtype = [(CompareConst.NAN, "bench and npu output dict keys are different")], False, \
+                CompareConst.NA, CompareConst.NA
         compare_result, test_success, bench_dtype, npu_dtype = compare_core(list(bench_out.values()), list(npu_out.values()), alg)
     elif isinstance(bench_out, torch.Tensor):
         bench_dtype = str(bench_out.dtype)
         npu_dtype = str(npu_out.dtype)
-        if bench_out.dtype == torch.bfloat16:
-            bench_out = bench_out.to(torch.float32)
-            npu_out = npu_out.to(torch.float32)
+        if bench_out.dtype in [torch.float32, torch.float64] and bench_out.dtype != npu_out.dtype:
+            npu_out = npu_out.type(bench_out.dtype)
         compare_result, test_success, msg = compare_torch_tensor(bench_out.detach().numpy(), npu_out.detach().cpu().numpy(), alg)
     elif isinstance(bench_out, (bool, int, float, str)):
         compare_result, test_success, msg = compare_builtin_type(bench_out, npu_out)

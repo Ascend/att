@@ -79,14 +79,17 @@ class Const:
     API_PATTERN = r"^[A-Za-z0-9]+[_]+([A-Za-z0-9]+[_]*[A-Za-z0-9]+)[_]+[0-9]+[_]+[A-Za-z0-9]+"
     WRITE_FLAGS = os.O_WRONLY | os.O_CREAT
     WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
-
+    
+    RAISE_PRECISION = {
+        "torch.float16" : "torch.float32",
+        "torch.bfloat16" : "torch.float32",
+        "torch.float32" : "torch.float64"
+    }
     CONVERT = {
-        "fp16_to_fp32": ["torch.float16", "torch.float32"],
-        "int32_to_int64": ["torch.int32", "torch.int64"]
+        "int32_to_int64": ["torch.int32", "torch.int64"],
     }
 
     CONVERT_API = {
-        "fp16_to_fp32": ["conv2d", "batch_norm", "relu", "max_pool2d", "interpolate", "group_norm", "layer_norm", "bmm", "tanh",  "cross_entropy", "linear", "numel"],
         "int32_to_int64": ["cross_entropy"]
     }
 
