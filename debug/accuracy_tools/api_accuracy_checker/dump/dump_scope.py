@@ -1,6 +1,5 @@
 # dump范围控制
 import torch 
-from torch.utils.data import Dataset, DataLoader 
 from torch.utils.data.dataloader import _BaseDataLoaderIter 
 from api_accuracy_checker.dump.dump import DumpUtil 
 
