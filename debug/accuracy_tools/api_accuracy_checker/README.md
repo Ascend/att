@@ -53,6 +53,12 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    注意：目前API通过测试的标准是每个输出与标杆比对的余弦相似度大于0.99，并且float16数据要通过双千分之一标准，float32数据要通过双万分之一标准，pretest_details.csv中的相对误差供用户分析时使用。
 
+4. 如果需要保存比对不达标的输入和输出数据，可以在run_ut执行命令结尾添加-save_error_data，例如：
+
+   ```
+   python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -save_error_data
+   ```
+   数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path
 
 ## FAQ 
 1. 多卡训练dump结果只有一组json，这正确吗？
