@@ -72,7 +72,7 @@ def pretest_info_dump(name, out_feat, module, phase):
     write_api_info_json(api_info)
 
 def pretest_hook(name, phase):
-    def pretest_info_dump_hook(module, in_feat, out_feat):
+    def pretest_info_dump_hook(module, out_feat):
         pretest_info_dump(name, out_feat, module, phase)
         if hasattr(module, "input_args"):
             del module.input_args 
