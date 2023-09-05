@@ -75,19 +75,14 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
             data_info = run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict)
-            new_data_info = UtDataInfo(
-                bench_grad_out=None if data_info.bench_grad_out is None else data_info.bench_grad_out.clone(),
-                npu_grad_out=None if data_info.npu_grad_out is None else data_info.npu_grad_out.clone(),
-                npu_out=None if data_info.npu_out is None else data_info.npu_out.clone(),
-                bench_out=None if data_info.bench_out is None else data_info.bench_out.clone(),
-                grad_in=data_info.grad_in,
-                in_fwd_data_list=data_info.in_fwd_data_list
-            )
-            is_fwd_success, is_bwd_success = compare.compare_output(api_full_name, data_info.bench_out,
-                                                                    data_info.npu_out, data_info.bench_grad_out,
-                                                                    data_info.npu_grad_out)
+            is_fwd_success, is_bwd_success = \
+                compare.compare_output(api_full_name,
+                                       None if data_info.bench_out is None else data_info.bench_out.clone(),
+                                       None if data_info.npu_out is None else data_info.npu_out.clone(),
+                                       None if data_info.bench_grad_out is None else data_info.bench_grad_out.clone(),
+                                       None if data_info.npu_grad_out is None else data_info.npu_grad_out.clone())
             if save_error_data:
-                do_save_error_data(api_full_name, new_data_info, is_fwd_success, is_bwd_success)
+                do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         except Exception as err:
             [_, api_name, _] = api_full_name.split("*")
             if "not implemented for 'Half'" in str(err):
