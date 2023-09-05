@@ -8,8 +8,8 @@ from api_accuracy_checker.compare.compare_utils import CompareConst
 
 
 class Comparator:
-    TEST_FILE_NAME = "pretest_result.csv"
-    DETAIL_TEST_FILE_NAME = "pretest_details.csv"
+    TEST_FILE_NAME = "accuracy_checking_result.csv"
+    DETAIL_TEST_FILE_NAME = "accuracy_checking_details.csv"
 
     # consts for result csv 
     COLUMN_API_NAME = "API name"
@@ -57,11 +57,11 @@ class Comparator:
         write_csv(summary_test_rows, self.save_path)
 
         detail_test_rows = [[
-            "Subject", "Bench Dtype", "NPU Dtype",
+            "Npu Name", "Bench Dtype", "NPU Dtype",
             "Cosine Similarity", "Cosine Similarity Message",
             "Max Rel Error", "Max Rel Err Message",
-            "Thousandth Rel Error Ratio", "Thousandth Rel Error Ratio Message",
-            "Ten Thousandth Rel Error Ratio", "Ten Thousandth Rel Error Ratio Message",
+            "Relative Error (dual thousandth)", "Relative Error (dual thousandth) Message",
+            "Relative Error (dual ten thousandth)", "Relative Error (dual ten thousandth) Message",
             "Compare Builtin Type", "Builtin Type Message",
             "Pass"
         ]]  
