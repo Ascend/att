@@ -15,18 +15,9 @@
 # limitations under the License.
 """
 
-import inspect
-import json
-import os
-import stat
-import numpy as np
-import torch
-import threading
-
-
 from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
 from api_accuracy_checker.dump.info_dump import write_api_info_json, initialize_output_json
-from api_accuracy_checker.common.utils import print_warn_log, print_info_log, print_error_log
+from api_accuracy_checker.common.utils import print_error_log
 from api_accuracy_checker.hook_module.register_hook import initialize_hook
 
 

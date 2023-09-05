@@ -2,7 +2,6 @@ import fcntl
 import json
 import os
 import threading
-import numpy as np
 
 from .api_info import ForwardAPIInfo, BackwardAPIInfo
 from ..common.utils import check_file_or_directory_path, initialize_save_path
