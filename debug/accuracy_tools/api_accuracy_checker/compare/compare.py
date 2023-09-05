@@ -60,8 +60,8 @@ class Comparator:
             "Npu Name", "Bench Dtype", "NPU Dtype",
             "Cosine Similarity", "Cosine Similarity Message",
             "Max Rel Error", "Max Rel Err Message",
-            "Maximun Relative Error (dual thousandth)", "Maximun Relative Error (dual thousandth) Message",
-            "Maximun Relative Error (dual ten thousandth)", "Maximun Relative Error (dual ten thousandth) Message",
+            "Relative Error (dual thousandth)", "Relative Error (dual thousandth) Message",
+            "Relative Error (dual ten thousandth)", "Relative Error (dual ten thousandth) Message",
             "Compare Builtin Type", "Builtin Type Message",
             "Pass"
         ]]  
