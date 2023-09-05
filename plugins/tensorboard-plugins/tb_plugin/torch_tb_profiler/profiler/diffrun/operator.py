@@ -35,10 +35,10 @@ class Operator(metaclass=ABCMeta):
             yield OpAgg(
                 agg.name,
                 agg.calls,
-                agg.host_duration,
-                agg.device_duration,
-                agg.self_host_duration,
-                agg.self_device_duration)
+                round(agg.host_duration, 3),
+                round(agg.device_duration, 3),
+                round(agg.self_host_duration, 3),
+                round(agg.self_device_duration, 3))
 
     def get_operators_and_kernels(self) -> Tuple[List[OperatorNode], List[DeviceNode]]:
         return [], []
