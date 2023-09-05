@@ -566,7 +566,7 @@ export const DiffOverview: React.FC<IProps> = (props: IProps) => {
 
         baselineHostDuration: left.host_duration,
         expHostDuration: right.host_duration,
-        deltaHostDuration: right.host_duration - left.host_duration,
+        deltaHostDuration: parseFloat((right.host_duration - left.host_duration).toFixed(3)),
         deltaHostDurationPercentNumber: deltaHostDurationPercentNumber,
         deltaHostDurationPercent: toPercentString(
           deltaHostDurationPercentNumber
@@ -575,7 +575,7 @@ export const DiffOverview: React.FC<IProps> = (props: IProps) => {
         baselineSelfHostDuration: left.self_host_duration,
         expSelfHostDuration: right.self_host_duration,
         deltaSelfHostDuration:
-          right.self_host_duration - left.self_host_duration,
+          parseFloat((right.self_host_duration - left.self_host_duration).toFixed(3)),
         deltaSelfHostDurationPercentNumber: deltaSelfHostDurationPercentNumber,
         deltaSelfHostDurationPercent: toPercentString(
           deltaSelfHostDurationPercentNumber
@@ -583,7 +583,7 @@ export const DiffOverview: React.FC<IProps> = (props: IProps) => {
 
         baselineDeviceDuration: left.device_duration,
         expDeviceDuration: right.device_duration,
-        deltaDeviceDuration: right.device_duration - left.device_duration,
+        deltaDeviceDuration: parseFloat((right.device_duration - left.device_duration).toFixed(3)),
         deltaDeviceDurationPercentNumber: deltaDeviceDurationPercentNumber,
         deltaDeviceDurationPercent: toPercentString(
           deltaDeviceDurationPercentNumber
@@ -592,7 +592,7 @@ export const DiffOverview: React.FC<IProps> = (props: IProps) => {
         baselineSelfDeviceDuration: left.self_device_duration,
         expSelfDeviceDuration: right.self_device_duration,
         deltaSelfDeviceDuration:
-          right.self_device_duration - left.self_device_duration,
+          parseFloat((right.self_device_duration - left.self_device_duration).toFixed(3)),
         deltaSelfDeviceDurationPercentNumber: deltaSelfDeviceDurationPercentNumber,
         deltaSelfDeviceDurationPercent: toPercentString(
           deltaSelfDeviceDurationPercentNumber
