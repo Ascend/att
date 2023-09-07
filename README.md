@@ -37,8 +37,21 @@ Ascend Training Tools，昇腾训练工具链
 
         **PyTorch精度工具**：用来进行PyTorch整网API粒度的数据dump、精度比对和溢出检测，从而定位PyTorch训练场景下的精度问题。
 
+3.  分析迁移工具[tools](https://www.hiascend.com/document/detail/zh/canncommercial/63RC2/devtools/auxiliarydevtool/atlasfmkt_16_0015.html)
+
+    a. [脚本分析工具](https://www.hiascend.com/document/detail/zh/canncommercial/63RC2/devtools/auxiliarydevtool/atlasfmkt_16_0016.html)
     
-3.  tensorboard支持npu可视化插件[tb-plugin](https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin)
+        **脚本分析能力**：脚本分析工具提供分析脚本，帮助用户在执行迁移操作前，分析基于GPU平台的PyTorch训练脚本中算子、三方库套件、亲和API分析以及动态shape的支持情况
+    b. [脚本迁移工具](https://www.hiascend.com/document/detail/zh/canncommercial/63RC2/devtools/auxiliarydevtool/atlasfmkt_16_0019.html)
+    
+        **脚本迁移能力**：脚本迁移工具提供后端命令行用于将GPU上训练的PyTorch脚本迁移至NPU上，得到新的训练脚本用于训练
+    
+    c. [自动迁移](https://www.hiascend.com/document/detail/zh/canncommercial/63RC2/devtools/auxiliarydevtool/atlasfmkt_16_0017.html)
+
+        **自动迁移能力**：自动迁移只需在训练脚本中导入库代码，使用方式较简单，且修改内容最少
+
+    
+4.  tensorboard支持npu可视化插件[tb-plugin](https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin)
 
     **PyTorch profiling数据可视化的TensorBoard的插件**： 它支持将Ascend平台采集、解析的Pytorch Profiling数据可视化呈现，也兼容GPU数据采集、解析可视化。
 
