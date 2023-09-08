@@ -205,8 +205,8 @@ def run_backward(api_full_name, args, backward_content, grad_index, npu_args, np
     return grad_out, npu_grad_out, grad, npu_grad
 
 
-def initialize_save_error_data():
-    error_data_path = os.path.realpath(msCheckerConfig.error_data_path)
+def initialize_save_error_data(out_path):
+    error_data_path = os.path.realpath(out_path)
     check_file_or_directory_path(error_data_path, True)
     initialize_save_path(error_data_path, 'ut_error_data')
 
@@ -225,7 +225,7 @@ def _run_ut_parser(parser):
                         required=False)
     parser.add_argument('-save_error_data', dest="save_error_data", action="store_true",
                         help="<optional> Save compare failed api output.", required=False)
-    parser.add_argument("-c", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
+    parser.add_argument("-j", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
                         default=False, required=False)
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
                         default=0, required=False)
@@ -249,7 +249,7 @@ def _run_ut():
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     save_error_data = args.save_error_data
     if save_error_data:
-        initialize_save_error_data()
+        initialize_save_error_data(out_path)
     run_ut(forward_file, backward_file, out_path, save_error_data)
 
 

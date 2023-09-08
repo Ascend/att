@@ -86,6 +86,8 @@ class Comparator:
         subject_prefix = test_result[0]
         fwd_result = test_result[3]
         bwd_result = test_result[4]
+        shape_info = test_result[5] 
+        test_rows.append(["Shape Info"] + list(shape_info))
         if isinstance(fwd_result, list):
             for i, test_subject in enumerate(fwd_result):
                 subject = subject_prefix + ".forward.output." + str(i)
@@ -106,6 +108,7 @@ class Comparator:
         self.compare_alg.update({name: (compare_func, standard)})
 
     def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None):
+        shape_info = npu_out.shape
         if "dropout" in api_name:
             is_fwd_success, fwd_compare_alg_results = self._compare_dropout(bench_out, npu_out)    
         else:
@@ -117,7 +120,7 @@ class Comparator:
                 is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
             is_bwd_success, bwd_compare_alg_results = CompareConst.NA, None
-        self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
+        self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results, shape_info)
         if is_fwd_success and is_bwd_success:
             self.test_result_cnt['success_num'] += 1
         elif not is_fwd_success and not is_bwd_success:
