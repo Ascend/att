@@ -61,6 +61,11 @@ def get_max_rel_err(n_value, b_value):
     bool_result = rel_err < 0.001
     return rel_err, bool_result, msg
 
+def get_max_abs_err(n_value, b_value):
+    n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
+    abs_err = np.abs(n_value - b_value).max()
+    bool_result = abs_err < 0.001
+    return abs_err, bool_result, msg
 
 def get_rel_err_ratio_thousandth(n_value, b_value):
     return get_rel_err_ratio(n_value, b_value, 0.001)

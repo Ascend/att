@@ -1,7 +1,7 @@
 # 进行比对及结果展示
 import os
 from prettytable import PrettyTable
-from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, \
+from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, get_max_abs_err, \
     compare_builtin_type, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
 from api_accuracy_checker.common.utils import get_json_contents, print_info_log, write_csv
 from api_accuracy_checker.compare.compare_utils import CompareConst 
@@ -27,6 +27,7 @@ class Comparator:
         self.compare_alg = {}
         self.register_compare_algorithm("Cosine Similarity", cosine_sim, cosine_standard)
         self.register_compare_algorithm("Max Relative Error", get_max_rel_err, None)
+        self.register_compare_algorithm("Max Absolute Error", get_max_abs_err, None)
         self.register_compare_algorithm("Thousandth Relative Error Ratio", get_rel_err_ratio_thousandth, None)
         self.register_compare_algorithm("Ten Thousandth Relative Error Ratio", get_rel_err_ratio_ten_thousandth, None)
         self.register_compare_algorithm("Default: isEqual", compare_builtin_type, None)
@@ -60,6 +61,7 @@ class Comparator:
             "Npu Name", "Bench Dtype", "NPU Dtype",
             "Cosine Similarity", "Cosine Similarity Message",
             "Max Rel Error", "Max Rel Err Message",
+            "Max Abs Error", "Max Abs Err Message",
             "Relative Error (dual thousandth)", "Relative Error (dual thousandth) Message",
             "Relative Error (dual ten thousandth)", "Relative Error (dual ten thousandth) Message",
             "Compare Builtin Type", "Builtin Type Message",
@@ -139,7 +141,7 @@ class Comparator:
             detailed_result, test_success, bench_dtype, npu_dtype = compare_core(bench_out, npu_out, alg)
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
-            if name != "Max Relative Error":
+            if name != "Max Relative Error" and name != "Max Absolute Error":
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
