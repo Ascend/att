@@ -57,7 +57,7 @@ class Comparator:
         write_csv(summary_test_rows, self.save_path)
 
         detail_test_rows = [[
-            "Npu Name", "Bench Dtype", "NPU Dtype",
+            "Npu Name", "Bench Dtype", "NPU Dtype", "Shape",
             "Cosine Similarity", "Cosine Similarity Message",
             "Max Rel Error", "Max Rel Err Message",
             "Relative Error (dual thousandth)", "Relative Error (dual thousandth) Message",
@@ -86,8 +86,6 @@ class Comparator:
         subject_prefix = test_result[0]
         fwd_result = test_result[3]
         bwd_result = test_result[4]
-        shape_info = test_result[5] 
-        test_rows.append(["Shape Info"] + list(shape_info))
         if isinstance(fwd_result, list):
             for i, test_subject in enumerate(fwd_result):
                 subject = subject_prefix + ".forward.output." + str(i)
@@ -108,7 +106,6 @@ class Comparator:
         self.compare_alg.update({name: (compare_func, standard)})
 
     def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None):
-        shape_info = npu_out.shape
         if "dropout" in api_name:
             is_fwd_success, fwd_compare_alg_results = self._compare_dropout(bench_out, npu_out)    
         else:
@@ -120,7 +117,7 @@ class Comparator:
                 is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
             is_bwd_success, bwd_compare_alg_results = CompareConst.NA, None
-        self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results, shape_info)
+        self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
         if is_fwd_success and is_bwd_success:
             self.test_result_cnt['success_num'] += 1
         elif not is_fwd_success and not is_bwd_success:
@@ -136,12 +133,14 @@ class Comparator:
         detailed_result_total = []
         bench_dtype_total = []
         npu_dtype_total = []
+        shape_total = []
         test_success_total = True
         for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
             detailed_result, test_success, bench_dtype, npu_dtype = compare_core(bench_out, npu_out, alg)
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
+            shape_total = npu_out.shape
             if name != "Max Relative Error":
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
@@ -154,6 +153,7 @@ class Comparator:
             detailed_result = list(detailed_result_total[i])
             detailed_result.insert(0, bench_dtype_total[i])
             detailed_result.insert(1, npu_dtype_total[i])
+            detailed_result.insert(2, shape_total[i])
             detailed_result.append(str(test_success_total))
             detailed_result_total[i] = tuple(detailed_result)
         return test_success_total, detailed_result_total
