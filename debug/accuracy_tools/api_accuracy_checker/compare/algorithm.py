@@ -171,7 +171,7 @@ def compare_core(bench_out, npu_out, alg):
     elif isinstance(bench_out, torch.Tensor):
         bench_dtype = str(bench_out.dtype)
         npu_dtype = str(npu_out.dtype)
-        shape = str(npu_out.shape)
+        shape = list(npu_out.shape)
         if bench_out.dtype in [torch.float32, torch.float64] and bench_out.dtype != npu_out.dtype:
             npu_out = npu_out.type(bench_out.dtype)
         compare_result, test_success, msg = compare_torch_tensor(bench_out.detach().numpy(), npu_out.detach().cpu().numpy(), alg)
