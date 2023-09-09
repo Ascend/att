@@ -137,10 +137,10 @@ class Comparator:
         test_success_total = True
         for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
-            detailed_result, test_success, bench_dtype, npu_dtype = compare_core(bench_out, npu_out, alg)
+            detailed_result, test_success, bench_dtype, npu_dtype, shape = compare_core(bench_out, npu_out, alg)
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
-            shape_total = npu_out.shape
+            shape_total = shape
             if name != "Max Relative Error":
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
