@@ -123,14 +123,11 @@ def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         api_full_name = api_full_name.replace("*", ".")
         for element in data_info.in_fwd_data_list:
             UtAPIInfo(api_full_name + '.forward.input', element)
-        if data_info.bench_out is not None:
-            UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out)
-            UtAPIInfo(api_full_name + '.forward.output.npu', data_info.npu_out)
-        if data_info.grad_in is not None:
-            UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in)
-        if data_info.bench_grad_out is not None:
-            UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out)
-            UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out)
+        UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out)
+        UtAPIInfo(api_full_name + '.forward.output.npu', data_info.npu_out)
+        UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in)
+        UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out)
+        UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out)
 
 
 
