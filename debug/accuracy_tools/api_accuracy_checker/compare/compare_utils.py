@@ -12,5 +12,7 @@ def check_dtype_comparable(x, y):
         return False
     if x.dtype in Const.BOOL_TYPE and y.dtype in Const.BOOL_TYPE:
         return False
+    if x.dtype in Const.INT_TYPE and y.dtype in Const.INT_TYPE:
+        return False
     print_warn_log(f"Compare: Unexpected dtype {x.dtype}, {y.dtype}")
     return True
