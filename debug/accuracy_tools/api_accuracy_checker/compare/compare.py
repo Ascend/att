@@ -58,7 +58,7 @@ class Comparator:
         write_csv(summary_test_rows, self.save_path)
 
         detail_test_rows = [[
-            "Npu Name", "Bench Dtype", "NPU Dtype",
+            "Npu Name", "Bench Dtype", "NPU Dtype", "Shape",
             "Cosine Similarity", "Cosine Similarity Message",
             "Max Rel Error", "Max Rel Err Message",
             "Max Abs Error", "Max Abs Err Message",
@@ -135,12 +135,14 @@ class Comparator:
         detailed_result_total = []
         bench_dtype_total = []
         npu_dtype_total = []
+        shape_total = []
         test_success_total = True
         for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
-            detailed_result, test_success, bench_dtype, npu_dtype = compare_core(bench_out, npu_out, alg)
+            detailed_result, test_success, bench_dtype, npu_dtype, shape = compare_core(bench_out, npu_out, alg)
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
+            shape_total = shape
             if name != "Max Relative Error" and name != "Max Absolute Error":
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
@@ -153,6 +155,7 @@ class Comparator:
             detailed_result = list(detailed_result_total[i])
             detailed_result.insert(0, bench_dtype_total[i])
             detailed_result.insert(1, npu_dtype_total[i])
+            detailed_result.insert(2, shape_total[i])
             detailed_result.append(str(test_success_total))
             detailed_result_total[i] = tuple(detailed_result)
         return test_success_total, detailed_result_total

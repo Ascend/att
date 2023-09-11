@@ -224,7 +224,7 @@ def _run_ut_parser(parser):
                         required=False)
     parser.add_argument('-save_error_data', dest="save_error_data", action="store_true",
                         help="<optional> Save compare failed api output.", required=False)
-    parser.add_argument("-c", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
+    parser.add_argument("-j", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
                         default=False, required=False)
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
                         default=0, required=False)
