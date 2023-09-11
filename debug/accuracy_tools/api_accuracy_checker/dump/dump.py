@@ -19,6 +19,7 @@ from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
 from api_accuracy_checker.dump.info_dump import write_api_info_json, initialize_output_json
 from api_accuracy_checker.common.utils import print_error_log
 from api_accuracy_checker.hook_module.register_hook import initialize_hook
+from api_accuracy_checker.common.config import msCheckerConfig
 
 
 def set_dump_switch(switch):
@@ -29,7 +30,7 @@ def set_dump_switch(switch):
 
 class DumpUtil(object):
     dump_switch = None
-    target_iter = 1
+    target_iter = msCheckerConfig.target_iter
     call_num = 0
 
     @staticmethod
