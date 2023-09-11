@@ -37,7 +37,7 @@ else:
     IS_GPU = False
 
 torch_without_guard_version_list = ['2.1']
-for version in torch.without_guard_version_list:
+for version in torch_without_guard_version_list:
     if torch.__version__.startswith(version):
         torch_without_guard_version = True
         break
