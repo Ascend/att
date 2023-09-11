@@ -2,6 +2,8 @@
 
 Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所有API，输出精度情况的诊断和分析。工具会提取模型中所有的API前反向信息，构造相应的API单元测试，将NPU输出与标杆比对，从而检测出精度有问题的API。
 
+工具支持PyTorch版本：1.8.1/1.11.0/2.0/2.1。
+
 ## 工具特性
 
 1. 落盘数据小
@@ -96,6 +98,8 @@ DP.dump.set_dump_switch("ON")
 # 溢出API解析工具
 
 针对训练过程中的溢出检测场景，对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，前向过程溢出的API可通过该工具对`forward_info_{pid}.json`进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
+
+工具支持PyTorch版本：1.8.1/1.11.0/2.0/2.1。
 
 参见[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)中的"溢出检测场景"进行溢出检测dump。
 
