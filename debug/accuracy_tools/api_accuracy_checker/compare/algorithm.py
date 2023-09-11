@@ -7,10 +7,10 @@ from api_accuracy_checker.common.utils import Const
 
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
-    if not check_dtype_comparable(cpu_output, npu_output):
+    if check_dtype_comparable(cpu_output, npu_output):
         return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but\
                  npu output dtype is {npu_output.dtype}, cannot compare."
-    if cpu_output.dtype == np.bool or cpu_output.dtype == np.uint8:
+    if cpu_output.dtype == np.bool or cpu_output.dtype == np.uint8 or cpu_output.dtype in Const.INT_TYPE:
         return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output, npu_output)
 
@@ -26,7 +26,7 @@ def compare_bool_tensor(cpu_output, npu_output):
     data_size = bench_data.size
     error_nums = (bench_data != npu_data).sum()
     error_rate = float(error_nums / data_size)
-    return error_rate, error_rate < 0.001, ""
+    return error_rate, error_rate == 0, ""
 
 
 def get_msg_and_handle_value(n_value, b_value):
