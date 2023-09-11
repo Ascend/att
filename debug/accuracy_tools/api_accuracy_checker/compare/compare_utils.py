@@ -12,4 +12,4 @@ def check_dtype_comparable(x, y):
     if dtype_set.issubset(Const.FLOAT_TYPE) or dtype_set.issubset(Const.BOOL_TYPE) or dtype_set.issubset(Const.INT_TYPE):
         return True
     print_warn_log(f"Compare: Unexpected dtype {x.dtype}, {y.dtype}")
-    return False
+    return False 
