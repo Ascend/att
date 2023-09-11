@@ -174,12 +174,14 @@ def compare_core(bench_out, npu_out, alg):
                 CompareConst.NA, CompareConst.NA, CompareConst.NA
         compare_result, test_success, bench_dtype, npu_dtype, shape = compare_core(list(bench_out.values()), list(npu_out.values()), alg)
     elif isinstance(bench_out, torch.Tensor):
-        bench_dtype = str(bench_out.dtype)
-        npu_dtype = str(npu_out.dtype)
+        copy_bench_out = bench_out.detach().clone()
+        copy_npu_out = npu_out.detach().clone()
+        bench_dtype = str(copy_bench_out.dtype)
+        npu_dtype = str(copy_npu_out.dtype)
         shape = list(npu_out.shape)
-        if bench_out.dtype in [torch.float32, torch.float64] and bench_out.dtype != npu_out.dtype:
-            npu_out = npu_out.type(bench_out.dtype)
-        compare_result, test_success, msg = compare_torch_tensor(bench_out.detach().numpy(), npu_out.detach().cpu().numpy(), alg)
+        if copy_bench_out.dtype in [torch.float32, torch.float64] and copy_bench_out.dtype != copy_npu_out.dtype:
+            copy_npu_out = copy_npu_out.type(copy_bench_out.dtype)
+        compare_result, test_success, msg = compare_torch_tensor(copy_bench_out.numpy(), copy_npu_out.cpu().numpy(), alg)
     elif isinstance(bench_out, (bool, int, float, str)):
         compare_result, test_success, msg = compare_builtin_type(bench_out, npu_out)
         bench_dtype = str(type(bench_out))
