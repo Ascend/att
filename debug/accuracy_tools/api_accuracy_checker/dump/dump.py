@@ -19,6 +19,7 @@ from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
 from api_accuracy_checker.dump.info_dump import write_api_info_json, initialize_output_json
 from api_accuracy_checker.common.utils import print_error_log
 from api_accuracy_checker.hook_module.register_hook import initialize_hook
+from api_accuracy_checker.common.config import msCheckerConfig
 
 
 def set_dump_switch(switch):
@@ -29,7 +30,6 @@ def set_dump_switch(switch):
 
 class DumpUtil(object):
     dump_switch = None
-    target_iter = 1
     call_num = 0
 
     @staticmethod
@@ -42,10 +42,10 @@ class DumpUtil(object):
     
     @staticmethod 
     def incr_iter_num_maybe_exit():
-        if DumpUtil.call_num == DumpUtil.target_iter:
+        if DumpUtil.call_num == msCheckerConfig.target_iter or not msCheckerConfig.enable_dataloader:
             set_dump_switch("ON")
-        elif DumpUtil.call_num > DumpUtil.target_iter:
-            raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.target_iter))
+        elif DumpUtil.call_num > msCheckerConfig.target_iter and msCheckerConfig.enable_dataloader:
+            raise Exception("Model pretest: exit after iteration {}".format(msCheckerConfig.target_iter))
         else:
             set_dump_switch("OFF")
         DumpUtil.call_num += 1 
