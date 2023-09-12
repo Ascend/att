@@ -27,6 +27,9 @@ class Config:
             raise ValueError("target_iter must be greater than 0")
         return value
 
+    def __getattr__(self, item):
+        return self.config[item]
+
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
