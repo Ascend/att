@@ -1,6 +1,6 @@
 # 进行比对及结果展示
 import os
-from rich.table import Column, Table
+from rich.table import Table
 from rich.console import Console
 from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, get_max_abs_err, \
     compare_builtin_type, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
