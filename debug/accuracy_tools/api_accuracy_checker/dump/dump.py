@@ -30,7 +30,6 @@ def set_dump_switch(switch):
 
 class DumpUtil(object):
     dump_switch = None
-    target_iter = msCheckerConfig.target_iter
     call_num = 0
 
     @staticmethod
@@ -43,10 +42,10 @@ class DumpUtil(object):
     
     @staticmethod 
     def incr_iter_num_maybe_exit():
-        if DumpUtil.call_num == DumpUtil.target_iter:
+        if DumpUtil.call_num == msCheckerConfig.target_iter:
             set_dump_switch("ON")
-        elif DumpUtil.call_num > DumpUtil.target_iter:
-            raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.target_iter))
+        elif DumpUtil.call_num > msCheckerConfig.target_iter:
+            raise Exception("Model pretest: exit after iteration {}".format(msCheckerConfig.target_iter))
         else:
             set_dump_switch("OFF")
         DumpUtil.call_num += 1 
