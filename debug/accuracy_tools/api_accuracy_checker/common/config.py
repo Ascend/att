@@ -18,7 +18,7 @@ class Config:
             'real_data': bool,
             'dump_step': int,
             'error_data_path': str,
-            'dataloader': bool,
+            'enable_dataloader': bool,
             'target_iter': int
         }
         if not isinstance(value, validators[key]):
