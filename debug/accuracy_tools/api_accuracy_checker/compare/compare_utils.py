@@ -8,8 +8,17 @@ class CompareConst:
 
 
 def check_dtype_comparable(x, y):
-    dtype_set = {x.dtype, y.dtype}
-    if dtype_set.issubset(Const.FLOAT_TYPE) or dtype_set.issubset(Const.BOOL_TYPE) or dtype_set.issubset(Const.INT_TYPE):
-        return True
+    if x.dtype in Const.FLOAT_TYPE:
+        if y.dtype in Const.FLOAT_TYPE:
+            return True 
+        return False 
+    if x.dtype in Const.BOOL_TYPE:
+        if y.dtype in Const.BOOL_TYPE:
+            return True 
+        return False 
+    if x.dtype in Const.INT_TYPE:
+        if y.dtype in Const.INT_TYPE:
+            return True 
+        return False
     print_warn_log(f"Compare: Unexpected dtype {x.dtype}, {y.dtype}")
     return False 
