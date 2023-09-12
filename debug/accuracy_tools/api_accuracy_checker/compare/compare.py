@@ -48,7 +48,7 @@ class Comparator:
 
         console = Console()
         table_total = Table(
-            show_header=True, header_style="bold magenta", title_style="Overall Statistics", show_lines=True, width=75
+            show_header=True, title="Overall Statistics", show_lines=True, width=75
         )
         table_total.add_column("Result")
         table_total.add_column("Statistics")
@@ -57,14 +57,14 @@ class Comparator:
         table_total.add_row("Passing Rate", passing_rate)
 
         table_detail = Table(
-            show_header=True, header_style="bold magenta", title_style="Detail Statistics", show_lines=True, width=75
+            show_header=True, title="Detail Statistics", show_lines=True, width=75
         )
         table_detail.add_column("Result")
         table_detail.add_column("Statistics")
-        table_detail.add_column("Forward Fail", str(self.test_result_cnt.get("forward_fail_num")))
-        table_detail.add_column("Backward Fail", str(self.test_result_cnt.get("backward_not_pass")))
-        table_detail.add_column(
-            "Forward & Backward Fail", str(self.test_result_cnt.get("forward_and_backward_not_pass")))
+        table_detail.add_row("Forward Fail", str(self.test_result_cnt.get("forward_fail_num")))
+        table_detail.add_row("Backward Fail", str(self.test_result_cnt.get("backward_fail_num")))
+        table_detail.add_row(
+            "Forward & Backward Fail", str(self.test_result_cnt.get("forward_and_backward_fail_num")))
 
         console.print(table_total)
         console.print(table_detail)
