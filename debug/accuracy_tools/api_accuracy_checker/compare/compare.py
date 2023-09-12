@@ -61,10 +61,10 @@ class Comparator:
         )
         table_detail.add_column("Result")
         table_detail.add_column("Statistics")
-        table_detail.add_row("Forward Fail", str(self.test_result_cnt.get("forward_fail_num")))
-        table_detail.add_row("Backward Fail", str(self.test_result_cnt.get("backward_fail_num")))
+        table_detail.add_row("Only Forward Fail", str(self.test_result_cnt.get("forward_fail_num")))
+        table_detail.add_row("Only Backward Fail", str(self.test_result_cnt.get("backward_fail_num")))
         table_detail.add_row(
-            "Forward & Backward Fail", str(self.test_result_cnt.get("forward_and_backward_fail_num")))
+            "Both Forward & Backward Fail", str(self.test_result_cnt.get("forward_and_backward_fail_num")))
 
         console.print(table_total)
         console.print(table_detail)
