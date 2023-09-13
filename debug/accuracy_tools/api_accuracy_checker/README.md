@@ -93,6 +93,10 @@ DP.dump.set_dump_switch("ON")
 
   上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
 
+2. run ut过程中出现报错：ERROR:Got unsupported ScalarType BFloat16
+
+   答：请使用最新版本的工具
+
 # 溢出API解析工具
 
 针对训练过程中的溢出检测场景，对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，前向过程溢出的API可通过该工具对`forward_info_{pid}.json`进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
