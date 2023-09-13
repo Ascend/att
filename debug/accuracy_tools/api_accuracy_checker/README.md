@@ -21,7 +21,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
 
-   安装依赖tqdm、prettytable、yaml
+   安装依赖tqdm、prettytable、pyyaml
 
    ```bash
    pip3 install tqdm prettytable pyyaml
@@ -47,18 +47,22 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    forward_info与stack_info中的key值一一对应，用户可根据forward_info中API的key在stack_info中查询到其调用栈及代码行位置。
 
-   有需要的话，用户可以通过msCheckerConfig.update_config来配置dump路径以及启用真实数据模式，在训练脚本中加入如下示例代码：
+   若有需要，用户可以通过msCheckerConfig.update_config来配置dump路径以及开启真实数据模式，在训练脚本中加入如下示例代码：
 
    ```Python
    	from api_accuracy_checker.dump import msCheckerConfig
-   	msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True)
+   	msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True, enable_dataloader=True, target_iter=1)
    ```
 
-   开启真实数据模式后，dump信息增加forward_real_data和backward_real_data目录，目录下保存每个API输入的具体数值。
+   - dump_path：设置dump路径，须为已存在目录。
 
-   "my/dump/path" 须为已存在目录。
+   - real_data：真实数据模式，可取值True或False，配置为True后开启真实数据模式，dump信息增加forward_real_data和backward_real_data目录，目录下保存每个API输入的具体数值。
 
-   注意：启用真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。
+     注意：开启真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。
+
+   - enable_dataloader：自动控制开关，可取值True或False，配置为True后自动识别dump target_iter参数指定的迭代数据，并在该迭代执行完成后退出训练。
+
+   - target_iter：指定dump某个step的数据，仅支持dump1个step，须指定为训练脚本中存在的step。
 
 3. 将API信息输入给run_ut模块运行精度检测并比对，运行如下命令：
 
@@ -78,7 +82,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
 4. 如果需要保存比对不达标的输入和输出数据，可以在run_ut执行命令结尾添加-save_error_data，例如：
 
-   ```
+   ```bash
    python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -save_error_data
    ```
    数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path
@@ -113,10 +117,10 @@ DP.dump.set_dump_switch("ON")
    export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
 
-   安装依赖tqdm、prettytable、yaml
+   安装依赖tqdm、prettytable、pyyaml
 
    ```bash
-   pip3 install tqdm prettytable yaml
+   pip3 install tqdm prettytable pyyaml
    ```
 
 2. 执行溢出API解析操作
