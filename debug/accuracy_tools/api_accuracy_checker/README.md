@@ -21,7 +21,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
 
-   安装依赖tqdm、prettytable、yaml
+   安装依赖tqdm、prettytable、pyyaml
 
    ```bash
    pip3 install tqdm prettytable pyyaml
@@ -117,10 +117,10 @@ DP.dump.set_dump_switch("ON")
    export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
 
-   安装依赖tqdm、prettytable、yaml
+   安装依赖tqdm、prettytable、pyyaml
 
    ```bash
-   pip3 install tqdm prettytable yaml
+   pip3 install tqdm prettytable pyyaml
    ```
 
 2. 执行溢出API解析操作
