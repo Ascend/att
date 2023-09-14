@@ -10,23 +10,19 @@ def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if not check_dtype_comparable(cpu_output, npu_output):
         return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but\
                  npu output dtype is {npu_output.dtype}, cannot compare."
-    if cpu_output.dtype == np.bool or cpu_output.dtype == np.uint8:
+    if cpu_output.dtype in [bool, np.uint8, np.int8, np.int16, np.uint16, np.uint32, np.int32, np.int64, np.uint64]:
         return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output, npu_output)
 
 
 def compare_bool_tensor(cpu_output, npu_output):
-    error_rate = CompareConst.NAN
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
     if cpu_shape != npu_shape:
-        return error_rate, False, ""
-    npu_data = npu_output
-    bench_data = cpu_output
-    data_size = bench_data.size
-    error_nums = (bench_data != npu_data).sum()
-    error_rate = float(error_nums / data_size)
-    return error_rate, error_rate < 0.001, ""
+        return CompareConst.NAN, False, ""
+    error_nums = (cpu_output != npu_output).sum()
+    error_rate = float(error_nums / cpu_output.size)
+    return error_rate, error_rate == 0, ""
 
 
 def get_msg_and_handle_value(n_value, b_value):
