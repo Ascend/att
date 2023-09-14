@@ -33,7 +33,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    import api_accuracy_checker.dump
    ```
 
-   目前工具仅支持抓取训练的**第二个迭代**并且在第二个迭代后会报错退出训练进程。报错信息如下，这个报错仅用于停止训练，属于正常现象：
+   工具默认抓取训练的**第二个迭代**并且在第二个迭代后会报错退出训练进程，可通过target_iter参数配置。报错信息如下，这个报错仅用于停止训练，属于正常现象：
 
    ```bash
    Exception: Model pretest: exit after iteration 1.
