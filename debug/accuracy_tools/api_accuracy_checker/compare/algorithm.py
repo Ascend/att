@@ -16,16 +16,12 @@ def compare_torch_tensor(cpu_output, npu_output, compare_alg):
 
 
 def compare_bool_tensor(cpu_output, npu_output):
-    error_rate = CompareConst.NAN
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
     if cpu_shape != npu_shape:
-        return error_rate, False, ""
-    npu_data = npu_output
-    bench_data = cpu_output
-    data_size = bench_data.size
-    error_nums = (bench_data != npu_data).sum()
-    error_rate = float(error_nums / data_size)
+        return CompareConst.NAN, False, ""
+    error_nums = (cpu_output != npu_output).sum()
+    error_rate = float(error_nums / cpu_output.size)
     return error_rate, error_rate == 0, ""
 
 
