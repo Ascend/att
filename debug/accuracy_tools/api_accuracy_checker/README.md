@@ -29,9 +29,18 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
 2. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
 
-   ```bash
+   ```python
    import api_accuracy_checker.dump
    ```
+
+   若训练脚本中的代码不是通过dataloader来加载数据或在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，导致多卡训练dump结果只有一组json，那么需要在训练代码中添加打开工具开关的调用：
+
+     ```Python
+   import api_accuracy_checker.dump as DP
+   DP.dump.set_dump_switch("ON")
+     ```
+
+   上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
 
    工具默认抓取训练的**第二个迭代**并且在第二个迭代后会报错退出训练进程，可通过target_iter参数配置。报错信息如下，这个报错仅用于停止训练，属于正常现象：
 
@@ -85,18 +94,6 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -save_error_data
    ```
    数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path
-
-## FAQ 
-
-多卡训练dump结果只有一组json，是否为正常现象？
-答：正常来说，多卡训练应该能dump下来与卡数相当的数组json文件，每组都包含forward backward和stack信息。目前在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，用户需要在训练代码中添加打开工具开关的调用：
-
-  ```Python
-import api_accuracy_checker.dump as DP
-DP.dump.set_dump_switch("ON")
-  ```
-
- 上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
 
 # 溢出API解析工具
 
