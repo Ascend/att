@@ -143,13 +143,17 @@ class Comparator:
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
             shape_total = shape
-            if name != "Max Relative Error":
+            if name not in ["Max Relative Error", "Max Absolute Error"]:
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
                     detailed_result_total[i] += detailed_result[i]
             else:
                 detailed_result_total = detailed_result
+        for name in self.compare_alg.keys():
+            alg = self.compare_alg[name][0]
+            if name == "Max Absolute Error":
+                test_success_total = test_success_total or test_success
         # dtype加到所有指标的前面, 是否pass放到所有指标的后面
         for i in range(len(detailed_result_total)):
             detailed_result = list(detailed_result_total[i])
