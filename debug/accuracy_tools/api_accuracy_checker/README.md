@@ -133,24 +133,14 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
 # FAQ 
 
-1. 多卡训练dump结果只有一组json，是否为正常现象？
-   答：正常来说，多卡训练应该能dump下来与卡数相当的数组json文件，每组都包含forward backward和stack信息。目前在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，用户需要在训练代码中添加打开工具开关的调用：
-
-  ```Python
-import api_accuracy_checker.dump as DP
-DP.dump.set_dump_switch("ON")
-  ```
-
-  上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
-
-2. run ut过程中出现报错：ERROR:Got unsupported ScalarType BFloat16
+1. run ut过程中出现报错：ERROR:Got unsupported ScalarType BFloat16
 
    答：请使用最新版本的工具
 
-3. Dropout算子，CPU和NPU的随机应该不一样，为什么结果比对是一致的？
+2. Dropout算子，CPU和NPU的随机应该不一样，为什么结果比对是一致的？
 
    答：这个结果是正常的，工具对该算子有特殊处理，只判定位置为0的位置比例大约和设定p值相当
 
-4. 为什么浮点型数据bench和npu的dtype不一致？
+3. 为什么浮点型数据bench和npu的dtype不一致？
 
    答：对于fp16的数据，cpu会上升一个精度fp32去计算，这是和算子那边对齐的精度结论，cpu用更高精度去计算会更接近真实值
