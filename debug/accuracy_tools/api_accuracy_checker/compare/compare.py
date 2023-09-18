@@ -143,7 +143,7 @@ class Comparator:
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
             shape_total = shape
-            if name != "Max Relative Error" and name != "Max Absolute Error":
+            if name != "Max Relative Error":
                 test_success_total = test_success_total and test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
