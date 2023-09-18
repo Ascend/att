@@ -71,6 +71,8 @@ class BaseAPIInfo:
 
     def analyze_builtin(self, arg):
         single_arg = {}
+        if self.is_save_data:
+            self.args_num += 1
         if isinstance(arg, slice):
             single_arg.update({'type' : "slice"})
             single_arg.update({'value' : [arg.start, arg.stop, arg.step]})

@@ -99,12 +99,11 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
             data_info = run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict)
-            is_fwd_success, is_bwd_success = \
-                compare.compare_output(api_full_name,
-                                       None if data_info.bench_out is None else data_info.bench_out.clone(),
-                                       None if data_info.npu_out is None else data_info.npu_out.clone(),
-                                       None if data_info.bench_grad_out is None else data_info.bench_grad_out.clone(),
-                                       None if data_info.npu_grad_out is None else data_info.npu_grad_out.clone())
+            is_fwd_success, is_bwd_success = compare.compare_output(api_full_name,
+                                                                    data_info.bench_out,
+                                                                    data_info.npu_out,
+                                                                    data_info.bench_grad_out,
+                                                                    data_info.npu_grad_out)
             if save_error_data:
                 do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         except Exception as err:
@@ -123,26 +122,23 @@ def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         api_full_name = api_full_name.replace("*", ".")
         for element in data_info.in_fwd_data_list:
             UtAPIInfo(api_full_name + '.forward.input', element)
-        if data_info.bench_out is not None:
-            UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out)
-            UtAPIInfo(api_full_name + '.forward.output.npu', data_info.npu_out)
-        if data_info.grad_in is not None:
-            UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in)
-        if data_info.bench_grad_out is not None:
-            UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out)
-            UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out)
+        UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out)
+        UtAPIInfo(api_full_name + '.forward.output.npu', data_info.npu_out)
+        UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in)
+        UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out)
+        UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out)
 
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
     in_fwd_data_list = []
     [api_type, api_name, _] = api_full_name.split("*")
-    args, inplace, kwargs, need_grad = get_api_info(api_info_dict, api_name)
+    args, kwargs, need_grad = get_api_info(api_info_dict, api_name)
     in_fwd_data_list.append(args)
     in_fwd_data_list.append(kwargs)
-    need_backward = api_full_name in backward_content and api_name[-1] != "_" and inplace is not True
+    need_backward = api_full_name in backward_content and api_name[-1] != "_"
     need_backward = need_backward and need_grad
-    if inplace or not need_grad:
+    if not need_grad:
         print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
     cpu_args, cpu_kwargs = generate_cpu_params(args, kwargs, need_backward)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
@@ -173,8 +169,7 @@ def get_api_info(api_info_dict, api_name):
     if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
         need_grad = False
     args, kwargs = gen_api_params(api_info_dict, need_grad, convert_type)
-    inplace = kwargs.get("inplace") if kwargs.get("inplace") else None
-    return args, inplace, kwargs, need_grad
+    return args, kwargs, need_grad
 
 
 def run_backward(api_full_name, args, backward_content, grad_index, npu_args, npu_out, out):
@@ -225,7 +220,7 @@ def _run_ut_parser(parser):
                         required=False)
     parser.add_argument('-save_error_data', dest="save_error_data", action="store_true",
                         help="<optional> Save compare failed api output.", required=False)
-    parser.add_argument("-c", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
+    parser.add_argument("-j", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
                         default=False, required=False)
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
                         default=0, required=False)
