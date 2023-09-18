@@ -14,7 +14,6 @@ def compare_torch_tensor(cpu_output, npu_output, compare_alg):
         return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output, npu_output)
 
-
 def compare_bool_tensor(cpu_output, npu_output):
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
@@ -24,73 +23,65 @@ def compare_bool_tensor(cpu_output, npu_output):
     error_rate = float(error_nums / cpu_output.size)
     return error_rate, error_rate == 0, ""
 
-
-def get_msg_and_handle_value(n_value, b_value):
+def get_msg_and_handle_value(b_value, n_value):
     msg = ""
-    if not isinstance(n_value, np.ndarray) or not isinstance(b_value, np.ndarray):
-        msg = f"Max rel err only support numpy array! The actual type is {type(n_value)}, {type(b_value)}."
+    if not isinstance(b_value, np.ndarray) or not isinstance(n_value, np.ndarray):
+        msg = f"Max rel err only support numpy array! The actual type is {type(b_value)}, {type(n_value)}."
         return CompareConst.NAN, False, msg
-    if n_value.shape != b_value.shape:
-        msg = f"Shape of npu and bench outputs don't match. NPU: {n_value.shape}, bench: {b_value.shape}."
+    if b_value.shape != n_value.shape:
+        msg = f"Shape of bench and npu outputs don't match. bench: {b_value.shape}, npu: {n_value.shape}."
         return CompareConst.NAN, False, msg
-    if n_value.dtype != b_value.dtype:
-        msg = f"Dtype of npu and bench outputs don't match. NPU: {n_value.dtype}, bench: {b_value.dtype}."
 
-    if b_value.dtype in Const.FLOAT_TYPE:
-        zero_mask = (b_value == 0)
+    if n_value.dtype in Const.FLOAT_TYPE:
+        zero_mask = (n_value == 0)
         # 给0的地方加上eps防止除0
-        b_value[zero_mask] += np.finfo(b_value.dtype).eps 
-        # 根据b_value为0的位置给n_value也加上eps，否则两者都是0的情况下相对误差会是1
-        n_value[zero_mask] += np.finfo(b_value.dtype).eps 
+        n_value[zero_mask] += np.finfo(n_value.dtype).eps 
+        # 根据n_value为0的位置给n_value也加上eps，否则两者都是0的情况下相对误差会是1
+        b_value[zero_mask] += np.finfo(n_value.dtype).eps 
     else:
         # int type + float eps 会报错，所以这里要强转
-        n_value, b_value = n_value.astype(float), b_value.astype(float)
-        zero_mask = (b_value == 0)
-        b_value[zero_mask] += np.finfo(float).eps 
+        b_value, n_value = b_value.astype(float), n_value.astype(float)
+        zero_mask = (n_value == 0)
         n_value[zero_mask] += np.finfo(float).eps 
-    return n_value, b_value, msg
+        b_value[zero_mask] += np.finfo(float).eps 
+    return b_value, n_value, msg
 
-
-def get_max_rel_err(n_value, b_value):
-    n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
+def get_max_rel_err(b_value, n_value):
+    b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
     rel_err = np.abs((n_value - b_value) / b_value).max()
     bool_result = rel_err < 0.001
     return rel_err, bool_result, msg
 
-def get_max_abs_err(n_value, b_value):
-    n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
-    abs_err = np.abs(n_value - b_value).max()
+def get_max_abs_err(b_value, n_value):
+    b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
+    abs_err = np.abs(b_value - n_value).max()
     bool_result = abs_err < 0.001
     return abs_err, bool_result, msg
 
-def get_rel_err_ratio_thousandth(n_value, b_value):
-    return get_rel_err_ratio(n_value, b_value, 0.001)
+def get_rel_err_ratio_thousandth(b_value, n_value):
+    return get_rel_err_ratio(b_value, n_value, 0.001)
 
-
-def get_rel_err_ratio_ten_thousandth(n_value, b_value):
-    ratio, bool_result, msg = get_rel_err_ratio(n_value, b_value, 0.0001)
-    if b_value.dtype == np.float16:
-        msg = f"This indicator is not used to evaluate {b_value.dtype} data"
+def get_rel_err_ratio_ten_thousandth(b_value, n_value):
+    ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.0001)
+    if n_value.dtype == np.float16:
+        msg = f"This indicator is not used to evaluate {n_value.dtype} data"
         return ratio, True, msg
     return ratio, bool_result, msg
 
-def get_rel_err_ratio(n_value, b_value, thresholding):
-    n_value, b_value, msg = get_msg_and_handle_value(n_value, b_value)
+def get_rel_err_ratio(b_value, n_value, thresholding):
+    b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
     rel_errs = np.abs((n_value - b_value) / b_value)
     ratio = np.divide(np.sum(rel_errs < thresholding), np.size(rel_errs))
     bool_result = ratio > (1 - thresholding)
     return ratio, bool_result, msg
 
-
 def max_rel_err_standard(max_rel_errs):
     bool_result = np.array(max_rel_errs) < 0.001 
     return np.all(bool_result), bool_result
 
-
 def cosine_standard(compare_result):
     bool_result = np.array(compare_result) > 0.99
     return np.all(bool_result), bool_result
-
 
 def cosine_sim(cpu_output, npu_output):
     msg = ""
@@ -122,13 +113,11 @@ def cosine_sim(cpu_output, npu_output):
             msg = "Dump data has NaN when comparing with Cosine Similarity."
         return cos, cos > 0.99, msg
 
-
-def compare_uint8_data(n_value, b_value):
-    if (n_value == b_value).all():
+def compare_uint8_data(b_value, n_value):
+    if (b_value == n_value).all():
         return 1, True
     else:
         return 0, False
-
 
 def compare_builtin_type(bench_out, npu_out):
     if not isinstance(bench_out, (bool, int, float, str)):
@@ -136,7 +125,6 @@ def compare_builtin_type(bench_out, npu_out):
     if bench_out != npu_out:
         return CompareConst.NAN, False, ""
     return True, True, ""
-
 
 def flatten_compare_result(result):
     flatten_result = []
@@ -175,8 +163,9 @@ def compare_core(bench_out, npu_out, alg):
         bench_dtype = str(copy_bench_out.dtype)
         npu_dtype = str(copy_npu_out.dtype)
         shape = list(npu_out.shape)
-        if copy_bench_out.dtype in [torch.float32, torch.float64] and copy_bench_out.dtype != copy_npu_out.dtype:
-            copy_npu_out = copy_npu_out.type(copy_bench_out.dtype)
+        if copy_npu_out.dtype == torch.bfloat16:
+            copy_bench_out = copy_bench_out.to(torch.float32)
+            copy_npu_out = copy_npu_out.to(torch.float32)
         compare_result, test_success, msg = compare_torch_tensor(copy_bench_out.numpy(), copy_npu_out.cpu().numpy(), alg)
     elif isinstance(bench_out, (bool, int, float, str)):
         compare_result, test_success, msg = compare_builtin_type(bench_out, npu_out)
@@ -207,5 +196,3 @@ def compare_core(bench_out, npu_out, alg):
         npu_dtype = [npu_dtype]
         shape = [shape]
     return compare_result, test_success, bench_dtype, npu_dtype, shape
-
-
