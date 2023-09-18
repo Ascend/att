@@ -33,8 +33,6 @@ def get_msg_and_handle_value(b_value, n_value):
     if b_value.shape != n_value.shape:
         msg = f"Shape of bench and npu outputs don't match. bench: {b_value.shape}, npu: {n_value.shape}."
         return CompareConst.NAN, False, msg
-    if n_value.dtype != b_value.dtype:
-        msg = f"Dtype of bench and npu outputs don't match. bench: {b_value.dtype}, npu: {n_value.dtype}."
 
     if n_value.dtype in Const.FLOAT_TYPE:
         zero_mask = (n_value == 0)
