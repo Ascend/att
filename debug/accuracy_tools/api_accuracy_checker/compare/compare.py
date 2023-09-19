@@ -19,7 +19,11 @@ class Comparator:
 
     def __init__(self, result_save_path, stack_info_json_path=None):
         self.save_path = os.path.join(result_save_path, self.TEST_FILE_NAME)
+        if os.path.exists(self.save_path):
+            raise ValueError(f"file {self.save_path} already exists, please remove it first or use a new dump path")
         self.detail_save_path = os.path.join(result_save_path, self.DETAIL_TEST_FILE_NAME)
+        if os.path.exists(self.detail_save_path):
+            raise ValueError(f"file {self.detail_save_path} already exists, please remove it first or use a new dump path")
         if stack_info_json_path:
             self.stack_info = get_json_contents(stack_info_json_path)
         else:
