@@ -67,7 +67,7 @@ def gen_real_tensor(data_path, convert_type):
     """
     data_path = os.path.realpath(data_path)
     check_file_or_directory_path(data_path)
-    if not data_path.endswith('.pt') or data_path.endswith('.npy'):
+    if not data_path.endswith('.pt') and not data_path.endswith('.npy'):
         print_error_log(f"The file: {data_path} is not a pt or numpy file.")
         raise CompareException.INVALID_FILE_ERROR
     if data_path.endswith('.pt'):
