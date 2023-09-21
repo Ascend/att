@@ -29,7 +29,6 @@ interface IProps {
   tag: string
   hAxisTitle?: string
   vAxisTitle?: string
-  explorerOptions?: object
   onSelectionChanged?: (start: number, end: number) => void
   record?: any
 }
@@ -62,7 +61,6 @@ export const LineChart: React.FC<IProps> = (props) => {
     if (!element) return
     element.oncontextmenu = () => { return false }
 
-    echarts.init(element).dispose()
     let myChart = echarts.init(element)
 
     let option: echarts.EChartsOption = {
@@ -367,6 +365,9 @@ export const LineChart: React.FC<IProps> = (props) => {
     })
 
     setChartObj(myChart)
+    return () => {
+      myChart.dispose()
+    }
   }, [graph, height, resizeEventDependency])
 
   React.useEffect(() => {
@@ -409,8 +410,6 @@ export const LineChart: React.FC<IProps> = (props) => {
   }, [graph, record, chartObj])
 
   return (
-    <div className={classes.root}>
-      <div ref={graphRef} style={{ height: '400px' }}></div>
-    </div>
+    <div ref={graphRef} style={{ height: '400px' }}></div>
   )
 }
