@@ -2,7 +2,7 @@
 import os
 from prettytable import PrettyTable
 from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, get_max_abs_err, \
-    compare_builtin_type, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
+    compare_builtin_type, get_rel_err_ratio_hundredth, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
 from api_accuracy_checker.common.utils import get_json_contents, print_info_log, write_csv
 from api_accuracy_checker.compare.compare_utils import CompareConst 
 
@@ -32,6 +32,7 @@ class Comparator:
         self.register_compare_algorithm("Cosine Similarity", cosine_sim, cosine_standard)
         self.register_compare_algorithm("Max Relative Error", get_max_rel_err, None)
         self.register_compare_algorithm("Max Absolute Error", get_max_abs_err, None)
+        self.register_compare_algorithm("Hundredth Relative Error Ratio", get_rel_err_ratio_hundredth, None)
         self.register_compare_algorithm("Thousandth Relative Error Ratio", get_rel_err_ratio_thousandth, None)
         self.register_compare_algorithm("Ten Thousandth Relative Error Ratio", get_rel_err_ratio_ten_thousandth, None)
         self.register_compare_algorithm("Default: isEqual", compare_builtin_type, None)
@@ -66,6 +67,7 @@ class Comparator:
             "Cosine Similarity", "Cosine Similarity Message",
             "Max Rel Error", "Max Rel Err Message",
             "Max Abs Error", "Max Abs Err Message",
+            "Relative Error (hundredth)", "Relative Error (dual hundredth) Message",
             "Relative Error (dual thousandth)", "Relative Error (dual thousandth) Message",
             "Relative Error (dual ten thousandth)", "Relative Error (dual ten thousandth) Message",
             "Compare Builtin Type", "Builtin Type Message",
@@ -140,29 +142,49 @@ class Comparator:
         bench_dtype_total = []
         npu_dtype_total = []
         shape_total = []
-        test_success_total = True
+        test_success_total = []
+        max_abs_error_success = False
+        max_cosine_success = False
         for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
             detailed_result, test_success, bench_dtype, npu_dtype, shape = compare_core(bench_out, npu_out, alg)
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
             shape_total = shape
-            if name != "Max Relative Error" and name != "Max Absolute Error":
-                test_success_total = test_success_total and test_success
+            if name not in ["Cosine Similarity", "Max Relative Error", "Max Absolute Error"]:
+                test_success_total.append(test_success)
+            if name == "Cosine Similarity":
+                max_cosine_success = test_success
+            if name == "Max Relative Error":
+                max_abs_error_success = test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
                     detailed_result_total[i] += detailed_result[i]
             else:
                 detailed_result_total = detailed_result
+        test_final_result = 'pass'
+        if not max_cosine_success:
+            test_final_result = 'error'
+        elif max_abs_error_success:
+            test_final_result = 'pass'
+        else:
+            if 'error' in test_success_total:
+                test_final_result = 'error'
+            elif 'warning' in test_success_total:
+                test_final_result = 'warning'
         # dtype加到所有指标的前面, 是否pass放到所有指标的后面
         for i in range(len(detailed_result_total)):
             detailed_result = list(detailed_result_total[i])
             detailed_result.insert(0, bench_dtype_total[i])
             detailed_result.insert(1, npu_dtype_total[i])
             detailed_result.insert(2, shape_total[i])
-            detailed_result.append(str(test_success_total))
+            detailed_result.append(str(test_final_result))
             detailed_result_total[i] = tuple(detailed_result)
-        return test_success_total, detailed_result_total
+        if test_final_result == 'pass':
+            test_final_success = True
+        else:
+            test_final_success = False
+        return test_final_success, detailed_result_total
     
     @staticmethod
     def _compare_dropout(bench_out, npu_out):

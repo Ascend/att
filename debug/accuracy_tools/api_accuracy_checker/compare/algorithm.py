@@ -21,7 +21,11 @@ def compare_bool_tensor(cpu_output, npu_output):
         return CompareConst.NAN, False, ""
     error_nums = (cpu_output != npu_output).sum()
     error_rate = float(error_nums / cpu_output.size)
-    return error_rate, error_rate == 0, ""
+    if error_rate == 0:
+        result = 'pass'
+    else:
+        result = 'error'
+    return error_rate, result, ""
 
 def get_msg_and_handle_value(b_value, n_value):
     msg = ""
@@ -58,15 +62,31 @@ def get_max_abs_err(b_value, n_value):
     bool_result = abs_err < 0.001
     return abs_err, bool_result, msg
 
+def get_rel_err_ratio_hundredth(b_value, n_value):
+    ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.01)
+    if n_value.dtype != np.float16:
+        msg = f"This indicator is not used to evaluate {n_value.dtype} data"
+        return ratio, 'pass', msg
+    if bool_result:
+        return ratio, 'pass', msg
+    return ratio, 'error', msg
+
 def get_rel_err_ratio_thousandth(b_value, n_value):
-    return get_rel_err_ratio(b_value, n_value, 0.001)
+    ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.001)
+    if bool_result:
+        return ratio, 'pass', msg
+    if n_value.dtype == np.float16:
+        return ratio, 'warning', msg
+    return ratio, 'error', msg
 
 def get_rel_err_ratio_ten_thousandth(b_value, n_value):
     ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.0001)
     if n_value.dtype == np.float16:
         msg = f"This indicator is not used to evaluate {n_value.dtype} data"
-        return ratio, True, msg
-    return ratio, bool_result, msg
+        return ratio, 'pass', msg
+    if bool_result:
+        return ratio, 'pass', msg
+    return ratio, 'warning', msg
 
 def get_rel_err_ratio(b_value, n_value, thresholding):
     b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
@@ -121,10 +141,10 @@ def compare_uint8_data(b_value, n_value):
 
 def compare_builtin_type(bench_out, npu_out):
     if not isinstance(bench_out, (bool, int, float, str)):
-        return CompareConst.NA, True, ""
+        return CompareConst.NA, 'pass', ""
     if bench_out != npu_out:
-        return CompareConst.NAN, False, ""
-    return True, True, ""
+        return CompareConst.NAN, 'error', ""
+    return True, 'pass', ""
 
 def flatten_compare_result(result):
     flatten_result = []
@@ -147,7 +167,15 @@ def compare_core(bench_out, npu_out, alg):
         for b_out_i, n_out_i in zip(bench_out, npu_out):
             compare_result_i, test_success_i, bench_dtype_i, npu_dtype_i, shape_i = compare_core(b_out_i, n_out_i, alg)
             compare_result.append(compare_result_i)
-            test_success = test_success and test_success_i
+            if isinstance(test_success, bool):
+                test_success = test_success and test_success_i
+            else:
+                if test_success_i == 'error':
+                    test_success = 'error'
+                elif test_success_i == 'warning' and test_success != 'error':
+                    test_success = 'warning'
+                elif test_success != 'warning' and test_success != 'error':
+                    test_success = test_success_i
             bench_dtype.append(bench_dtype_i)
             npu_dtype.append(npu_dtype_i)
             shape.append(shape_i)
