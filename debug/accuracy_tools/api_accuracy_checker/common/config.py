@@ -26,7 +26,7 @@ class Config:
             raise ValueError(f"{key} must be {validators[key].__name__} type")
         if key == 'target_iter' and value < 0:
             raise ValueError("target_iter must be greater than 0")
-        if key == 'precision' and value <= 0:
+        if key == 'precision' and value < 0:
             raise ValueError("precision must be greater than 0")
         return value
 
