@@ -164,9 +164,9 @@ class Comparator:
                 detailed_result_total = detailed_result
         test_all_result = ['pass' for _ in range(len(detailed_result_total))]
         for i in range(len(test_all_result)):
-            if not cosine_success[0][i] or 'error' in cosine_success[0][i]:
+            if not cosine_success[0][i] or 'error' == cosine_success[0][i]:
                 test_all_result[i] = 'error'
-            elif max_abs_error_success[0][i]:
+            elif max_abs_error_success[0][i] or 'pass' == max_abs_error_success[0][i]:
                 test_all_result[i] = 'pass'
             else:
                 test_success_column = [test_success_single[i] for test_success_single in test_success_total]
