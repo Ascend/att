@@ -95,10 +95,12 @@ class Comparator:
         if isinstance(fwd_result, list):
             for i, test_subject in enumerate(fwd_result):
                 subject = subject_prefix + ".forward.output." + str(i)
+                test_subject = ["{:.14f}".format(item) if isinstance(item, float) else item for item in test_subject]
                 test_rows.append([subject] + list(test_subject))
         if isinstance(bwd_result, list):
             for i, test_subject in enumerate(bwd_result):
                 subject = subject_prefix + ".backward.output." + str(i)
+                test_subject = ["{:.14f}".format(item) if isinstance(item, float) else item for item in test_subject]
                 test_rows.append([subject] + list(test_subject))
 
         write_csv(test_rows, self.detail_save_path)
