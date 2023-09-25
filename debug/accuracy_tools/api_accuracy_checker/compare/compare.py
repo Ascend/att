@@ -5,7 +5,7 @@ from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cos
     compare_builtin_type, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
 from api_accuracy_checker.common.utils import get_json_contents, print_info_log, write_csv
 from api_accuracy_checker.compare.compare_utils import CompareConst 
-
+from api_accuracy_checker.common.config import msCheckerConfig
 
 class Comparator:
     TEST_FILE_NAME = "accuracy_checking_result.csv"
@@ -95,12 +95,12 @@ class Comparator:
         if isinstance(fwd_result, list):
             for i, test_subject in enumerate(fwd_result):
                 subject = subject_prefix + ".forward.output." + str(i)
-                test_subject = ["{:.14f}".format(item) if isinstance(item, float) else item for item in test_subject]
+                test_subject = ["{:.{}f}".format(item, msCheckerConfig.precision) if isinstance(item, float) else item for item in test_subject]
                 test_rows.append([subject] + list(test_subject))
         if isinstance(bwd_result, list):
             for i, test_subject in enumerate(bwd_result):
                 subject = subject_prefix + ".backward.output." + str(i)
-                test_subject = ["{:.14f}".format(item) if isinstance(item, float) else item for item in test_subject]
+                test_subject = ["{:.{}f}".format(item, msCheckerConfig.precision) if isinstance(item, float) else item for item in test_subject]
                 test_rows.append([subject] + list(test_subject))
 
         write_csv(test_rows, self.detail_save_path)
