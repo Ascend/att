@@ -67,11 +67,14 @@ def gen_real_tensor(data_path, convert_type):
     """
     data_path = os.path.realpath(data_path)
     check_file_or_directory_path(data_path)
-    if not data_path.endswith('.npy'):
-        print_error_log(f"The file: {data_path} is not a numpy file.")
+    if not data_path.endswith('.pt') and not data_path.endswith('.npy'):
+        print_error_log(f"The file: {data_path} is not a pt or numpy file.")
         raise CompareException.INVALID_FILE_ERROR
-    data_np = np.load(data_path)
-    data = torch.from_numpy(data_np)
+    if data_path.endswith('.pt'):
+        data = torch.load(data_path)
+    else:
+        data_np = np.load(data_path)
+        data = torch.from_numpy(data_np)
     if convert_type:
         ori_dtype = Const.CONVERT.get(convert_type)[0]
         dist_dtype = Const.CONVERT.get(convert_type)[1]
@@ -236,8 +239,6 @@ def gen_api_params(api_info, need_grad=True, convert_type=None):
         print_error_log(f"convert_type params not support {convert_type} ")
         raise CompareException.INVALID_PARAM_ERROR
     kwargs_params = gen_kwargs(api_info, convert_type)
-    if kwargs_params.get("inplace"):
-        need_grad = False
     if api_info.get("args"):
         args_params = gen_args(api_info.get("args"), need_grad, convert_type)
     else:

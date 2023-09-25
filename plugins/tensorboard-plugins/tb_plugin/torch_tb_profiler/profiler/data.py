@@ -235,7 +235,7 @@ class RunProfileData(object):
         start_ts = float('inf')
         for i in reversed(range(len(event_list))):
             if event_list[i].get('ts') is not None:
-                start_ts = min(start_ts, event_list[i]['ts'])
+                start_ts = min(start_ts, float(event_list[i]['ts']))
             if device_target != 'Ascend':
                 if event_list[i]['name'] == 'Record Window End':
                     end_index = i

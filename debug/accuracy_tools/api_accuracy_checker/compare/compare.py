@@ -19,7 +19,11 @@ class Comparator:
 
     def __init__(self, result_save_path, stack_info_json_path=None):
         self.save_path = os.path.join(result_save_path, self.TEST_FILE_NAME)
+        if os.path.exists(self.save_path):
+            raise ValueError(f"file {self.save_path} already exists, please remove it first or use a new dump path")
         self.detail_save_path = os.path.join(result_save_path, self.DETAIL_TEST_FILE_NAME)
+        if os.path.exists(self.detail_save_path):
+            raise ValueError(f"file {self.detail_save_path} already exists, please remove it first or use a new dump path")
         if stack_info_json_path:
             self.stack_info = get_json_contents(stack_info_json_path)
         else:
@@ -137,19 +141,23 @@ class Comparator:
         npu_dtype_total = []
         shape_total = []
         test_success_total = True
+        max_abs_error_success = False
         for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
             detailed_result, test_success, bench_dtype, npu_dtype, shape = compare_core(bench_out, npu_out, alg)
             bench_dtype_total = bench_dtype
             npu_dtype_total = npu_dtype
             shape_total = shape
-            if name != "Max Relative Error" and name != "Max Absolute Error":
+            if name not in ["Max Relative Error", "Max Absolute Error"]:
                 test_success_total = test_success_total and test_success
+            if name == "Max Absolute Error":
+                max_abs_error_success = test_success
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
                     detailed_result_total[i] += detailed_result[i]
             else:
                 detailed_result_total = detailed_result
+        test_success_total = test_success_total or max_abs_error_success
         # dtype加到所有指标的前面, 是否pass放到所有指标的后面
         for i in range(len(detailed_result_total)):
             detailed_result = list(detailed_result_total[i])
