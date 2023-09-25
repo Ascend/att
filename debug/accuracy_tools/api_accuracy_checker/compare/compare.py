@@ -143,8 +143,8 @@ class Comparator:
         npu_dtype_total = []
         shape_total = []
         test_success_total = []
-        max_abs_error_success = False
-        max_cosine_success = False
+        max_abs_error_success = []
+        cosine_success = []
         for name in self.compare_alg.keys():
             alg = self.compare_alg[name][0]
             detailed_result, test_success, bench_dtype, npu_dtype, shape = compare_core(bench_out, npu_out, alg)
@@ -154,36 +154,38 @@ class Comparator:
             if name not in ["Cosine Similarity", "Max Relative Error", "Max Absolute Error"]:
                 test_success_total.append(test_success)
             if name == "Cosine Similarity":
-                max_cosine_success = test_success
+                cosine_success.append(test_success)
             if name == "Max Relative Error":
-                max_abs_error_success = test_success
+                max_abs_error_success.append(test_success)
             if detailed_result_total:
                 for i in range(len(detailed_result_total)):
                     detailed_result_total[i] += detailed_result[i]
             else:
                 detailed_result_total = detailed_result
-        test_final_result = 'pass'
-        if not max_cosine_success:
-            test_final_result = 'error'
-        elif max_abs_error_success:
-            test_final_result = 'pass'
-        else:
-            if 'error' in test_success_total:
-                test_final_result = 'error'
-            elif 'warning' in test_success_total:
-                test_final_result = 'warning'
+        test_all_result = ['pass' for _ in range(len(detailed_result_total))]
+        for i in range(len(test_all_result)):
+            if not cosine_success[0][i] or 'error' in cosine_success[0][i]:
+                test_all_result[i] = 'error'
+            elif max_abs_error_success[0][i]:
+                test_all_result[i] = 'pass'
+            else:
+                test_success_column = [test_success_single[i] for test_success_single in test_success_total]
+                if 'error' in test_success_column or False in test_success_column:
+                    test_all_result[i] = 'error'
+                elif 'warning' in test_success_column:
+                    test_all_result[i] = 'warning'
         # dtype加到所有指标的前面, 是否pass放到所有指标的后面
         for i in range(len(detailed_result_total)):
             detailed_result = list(detailed_result_total[i])
             detailed_result.insert(0, bench_dtype_total[i])
             detailed_result.insert(1, npu_dtype_total[i])
             detailed_result.insert(2, shape_total[i])
-            detailed_result.append(str(test_final_result))
+            detailed_result.append(test_all_result[i])
             detailed_result_total[i] = tuple(detailed_result)
-        if test_final_result == 'pass':
-            test_final_success = True
-        else:
+        if 'error' in test_all_result or 'warning' in test_all_result:
             test_final_success = False
+        else:
+            test_final_success = True
         return test_final_success, detailed_result_total
     
     @staticmethod

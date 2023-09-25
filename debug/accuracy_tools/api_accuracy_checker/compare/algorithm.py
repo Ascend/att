@@ -161,21 +161,13 @@ def compare_core(bench_out, npu_out, alg):
     if not isinstance(bench_out, type(npu_out)):
         return [(CompareConst.NAN, "bench and npu output type is different.")], False, CompareConst.NA, CompareConst.NA
     if isinstance(bench_out, (list, tuple)):
-        compare_result, test_success, bench_dtype, npu_dtype, shape = [], True, [], [], []
+        compare_result, test_success, bench_dtype, npu_dtype, shape = [], [], [], [], []
         if len(bench_out) != len(npu_out):
             return [(CompareConst.NAN, "bench and npu output structure is different")], False, CompareConst.NA, CompareConst.NA
         for b_out_i, n_out_i in zip(bench_out, npu_out):
             compare_result_i, test_success_i, bench_dtype_i, npu_dtype_i, shape_i = compare_core(b_out_i, n_out_i, alg)
             compare_result.append(compare_result_i)
-            if isinstance(test_success, bool):
-                test_success = test_success and test_success_i
-            else:
-                if test_success_i == 'error':
-                    test_success = 'error'
-                elif test_success_i == 'warning' and test_success != 'error':
-                    test_success = 'warning'
-                elif test_success != 'warning' and test_success != 'error':
-                    test_success = test_success_i
+            test_success.append(test_success_i)
             bench_dtype.append(bench_dtype_i)
             npu_dtype.append(npu_dtype_i)
             shape.append(shape_i)
@@ -215,6 +207,10 @@ def compare_core(bench_out, npu_out, alg):
         compare_result = flatten_compare_result(compare_result)
     else:
         compare_result = [(compare_result, msg)]
+    if isinstance(test_success, list):
+        test_success = flatten_compare_result(test_success)
+    else:
+        test_success = [test_success]
     if isinstance(bench_dtype, list):
         bench_dtype = flatten_compare_result(bench_dtype)
         npu_dtype = flatten_compare_result(npu_dtype)
