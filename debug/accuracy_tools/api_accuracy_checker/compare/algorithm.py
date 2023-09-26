@@ -21,10 +21,7 @@ def compare_bool_tensor(cpu_output, npu_output):
         return CompareConst.NAN, False, ""
     error_nums = (cpu_output != npu_output).sum()
     error_rate = float(error_nums / cpu_output.size)
-    if error_rate == 0:
-        result = 'pass'
-    else:
-        result = 'error'
+    result = CompareConst.PASS if error_rate == 0 else CompareConst.ERROR
     return error_rate, result, ""
 
 def get_msg_and_handle_value(b_value, n_value):
@@ -66,27 +63,27 @@ def get_rel_err_ratio_hundredth(b_value, n_value):
     ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.01)
     if n_value.dtype != np.float16:
         msg = f"This indicator is not used to evaluate {n_value.dtype} data"
-        return ratio, 'pass', msg
+        return ratio, CompareConst.PASS, msg
     if bool_result:
-        return ratio, 'pass', msg
-    return ratio, 'error', msg
+        return ratio, CompareConst.PASS, msg
+    return ratio, CompareConst.ERROR, msg
 
 def get_rel_err_ratio_thousandth(b_value, n_value):
     ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.001)
     if bool_result:
-        return ratio, 'pass', msg
+        return ratio, CompareConst.PASS, msg
     if n_value.dtype == np.float16:
-        return ratio, 'warning', msg
-    return ratio, 'error', msg
+        return ratio, CompareConst.WARNING, msg
+    return ratio, CompareConst.ERROR, msg
 
 def get_rel_err_ratio_ten_thousandth(b_value, n_value):
     ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.0001)
     if n_value.dtype == np.float16:
         msg = f"This indicator is not used to evaluate {n_value.dtype} data"
-        return ratio, 'pass', msg
+        return ratio, CompareConst.PASS, msg
     if bool_result:
-        return ratio, 'pass', msg
-    return ratio, 'warning', msg
+        return ratio, CompareConst.PASS, msg
+    return ratio, CompareConst.WARNING, msg
 
 def get_rel_err_ratio(b_value, n_value, thresholding):
     b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
@@ -141,10 +138,10 @@ def compare_uint8_data(b_value, n_value):
 
 def compare_builtin_type(bench_out, npu_out):
     if not isinstance(bench_out, (bool, int, float, str)):
-        return CompareConst.NA, 'pass', ""
+        return CompareConst.NA, CompareConst.PASS, ""
     if bench_out != npu_out:
-        return CompareConst.NAN, 'error', ""
-    return True, 'pass', ""
+        return CompareConst.NAN, CompareConst.ERROR, ""
+    return True, CompareConst.PASS, ""
 
 def flatten_compare_result(result):
     flatten_result = []

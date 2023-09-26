@@ -162,18 +162,18 @@ class Comparator:
                     detailed_result_total[i] += detailed_result[i]
             else:
                 detailed_result_total = detailed_result
-        test_all_result = ['pass' for _ in range(len(detailed_result_total))]
+        test_all_result = [CompareConst.PASS for _ in range(len(detailed_result_total))]
         for i in range(len(test_all_result)):
-            if not cosine_success[0][i] or 'error' == cosine_success[0][i]:
-                test_all_result[i] = 'error'
-            elif max_abs_error_success[0][i] or 'pass' == max_abs_error_success[0][i]:
-                test_all_result[i] = 'pass'
+            if not cosine_success[0][i] or CompareConst.ERROR == cosine_success[0][i]:
+                test_all_result[i] = CompareConst.ERROR
+            elif max_abs_error_success[0][i] or CompareConst.PASS == max_abs_error_success[0][i]:
+                test_all_result[i] = CompareConst.PASS
             else:
                 test_success_column = [test_success_single[i] for test_success_single in test_success_total]
-                if 'error' in test_success_column or False in test_success_column:
-                    test_all_result[i] = 'error'
-                elif 'warning' in test_success_column:
-                    test_all_result[i] = 'warning'
+                if CompareConst.ERROR in test_success_column or False in test_success_column:
+                    test_all_result[i] = CompareConst.ERROR
+                elif CompareConst.WARNING in test_success_column:
+                    test_all_result[i] = CompareConst.WARNING
         # dtype加到所有指标的前面, 是否pass放到所有指标的后面
         for i in range(len(detailed_result_total)):
             detailed_result = list(detailed_result_total[i])
@@ -182,10 +182,7 @@ class Comparator:
             detailed_result.insert(2, shape_total[i])
             detailed_result.append(test_all_result[i])
             detailed_result_total[i] = tuple(detailed_result)
-        if 'error' in test_all_result or 'warning' in test_all_result:
-            test_final_success = False
-        else:
-            test_final_success = True
+        test_final_success = False if CompareConst.ERROR in test_all_result or CompareConst.WARNING in test_all_result else True
         return test_final_success, detailed_result_total
     
     @staticmethod
