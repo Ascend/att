@@ -207,21 +207,21 @@ def initialize_save_error_data():
 
 
 def _run_ut_parser(parser):
-    parser.add_argument("-forward", "--forward_input_file", dest="forward_input_file", default="",
+    parser.add_argument("-forward", "--forward_input_file", dest="forward_input_file", default="", type=str,
                         help="<Required> The api param tool forward result file: generate from api param tool, "
                              "a json file.",
                         required=True)
-    parser.add_argument("-backward", "--backward_input_file", dest="backward_input_file", default="",
+    parser.add_argument("-backward", "--backward_input_file", dest="backward_input_file", default="", type=str,
                         help="<Required> The api param tool backward result file: generate from api param tool, "
                              "a json file.",
                         required=True)
-    parser.add_argument("-o", "--out_path", dest="out_path", default="",
+    parser.add_argument("-o", "--out_path", dest="out_path", default="", type=str,
                         help="<optional> The ut task result out path.",
                         required=False)
     parser.add_argument('-save_error_data', dest="save_error_data", action="store_true",
                         help="<optional> Save compare failed api output.", required=False)
-    parser.add_argument("-j", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
-                        default=False, required=False)
+    parser.add_argument("-j", "--jit_compile", dest="jit_compile", action="store_true",
+                        help="<optional> whether to turn on jit compile", required=False)
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
                         default=0, required=False)
 
