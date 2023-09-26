@@ -239,8 +239,6 @@ def gen_api_params(api_info, need_grad=True, convert_type=None):
         print_error_log(f"convert_type params not support {convert_type} ")
         raise CompareException.INVALID_PARAM_ERROR
     kwargs_params = gen_kwargs(api_info, convert_type)
-    if kwargs_params.get("inplace"):
-        need_grad = False
     if api_info.get("args"):
         args_params = gen_args(api_info.get("args"), need_grad, convert_type)
     else:

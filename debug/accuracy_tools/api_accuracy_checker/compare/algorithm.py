@@ -50,7 +50,10 @@ def get_msg_and_handle_value(b_value, n_value):
 def get_max_rel_err(b_value, n_value):
     b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
     rel_err = np.abs((n_value - b_value) / b_value).max()
-    bool_result = rel_err < 0.001
+    if n_value.dtype == np.float32:
+        bool_result = rel_err < 0.0001
+    else:
+        bool_result = rel_err < 0.001
     return rel_err, bool_result, msg
 
 def get_max_abs_err(b_value, n_value):
