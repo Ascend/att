@@ -74,7 +74,7 @@ class Comparator:
         console.print(table_detail)
 
     def write_csv_title(self):
-        summary_test_rows = [[self.COLUMN_API_NAME, self.COLUMN_FORWARD_SUCCESS, self.COLUMN_BACKWARD_SUCCESS]]
+        summary_test_rows = [[self.COLUMN_API_NAME, self.COLUMN_FORWARD_SUCCESS, self.COLUMN_BACKWARD_SUCCESS, "Message"]]
         write_csv(summary_test_rows, self.save_path)
 
         detail_test_rows = [[
@@ -96,6 +96,8 @@ class Comparator:
 
         name = test_result[0]
         df_row = list(test_result[:3])
+        if test_result[1] == "SKIP" or test_result[2] == "SKIP":
+            df_row.append(test_result[3])
         if self.stack_info:
             stack_info = "\n".join(self.stack_info[name])
             df_row.append(stack_info)
