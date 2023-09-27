@@ -116,6 +116,7 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
             compare.write_summary_csv((api_full_name, "SKIP", "SKIP", str(err)))
     compare.print_pretest_result()
 
+
 def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success):
     if not is_fwd_success or not is_bwd_success:
         api_full_name = api_full_name.replace("*", ".")
