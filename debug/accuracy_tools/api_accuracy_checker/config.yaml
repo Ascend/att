@@ -6,3 +6,5 @@ real_data: False
 dump_step: 1000
 enable_dataloader: True
 target_iter: 1
+precision: 14
+ 
