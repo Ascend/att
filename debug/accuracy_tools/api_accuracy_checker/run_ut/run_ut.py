@@ -200,8 +200,8 @@ def run_backward(api_full_name, args, backward_content, grad_index, npu_args, np
     return grad_out, npu_grad_out, grad, npu_grad
 
 
-def initialize_save_error_data(out_path):
-    error_data_path = os.path.realpath(out_path)
+def initialize_save_error_data():
+    error_data_path = os.path.realpath(msCheckerConfig.error_data_path)
     check_file_or_directory_path(error_data_path, True)
     initialize_save_path(error_data_path, 'ut_error_data')
 
@@ -244,7 +244,7 @@ def _run_ut():
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     save_error_data = args.save_error_data
     if save_error_data:
-        initialize_save_error_data(out_path)
+        initialize_save_error_data()
     run_ut(forward_file, backward_file, out_path, save_error_data)
 
 

@@ -17,6 +17,7 @@ class Config:
             'compare_algorithm': str,
             'real_data': bool,
             'dump_step': int,
+            'error_data_path': str,
             'enable_dataloader': bool,
             'target_iter': int,
             'precision': int
