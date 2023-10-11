@@ -80,6 +80,8 @@ class Const:
     API_LIST = "api_list"
     API_STACK = "api_stack"
     DUMP_MODE = [ALL, LIST, RANGE, STACK, ACL, API_LIST, API_STACK]
+    AUTO = "auto"
+    ONLINE_DUMP_MODE = [ALL, LIST, AUTO, OFF]
 
     API_PATTERN = r"^[A-Za-z0-9]+[_]+([A-Za-z0-9]+[_]*[A-Za-z0-9]+)[_]+[0-9]+[_]+[A-Za-z0-9]+"
     WRITE_FLAGS = os.O_WRONLY | os.O_CREAT
@@ -93,6 +95,9 @@ class Const:
     FILE_NAME_LENGTH = 255
     DIRECTORY_LENGTH = 4096
 
+    # env dump path
+    ASCEND_WORK_PATH = "ASCEND_WORK_PATH"
+    DUMP_DIR = "dump_data"
 
 class CompareConst:
     """
@@ -194,13 +199,16 @@ class DumpException(CompareException):
 
 
 def make_dump_path_if_not_exists(dump_path):
-    # 之前应该已经验证过dump_path的上层文件夹存在
-    dump_root, dump_dir = os.path.split(dump_path)
     if not os.path.exists(dump_path):
-        Path(dump_path).mkdir(mode=0o750, exist_ok=True)
+        try:
+            Path(dump_path).mkdir(mode=0o750, exist_ok=True, parents=True)
+        except OSError as ex:
+            print_error_log(
+                'Failed to create {}.Please check the path permission or disk space .{}'.format(dump_path, str(ex)))
+            raise CompareException(CompareException.INVALID_PATH_ERROR)
     else:
         if not os.path.isdir(dump_path):
-            print_error_log((f"{dump_path} already exists and is not a directory."))
+            print_error_log('{} already exists and is not a directory.'.format(dump_path))
 
 
 def _print_log(level, msg):
@@ -241,6 +249,10 @@ def print_warn_log(warn_msg):
 
 
 def check_mode_valid(mode, scope=[], api_list=[]):
+    if not isinstance(scope, list):
+        raise ValueError("scope param set invalid, it's must be a list.")
+    elif not isinstance(api_list, list):
+        raise ValueError("api_list param set invalid, it's must be a list.")
     mode_check = {
         Const.ALL: lambda: None,
         Const.RANGE: lambda:  ValueError("set_dump_switch, scope param set invalid, it's must be [start, end].") if len(scope) != 2 else None,
@@ -273,7 +285,7 @@ def check_dump_mode_valid(dump_mode):
     if 'forward' not in dump_mode and 'backward' not in dump_mode:
         dump_mode.extend(['forward', 'backward'])
     if 'all' in dump_mode or set(["forward", "backward", "input", "output"]).issubset(set(dump_mode)):
-        return ['all']
+        return ["forward", "backward", "input", "output"]
     return dump_mode
 
 def check_summary_only_valid(summary_only):
@@ -483,16 +495,6 @@ def save_numpy_data(file_path, data):
     np.save(file_path, data)
 
 
-def parse_arg_value(values):
-    """
-    parse dynamic arg value of atc cmdline
-    """
-    value_list = []
-    for item in values.split(Const.SEMICOLON):
-        value_list.append(parse_value_by_comma(item))
-    return value_list
-
-
 def parse_value_by_comma(value):
     """
     parse value by comma, like '1,2,4,8'
@@ -528,7 +530,7 @@ def get_time():
 
 
 def format_value(value):
-    return '{:.6f}'.format(value)
+    return '{:.12f}'.format(value)
 
 
 def torch_device_guard(func):

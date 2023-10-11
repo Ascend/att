@@ -98,7 +98,7 @@ class TestUtilsMethods(unittest.TestCase):
         n_value = np.array([1, 2, 3])
         b_value = np.array([1, 2, 3])
         max_relative_err, message = compare.get_max_relative_err(n_value, b_value)
-        self.assertEqual(max_relative_err, "0.000000")
+        self.assertEqual(max_relative_err, "0.000000000000")
         self.assertEqual(message, "")
 
     def test_check_op(self):

@@ -15,7 +15,7 @@
 
 ### 工具安装方式
 
-ptdbg_ascend精度工具的安装方式包括：下载whl包安装和源代码编译安装。本文主要介绍whl包安装，源码编译安装详见：[ptdbg_ascend](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend)。
+ptdbg_ascend精度工具的安装方式包括：下载whl包安装和源代码编译安装。本文主要介绍whl包安装，源码编译安装详见：[ptdbg_ascend](https://gitee.com/ascend/tools/tree/master/ptdbg_ascend)。
 
 
 #### 下载whl包安装

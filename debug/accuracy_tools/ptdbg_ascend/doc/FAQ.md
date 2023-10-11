@@ -1,5 +1,13 @@
 ## FAQ
+## 工具使用
+### 1.环境变量方式导入ptdbg_ascend
+当需要使用export PYTHONPATH的方法导入ptdbg_ascend的时候，需要在tools/ptdbg_ascend/src/python/ptdbg_ascend/common的目录下，手动添加一个version.py，并加上以下版本号信息，其中‘3.4’为当前ptdbg_ascend的版本
 
+```
+__version__ = '3.4'
+```
+
+## 异常情况
 ### 1. 单机多卡场景dump目录下只生成一个rank目录或pkl文件格式损坏
 
 **故障现象**
@@ -31,3 +39,62 @@ CANN软件版本较低导致不兼容。
 **故障处理**
 
 升级新版CANN软件版本。
+### 3. torch_npu._C._clear_overflow_npu() RuntimeError NPU error，error code is 107002
+如果运行溢出检测功能遇到这个报错，采取以下解决方法：
+如果是单卡运行，添加如下代码，0是卡号，选择自己空闲的卡号。
+
+```
+torch.npu.set_device('npu:0')
+```
+如果多卡运行，请在代码中修改对应卡号，比如进程使用卡号为{rank}时可以添加如下代码：
+
+```
+torch.npu.set_device(f'npu:{rank}')
+```
+如果运行精度比对功能遇到这个报错，尝试安装最新版本的ptdbg_ascend
+
+### 4. 运行compare.py时报错：json.decoder.JSONDecodeError: Extra data: line 1 column 37(char 36)
+
+遇到这种情况，先更新工具版本为最新版本，再重新运行训练代码dump数据，再用新的dump数据进行精度比对，如果最新版本未能解决问题，请联系ptdbg工具开发人员。
+
+### 5. AssertionError: assert set(WrapTensorOps) <= set(_tensor_ops)
+
+遇到这种情况，先检查安装的torch版本，建议先更新工具版本为2.2以上，版本2.2的工具支持torch1.8、1.11和2.0
+
+### 6. dump得到的VF_lstm_99_forward_input.1.0.npy、VF_lstm_99_forward_input.1.1.npy类似的数据是否正常？
+
+带1.0/1.1/1.2后缀的npy是正常现象，例如当输入数据为[[tensor1, tensor2, tensor3]]会生成这样的后缀
+
+### 7. dump数据时，dump输出目录只得到了.npy文件，不生成pkl文件
+
+- 检查set_dump_switch("ON")，set_dump_switch("OFF")是否都配置了；
+- 如果都配置了，观察模型运行日志结尾是否打印“Dump switch is turned off”，如果没有，则表明代码没有执行到set_dump_switch("OFF")，请检查模型代码中是否有exit()操作。
+
+### 8. 进行compare报错：The current file contains stack information, please turn on the stack_mode
+在比对脚本中，设置stack_mode=True，例如：
+
+```
+from ptdbg_ascend import *
+dump_result_param={
+"npu_pkl_path": "./npu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump.pkl",
+"bench_pkl_path": "./gpu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump.pkl",
+"npu_dump_data_dir": "./npu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump",
+"bench_dump_data_dir": "./gpu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump",
+"is_print_compare_log": True
+}
+compare(dump_result_param, "./output", stack_mode=True)
+```
+### 9. dump指定反向API的ACL级别的数据报错：NameError：name 'torch_npu' is not defined
+
+- 如果是npu环境，请安装torch_npu；
+- 如果是gpu环境，暂不支持dump指定API的ACL级别的数据
+
+### 10. 配置dump_path后，使用工具报错：[ERROR]The file path /home/xxx/dump contains special characters
+
+- 请检查你设置的dump绝对路径是否包含特殊字符，确保路径名只包含大小写字母、数字、下划线、斜杠、点和短横线
+- 注意，如果你执行脚本的路径为/home/abc++/，你设置的dump_path="./dump"，工具实际校验的路径为绝对路径/home/abc++/dump，++为特殊字符，会引发本条报错
+
+### 11. 遇到报错'IsADirectoryError: [Errno 21] Is a directory: '/data/rank0/api_stack_xxx''
+
+- 请检查register_hook是否写在了set_dump_path前面，register_hook必须在set_dump_path后调用
+- 请检查是否写了多个register_hook或者set_dump_path，如有，请保留一个register_hook或者set_dump_path

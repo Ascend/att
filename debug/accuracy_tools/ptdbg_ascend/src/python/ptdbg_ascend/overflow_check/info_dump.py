@@ -76,15 +76,16 @@ class APIInfo:
 
         else:
             dump_path = "./"
-            api_args = self.api_name + '*' + str(self.args_num)
+            api_args = self.api_name + '.' + str(self.args_num)
+            rank = arg.device.index
             if self.is_forward:
-                forward_real_data_path = os.path.join(dump_path, 'forward_real_data')
+                forward_real_data_path = os.path.join(dump_path, 'forward_real_data', f"rank{rank}")
                 if not os.path.exists(forward_real_data_path):
                     os.makedirs(forward_real_data_path, 0o755)
 
                 file_path = os.path.join(forward_real_data_path, f'{api_args}.npy')
             else:
-                backward_real_data_path = os.path.join(dump_path, 'backward_real_data')
+                backward_real_data_path = os.path.join(dump_path, 'backward_real_data', f"rank{rank}")
                 if not os.path.exists(backward_real_data_path):
                     os.makedirs(backward_real_data_path, 0o755)
                 file_path = os.path.join(backward_real_data_path, f'{api_args}.npy')

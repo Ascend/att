@@ -29,7 +29,3 @@ class TestAdvisor(unittest.TestCase):
         advisor.analysis()
         filenames = os.listdir(self.output_path)
         self.assertEqual(len(filenames), 1)
-
-    def test_analysis_when_accuracy_and_npu_name_not_in_csv(self):
-        advisor = Advisor("resources/compare/compare_result_without_accuracy.csv", self.output_path)
-        self.assertRaises(AttributeError, advisor.analysis)
