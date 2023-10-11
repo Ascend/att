@@ -1,7 +1,7 @@
 ## FAQ
 ## 工具使用
 ### 1.环境变量方式导入ptdbg_ascend
-当需要使用export PYTHONPATH的方法导入ptdbg_ascend的时候，需要在tools/ptdbg_ascend/src/python/ptdbg_ascend/common的目录下，手动添加一个version.py，并加上以下版本号信息，其中‘3.4’为当前ptdbg_ascend的版本
+当需要使用export att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/common的目录下，手动添加一个version.py，并加上以下版本号信息，其中‘3.4’为当前ptdbg_ascend的版本
 
 ```
 __version__ = '3.4'
