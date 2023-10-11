@@ -251,7 +251,6 @@ export const ModuleView: React.FC<IProps> = (props) => {
             height={flameHeight}
             width={cardWidth}
             onChange={(node: any) => {
-              console.log(`"${node.name}" focused`)
             }}
           />
         )}

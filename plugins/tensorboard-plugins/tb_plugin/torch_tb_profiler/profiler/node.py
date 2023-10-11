@@ -73,8 +73,6 @@ class HostNode(BaseNode):
 
 class OperatorNode(HostNode):
     # Don't use [] as default parameters
-    # https://stackoverflow.com/questions/1132941/least-astonishment-and-the-mutable-default-argument?page=1&tab=votes#tab-top
-    # https://web.archive.org/web/20200221224620/http://effbot.org/zone/default-values.htm
     def __init__(self, children=None, runtimes=None, input_shape: Optional[List[List[int]]] = None,
                  input_type: Optional[List[str]] = None, callstack: Optional[str] = None,
                  self_host_duration: int = 0, self_device_duration: int = 0, **kwargs):

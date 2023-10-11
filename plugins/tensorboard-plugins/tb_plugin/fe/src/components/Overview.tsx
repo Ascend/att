@@ -93,7 +93,6 @@ export const Overview: React.FC<IProps> = (props) => {
       setSteps(resp.steps)
       setRecommendations(resp.recommendations)
       setGpuMetrics(resp.gpu_metrics)
-      console.log(resp.gpu_metrics)
     })
   }, [run, worker, span])
 

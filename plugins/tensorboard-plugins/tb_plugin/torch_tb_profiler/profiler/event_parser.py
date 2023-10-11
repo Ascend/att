@@ -206,8 +206,6 @@ class NodeParserMixin:
 class StepParser:
     def __init__(self):
         # we could not use [[]] * len here since they all point to same memory
-        # https://stackoverflow.com/questions/12791501/python-initializing-a-list-of-lists
-        # https://stackoverflow.com/questions/240178/list-of-lists-changes-reflected-across-sublists-unexpectedly
         self.role_ranges: List[List[Tuple[int, int]]] = [[] for _ in range(ProfileRole.Total - 1)]
         self.steps: List[Tuple[int, int]] = []
         self.steps_names: List[str] = []
