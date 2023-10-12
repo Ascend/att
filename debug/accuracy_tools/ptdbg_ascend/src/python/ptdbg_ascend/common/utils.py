@@ -211,21 +211,21 @@ def make_dump_path_if_not_exists(dump_path):
             print_error_log('{} already exists and is not a directory.'.format(dump_path))
 
 
-def _print_log(level, msg):
+def _print_log(level, msg, end='\n'):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
     pid = os.getgid()
-    print(current_time + "(" + str(pid) + ")-[" + level + "]" + msg)
+    print(current_time + "(" + str(pid) + ")-[" + level + "]" + msg, end=end)
     sys.stdout.flush()
 
 
-def print_info_log(info_msg):
+def print_info_log(info_msg, end='\n'):
     """
     Function Description:
         print info log.
     Parameter:
         info_msg: the info message.
     """
-    _print_log("INFO", info_msg)
+    _print_log("INFO", info_msg, end=end)
 
 
 def print_error_log(error_msg):

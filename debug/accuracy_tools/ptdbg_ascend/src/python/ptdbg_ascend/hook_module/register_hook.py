@@ -122,14 +122,15 @@ def register_hook_core(hook, **kwargs):
         # In NPU scene, clear the overflow flag before overflow detection
         if need_clear:
             HOOKModule.__init__ = add_clear_overflow(HOOKModule.__init__, pid)
-    elif "acc_cmp_dump" in hook_name:
-        remove_dropout()
 
     print_info_log("Start mounting the {} hook function to the model.".format(hook_name))
     hook = functools.partial(hook, dump_step=0, pid=pid)
     print_info_log("The {} hook function is successfully mounted to the model.".format(hook_name))
 
     initialize_hook(hook)
+
+    if "acc_cmp_dump" in hook_name:
+        remove_dropout()
 
 
 def init_dump_config(kwargs):
