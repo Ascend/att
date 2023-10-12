@@ -446,6 +446,7 @@ tensor:
   - negative
   - negative_
   - nonzero
+  - norm
   - normal_
   - not_equal
   - not_equal_
