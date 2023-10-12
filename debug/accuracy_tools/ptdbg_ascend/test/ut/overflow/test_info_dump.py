@@ -79,10 +79,14 @@ class TestInfoDump(unittest.TestCase):
     def test_write_api_info_json(self):
         info_dump.write_api_info_json(self.forward_api_info)
         self.assertTrue(os.path.exists(os.path.join(self.dump_path, f'forward_info_{self.forward_api_info.rank}.json')))
+        if os.path.exists(os.path.join(self.dump_path, f'forward_info_{self.forward_api_info.rank}.json')):
+            os.remove(os.path.join(self.dump_path, f'forward_info_{self.forward_api_info.rank}.json'))
 
     def test_write_json(self):
         info_dump.write_json(self.json_file_path, {'test': 'data'})
         self.assertTrue(os.path.exists(self.json_file_path))
+        if os.path.exists(self.json_file_path):
+            os.remove(self.json_file_path)
 
     def test_initialize_output_json(self):
         try:

@@ -1,4 +1,5 @@
 import unittest
+import os
 import numpy as np
 from ptdbg_ascend.parse_tool.lib.visualization import Visualization
 
@@ -28,3 +29,8 @@ class TestVisualization(unittest.TestCase):
         except Exception as e:
             self.fail(f"parse_pkl raised exception {e}")
 
+    def tearDown(self):
+        if os.path.exists('test.npy'):
+            os.remove('test.npy')
+        if os.path.exists('test.pkl'):
+            os.remove('test.pkl')
