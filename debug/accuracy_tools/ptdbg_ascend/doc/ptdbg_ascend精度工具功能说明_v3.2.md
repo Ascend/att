@@ -362,14 +362,19 @@ register_hook需要在set_dump_path之后调用，也需要在每个进程上被
 
 3. NPU环境下执行训练dump溢出数据。
 
-   针对输入正常但输出存在溢出的API，会训练执行目录下将溢出的API信息dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，通过 [Ascend模型精度预检工具](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/api_accuracy_checker)对json文件进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
+   针对输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，前向过程溢出的API可通过 [Ascend模型精度预检工具](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/api_accuracy_checker)对json文件进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
 
    精度预检工具执行命令如下：
 
-   ```
+   ```bash
+   # 下载att代码仓后执行如下命令
+   export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    cd $ATT_HOME/debug/accuracy_tools/api_accuracy_checker/run_ut
-   python run_overflow_check.py -forward ./forward_info_0.json -backward ./backward_info_0.json
+   python run_overflow_check.py -forward ./forward_info_{pid}.json
    ```
+   反向过程溢出的API暂不支持这一功能。
+
+   当重复执行溢出检测dump操作时，需要删除上一次dump目录下的溢出检测dump数据，否则将因重名而报错。
 
 **注意事项**
 
@@ -389,7 +394,7 @@ PrecisionDebugger模块包含dump和溢出检测功能的总体配置项。可�
 **原型**
 
 ```python
-PrecisionDebugger(dump_path=None, hook_name=None, rank=None):
+PrecisionDebugger(config=DebuggerConfig(dump_path=None, hook_name=None, rank=None)):
 ```
 
 **参数说明**
@@ -398,7 +403,7 @@ PrecisionDebugger(dump_path=None, hook_name=None, rank=None):
 | --------- | ------------------------------------------------------------ | -------- |
 | dump_path | 设置dump数据目录路径，参数示例："./dump_path"。dump_path的父目录须为已存在目录。<br/>默认在指定的dump_path路径下生成`ptdbg_dump_{version}`目录，并在该目录下生成`dump.pkl`文件以及`dump`数据文件保存目录。<br/>当**configure_hook**函数配置了mode参数时，`dump.pkl`文件以及`dump`数据文件保存目录名称添加mode参数值为前缀，详情请参见“**dump数据存盘说明**”。 | 是       |
 | hook_name | dump模式，可取值dump和overflow_check，表示dump和溢出检测功能，二选一。 | 是       |
-| rank      | 指定对某张卡上的数据进行dump或溢出检测，默认未配置（表示dump所有卡的数据），须根据实际卡的Rank ID配置。 | 否       |
+| rank      | 指定对某张卡上的数据进行dump或溢出检测，默认未配置（表示dump所有卡的数据）。应配置为大于0的正整数，且须根据实际卡的Rank ID配置，若所配置的值大于实际训练所运行的卡的Rank ID，则dump数据为空，比如当前环境Rank ID为0~7，实际训练运行0~3卡，此时若配置Rank ID为4或不存在的10等其他值，此时dump数据为空。 | 否       |
 
 ### configure_hook函数（可选）
 
@@ -518,7 +523,7 @@ configure_hook可配置多种dump模式，示例如下：
   debugger.configure_hook(mode="acl", acl_config="./dump.json")
   ```
 
-  该场景**PrecisionDebugger**模块的dump_path参数不生效，由acl_config中的dump.json文件配置溢出数据目录。
+  该场景会在原有数据基础上，额外在dump.json文件配置的dump_path目录下生成一份ACL算子数据，该数据可通过“**ptdbg_ascend.parse**”工具进行解析。
 
   仅支持NPU环境。
 
@@ -560,7 +565,7 @@ debugger.stop()
 
   ```python
   from ptdbg_ascend import *
-  debugger = PrecisionDebugger(dump_path="./dump_path", hook_name="dump")
+  debugger = PrecisionDebugger(config=DebuggerConfig(dump_path="./dump_path", hook_name="dump"))
   
   # 模型初始化
   # 下面代码也可以用PrecisionDebugger.start()和PrecisionDebugger.stop()
@@ -575,7 +580,7 @@ debugger.stop()
 
   ```python
   from ptdbg_ascend import *
-  debugger = PrecisionDebugger(dump_path="./dump_path", hook_name="overflow_check")
+  debugger = PrecisionDebugger(config=DebuggerConfig(dump_path="./dump_path", hook_name="overflow_check"))
   
   # 模型初始化
   # 下面代码也可以用PrecisionDebugger.start()和PrecisionDebugger.stop()
@@ -784,7 +789,7 @@ register_hook(model, hook, overflow_nums=overflow_nums, dump_mode=dump_mode, dum
   register_hook(model, overflow_check, dump_mode='acl', dump_config='./dump.json')
   ```
 
-  该场景set_dump_path不生效，由dump_config中的dump.json文件配置溢出数据目录。
+  该场景会在原有数据基础上，额外在dump.json文件配置的dump_path目录下生成一份ACL算子数据，该数据可通过“**ptdbg_ascend.parse**”工具进行解析。
 
   仅支持NPU环境。
 

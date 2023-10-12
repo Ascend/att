@@ -50,7 +50,7 @@ class TestUtilsMethods(unittest.TestCase):
     def test_set_overflow_check_switch_success2(self):
         utils.set_overflow_check_switch(ON)
         self.assertEqual(OverFlowUtil.overflow_check_switch, ON)
-        self.assertEqual(OverFlowUtil.overflow_filter_switch, ON)
+        self.assertEqual(OverFlowUtil.overflow_filter_switch, OFF)
 
     def test_set_overflow_check_switch_success3(self):
         utils.set_overflow_check_switch(ON, ON)

@@ -1,14 +1,13 @@
 import os
 import shutil
 import sys
-import re
 from pathlib import Path
 import torch
 
 from ..dump import dump
 from ..common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
     check_mode_valid, get_api_name_from_matcher, check_switch_valid, check_dump_mode_valid, check_summary_only_valid, generate_compare_script, \
-    check_is_npu, check_file_valid
+    check_is_npu, check_file_valid, make_dump_path_if_not_exists
 
 from ..common.version import __version__
 
@@ -17,6 +16,7 @@ range_begin_flag, range_end_flag = False, False
 
 
 class DumpUtil(object):
+    dump_root = None
     dump_data_dir = None
     dump_path = None
     dump_switch = None
@@ -31,20 +31,9 @@ class DumpUtil(object):
     dump_config = None
     dataloader_iter = 0
     target_iter = None
+    iter_num = 0
     target_rank = None
     summary_only = False
-
-    @staticmethod
-    def incr_iter_num_maybe_exit():
-        if DumpUtil.target_iter is None:
-            return
-        if DumpUtil.dataloader_iter == DumpUtil.target_iter:
-            set_dump_switch("ON")
-        elif DumpUtil.dataloader_iter > DumpUtil.target_iter:
-            raise Exception("Ptdbg: exit after iteration {}".format(DumpUtil.target_iter))
-        else:
-            set_dump_switch("OFF")
-        DumpUtil.dataloader_iter += 1
 
     @staticmethod
     def set_dump_path(save_path):
@@ -141,15 +130,10 @@ class DumpUtil(object):
 
 
 def set_dump_path(fpath=None, dump_tag='ptdbg_dump'):
-    if fpath is None:
-        raise RuntimeError("set_dump_path '{}' error, please set a valid filename".format(fpath))
-        return
+    fpath = load_env_dump_path(fpath)
     check_file_valid(fpath)
     real_path = os.path.realpath(fpath)
-    if not os.path.isdir(real_path):
-        print_error_log(
-            "set_dump_path '{}' error, the path is not a directory please set a valid directory.".format(real_path))
-        raise DumpException(DumpException.INVALID_PATH_ERROR)
+    make_dump_path_if_not_exists(real_path)
     DumpUtil.set_dump_path(real_path)
     DumpUtil.dump_dir_tag = dump_tag
 
@@ -171,7 +155,7 @@ def get_tensor_rank(in_feat, out_feat):
     if in_rank is None:
         out_rank = get_tensor_rank_single(out_feat)
         if out_rank is None:
-            return 0
+            return None
         return out_rank
     return in_rank
 
@@ -205,6 +189,8 @@ def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch
     except (CompareException, AssertionError) as err:
         print_error_log(str(err))
         sys.exit()
+    if not DumpUtil.dump_path:
+        set_dump_path()
     DumpUtil.set_dump_switch(switch, summary_only=summary_only)
     dump_path_str = generate_dump_path_str()
     if switch == "OFF":
@@ -242,10 +228,13 @@ def set_dump_switch_print_info(switch, mode, dump_path_str):
             print_info_log("The number of matched dump is {}".format(dump_count))
 
 
-def _set_dump_switch4api_list(name):
-    if DumpUtil.dump_api_list:
-        api_name = get_api_name_from_matcher(name)
-        DumpUtil.dump_switch = "ON" if api_name in DumpUtil.dump_api_list else "OFF"
+def check_if_in_api_list(name):
+    if not DumpUtil.dump_api_list:
+        return False
+    for api in DumpUtil.dump_api_list:
+        if api.lower() in name.lower():
+            return True
+    return False
 
 
 def set_backward_input(backward_input):
@@ -267,7 +256,7 @@ def make_dump_data_dir(dump_file_name):
 
 def make_dump_dirs():
     dump_file_name, dump_file_name_body = "dump.pkl", "dump"
-    dump_root_dir = DumpUtil.dump_path if DumpUtil.dump_path else "./"
+    dump_root_dir = load_env_dump_path(DumpUtil.dump_path)
     tag_dir = os.path.join(dump_root_dir, DumpUtil.dump_dir_tag + f'_v{__version__}')
     Path(tag_dir).mkdir(mode=0o750, parents=True, exist_ok=True)
     DumpUtil.dump_dir = tag_dir
@@ -282,3 +271,20 @@ def check_writable(dump_file):
                 dump_file))
         raise DumpException(DumpException.INVALID_PATH_ERROR)
 
+
+def load_env_dump_path(dump_path):
+    if not dump_path:
+        dump_path = os.getenv(Const.ASCEND_WORK_PATH)
+        if dump_path:
+            try:
+                dump_path = os.path.join(str(dump_path), Const.DUMP_DIR)
+            except TypeError:
+                print_error_log("Generating dump path from environment variables ASCEND_WORK_PATH failed.")
+                raise DumpException(DumpException.INVALID_PATH_ERROR)
+        else:
+            print_error_log("Dump path is None, you can configure it in the following ways:\n"
+                            "1. Configure set_dump_path function.\n"
+                            "2. Configure the dump_path parameter of PrecisionDebugger.\n"
+                            "3. Set environment variables ASCEND_WORK_PATH.")
+            raise DumpException(DumpException.INVALID_PATH_ERROR)
+    return dump_path

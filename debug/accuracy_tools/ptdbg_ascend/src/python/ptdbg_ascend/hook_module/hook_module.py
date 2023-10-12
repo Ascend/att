@@ -22,31 +22,43 @@ import torch
 import torch.nn as nn
 import torch.utils.hooks as full_hooks
 
-module_count = {}
-
+g_stop_hook = False
 
 class HOOKModule(nn.Module):
-
+    module_count = {}
     def __init__(self, hook) -> None:
         super(HOOKModule, self).__init__()
         self.has_overflow = False
         self.input_args = tuple()
         self.input_kwargs = dict()
-        prefix = ""
-        if hasattr(self, "prefix_op_name_"):
-            prefix = self.prefix_op_name_
 
-        if prefix not in module_count:
-            module_count[prefix] = 1
-            prefix += '0_'
-        else:
-            module_count[prefix] += 1
-            prefix = prefix + str(module_count[prefix] - 1) + '_'
+        if not g_stop_hook:
+            prefix = ""
+            if hasattr(self, "prefix_op_name_"):
+                prefix = self.prefix_op_name_
 
-        self.register_forward_hook(hook(prefix + "forward"))
-        self.register_backward_hook(hook(prefix + "backward"))
+            if prefix not in HOOKModule.module_count:
+                HOOKModule.module_count[prefix] = 1
+                prefix += '0_'
+            else:
+                HOOKModule.module_count[prefix] += 1
+                prefix = prefix + str(HOOKModule.module_count[prefix] - 1) + '_'
+
+            self.register_forward_hook(hook(prefix + "forward"))
+            self.register_backward_hook(hook(prefix + "backward"))
 
     def __call__(self, *input, **kwargs):
+        changed = False
+        global g_stop_hook
+        if not g_stop_hook:
+            g_stop_hook = True
+            changed = True
+        result = self._call_func(*input, **kwargs)
+        if changed:
+            g_stop_hook = False
+        return result
+
+    def _call_func(self, *input, **kwargs):
         full_backward_hooks, non_full_backward_hooks = [], []
         if len(self._backward_hooks) > 0:
             full_backward_hooks, non_full_backward_hooks = self._get_backward_hooks()

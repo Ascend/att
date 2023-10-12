@@ -1052,3 +1052,17 @@ torch_npu:
   - npu_sign_bits_pack
   - npu_sign_bits_unpack
   - npu_flash_attention
+
+distributed:
+  - send
+  - recv
+  - broadcast
+  - all_reduce
+  - reduce
+  - all_gather
+  - gather
+  - batch_isend_irecv
+  - isend
+  - irecv
+  - scatter
+  - reduce_scatter

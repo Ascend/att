@@ -19,8 +19,9 @@ import functools
 import os
 
 import torch
+import torch.distributed as dist
 
-from . import wrap_torch, wrap_functional, wrap_tensor, wrap_vf
+from . import wrap_torch, wrap_functional, wrap_tensor, wrap_vf, wrap_distributed
 from .hook_module import HOOKModule
 from .wrap_functional import remove_dropout
 from ..common.utils import check_file_or_directory_path, print_error_log, CompareException, Const, \
@@ -55,6 +56,16 @@ def initialize_hook(hook):
         if attr_name.startswith("wrap_"):
             setattr(torch.nn.functional, attr_name[5:], getattr(wrap_functional.HOOKFunctionalOP, attr_name))
 
+    wrap_distributed.wrap_distributed_ops_and_bind(hook)
+    for attr_name in dir(wrap_distributed.HOOKDistributedOP):
+        if attr_name.startswith("wrap_"):
+            setattr(dist, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
+            setattr(dist.distributed_c10d, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
+            if not is_gpu:
+                setattr(torch_npu.distributed, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
+                setattr(torch_npu.distributed.distributed_c10d, attr_name[5:],
+                        getattr(wrap_distributed.HOOKDistributedOP, attr_name))
+
     wrap_vf.wrap_vf_ops_and_bind(hook)
     for attr_name in dir(wrap_vf.HOOKVfOP):
         if attr_name.startswith("wrap_"):
@@ -66,9 +77,12 @@ def initialize_hook(hook):
             if attr_name.startswith("wrap_"):
                 setattr(torch_npu, attr_name[5:], getattr(wrap_npu_custom.HOOKNpuOP, attr_name))
 
-def add_clear_overflow(func):
+def add_clear_overflow(func, pid):
     first_module = True
     def clear_overflow_wrapper(*args, **kwargs):
+        child_pid = os.getpid()
+        if pid != child_pid:
+            return func(*args, **kwargs)
         nonlocal first_module
         if first_module:
             torch_npu._C._clear_overflow_npu()
@@ -107,7 +121,7 @@ def register_hook_core(hook, **kwargs):
                            "please check the version of software torch_npu.")
         # In NPU scene, clear the overflow flag before overflow detection
         if need_clear:
-            HOOKModule.__init__ = add_clear_overflow(HOOKModule.__init__)
+            HOOKModule.__init__ = add_clear_overflow(HOOKModule.__init__, pid)
     elif "acc_cmp_dump" in hook_name:
         remove_dropout()
 

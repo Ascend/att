@@ -1,7 +1,6 @@
 import os
-import glob
 import torch
-
+from pathlib import Path
 from ..common.utils import print_warn_log, get_time, print_info_log
 from ..dump.dump import forward_init_status, forward_acl_dump
 from .utils import OverFlowUtil, dump_overflow
@@ -22,6 +21,7 @@ forward_api_info = {}
 backward_api_info = {}
 FORWARD_REAL_DATA_PATH = os.path.join('./', 'forward_real_data')
 BACKWARD_REAL_DATA_PATH = os.path.join('./', 'backward_real_data')
+rank = os.getpid()
 
 
 def check_overflow_environment(pid):
@@ -75,7 +75,6 @@ def check_data_overflow(x):
 def check_path(apis, path):
     return any(api in path for api in apis)
 
-
 def overflow_check(name, **kwargs):
     overflow_nums = OverFlowUtil.overflow_nums
     pid = kwargs.get('pid')
@@ -86,11 +85,25 @@ def overflow_check(name, **kwargs):
     def overflowcheck_hook(module, in_feat, out_feat):
         if not check_overflow_environment(pid):
             return
-        rank = get_tensor_rank(in_feat, out_feat)
+        dump_file = DumpUtil.get_dump_path()
+        global rank
+        if DumpUtil.target_iter:
+            dump_dir, dump_filename = os.path.split(dump_file)
+            dump_dir = os.path.join(dump_dir, "step{}".format(DumpUtil.iter_num))
+            if not os.path.exists(dump_dir):
+                Path(dump_dir).mkdir(mode=0o750, exist_ok=True)
+            dump_file = os.path.join(dump_dir, dump_filename)
+        rank_this = get_tensor_rank(in_feat, out_feat)
+        DumpUtil.dump_root = os.path.dirname(DumpUtil.dump_path)
+        if rank_this is not None and rank != rank_this:
+            rank = rank_this
+            dump.rename_()
         if DumpUtil.target_rank is not None:
             if rank != DumpUtil.target_rank:
                 return
-        dump_path = create_dirs_if_not_exist(rank, DumpUtil.dump_path)
+        dump_path = create_dirs_if_not_exist(rank, dump_file)
+        global pkl_name
+        pkl_name = dump_path
         dump_dir = os.path.split(dump_path)[0]
         global api_overflow
         global forward_api_info
@@ -132,7 +145,6 @@ def overflow_check(name, **kwargs):
             if dump_mode == "acl":
                 acl_dump(module, module_name)
             dump.write_to_disk()
-            dump.api_list.clear()
             # clear overflow flag for the next check
             torch_npu._C._clear_overflow_npu()
             if not OverFlowUtil.check_overflow_dump_times(overflow_nums):
@@ -143,14 +155,6 @@ def overflow_check(name, **kwargs):
                 raise ValueError("[overflow {} times]: dump file is saved in '{}'."
                                  .format(OverFlowUtil.real_overflow_dump_times, os.path.realpath(dump_file_name)))
                 return
-
-    def delete_forward_npy(api_overflow_list, api_info):
-        for path in glob.glob(FORWARD_REAL_DATA_PATH + "/*.npy"):
-            if not check_path(api_overflow_list, path):
-                os.remove(os.path.abspath(path))
-        for key in list(api_info.keys()):
-            if key not in api_overflow:
-                del forward_api_info[key]
 
     def overflow_type_judge(in_feat, out_feat, module_name):
         if module_name.endswith(Const.BACKWARD):
