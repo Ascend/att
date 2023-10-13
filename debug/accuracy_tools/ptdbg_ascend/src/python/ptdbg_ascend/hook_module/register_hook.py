@@ -25,7 +25,7 @@ from . import wrap_torch, wrap_functional, wrap_tensor, wrap_vf, wrap_distribute
 from .hook_module import HOOKModule
 from .wrap_functional import remove_dropout
 from ..common.utils import check_file_or_directory_path, print_error_log, CompareException, Const, \
-    print_info_log, print_warn_log, get_process_rank
+    print_info_log, print_warn_log, get_process_rank, torch_without_guard_version
 from ..dump.utils import make_dump_dirs, DumpUtil
 from ..overflow_check.utils import OverFlowUtil
 
@@ -61,7 +61,7 @@ def initialize_hook(hook):
         if attr_name.startswith("wrap_"):
             setattr(dist, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
             setattr(dist.distributed_c10d, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
-            if not is_gpu:
+            if not is_gpu and not torch_without_guard_version:
                 setattr(torch_npu.distributed, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
                 setattr(torch_npu.distributed.distributed_c10d, attr_name[5:],
                         getattr(wrap_distributed.HOOKDistributedOP, attr_name))
