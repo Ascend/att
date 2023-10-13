@@ -98,3 +98,8 @@ compare(dump_result_param, "./output", stack_mode=True)
 
 - 请检查register_hook是否写在了set_dump_path前面，register_hook必须在set_dump_path后调用
 - 请检查是否写了多个register_hook或者set_dump_path，如有，请保留一个register_hook或者set_dump_path
+
+### 12. 无法dump matmul权重的反向梯度数据
+
+- matmul期望的输入是二维，当输入不是二维时，会将输入通过view操作展成二维，再进行matmul运算，因此在反向求导时，backward_hook能拿到的是UnsafeViewBackward这步操作里面数据的梯度信息，取不到MmBackward这步操作里面数据的梯度信息，即权重的反向梯度数据。
+- 典型的例子有，当linear的输入不是二维，且无bias时，会调用output = input.matmul(weight.t()),因此拿不到linear层的weight的反向梯度数据。
