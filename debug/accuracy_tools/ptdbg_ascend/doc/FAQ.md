@@ -8,6 +8,7 @@ __version__ = '3.4'
 ```
 ### 2.dump指定操作
 dump指定操作当前支持dump融合算子和dump切片操作的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中添加如下代码：
+
 --切片操作
     在tensor:下添加：
 ```
