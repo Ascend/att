@@ -7,27 +7,30 @@
 __version__ = '3.4'
 ```
 ### 2.dump指定操作
-如果需要dump融合算子或者切片操作的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中进行手动添加，切片操作在tensor:下添加
+dump指定操作当前支持dump融合算子和dump切片操作的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中添加如下代码：
+--切片操作
+    在tensor:下添加：
 ```
 - __getitem__
 ```
-如果融合算子无法dump，需要手动添加到support_wrap_ops.yaml中，比如以下算子：
-```
-def npu_forward_fused_softmax(self, input_, mask):
-    resl = torch_npu.npu_scaled_masked_softmax(input_, mask, self.scale, False)
-    return resl
-```
-需要在support_wrap_ops.yaml中的torch_npu: 中自行添加该融合算子即可：
-```
-- npu_scaled_masked_softmax
-```
-目前已默认支持的融合算子包括：
+--融合算子
+   在torch_npu:下添加融合算子名称，当前默认支持的融合算子包括：
 ```
 - npu_scaled_masked_softmax
 - torch_npu.npu_rotary_mul
 - torch_npu.npu_roi_align
 - torch_npu.npu_roi_alignbk
 - npu_ptiou
+```
+例如：
+```
+def npu_forward_fused_softmax(self, input_, mask):
+    resl = torch_npu.npu_scaled_masked_softmax(input_, mask, self.scale, False)
+    return resl
+```
+需要在support_wrap_ops.yaml中的torch_npu: 中添加：
+```
+- npu_scaled_masked_softmax
 ```
 ## 常见问题
 
