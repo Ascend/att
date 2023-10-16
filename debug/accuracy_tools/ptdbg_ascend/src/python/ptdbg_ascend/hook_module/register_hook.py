@@ -21,13 +21,15 @@ import os
 import torch
 import torch.distributed as dist
 
-from . import wrap_torch, wrap_functional, wrap_tensor, wrap_vf, wrap_distributed
+from . import wrap_torch, wrap_functional, wrap_tensor, wrap_vf, wrap_distributed, wrap_aten
 from .hook_module import HOOKModule
 from .wrap_functional import remove_dropout
 from ..common.utils import check_file_or_directory_path, print_error_log, CompareException, Const, \
     print_info_log, print_warn_log, get_process_rank, torch_without_guard_version
 from ..dump.utils import make_dump_dirs, DumpUtil
 from ..overflow_check.utils import OverFlowUtil
+
+torch_version_above_2 = torch.__version__.split('+')[0] > '2.0'
 
 try:
     import torch_npu
@@ -66,19 +68,27 @@ def initialize_hook(hook):
                 setattr(torch_npu.distributed.distributed_c10d, attr_name[5:],
                         getattr(wrap_distributed.HOOKDistributedOP, attr_name))
 
+    if torch_version_above_2:
+        wrap_aten.wrap_aten_ops_and_bind(hook)
+        for attr_name in dir(wrap_aten.HOOKAtenOP):
+            if attr_name.startswith("wrap_"):
+                setattr(torch.ops.aten, attr_name[5:], getattr(wrap_aten.HOOKAtenOP, attr_name))
+
     wrap_vf.wrap_vf_ops_and_bind(hook)
     for attr_name in dir(wrap_vf.HOOKVfOP):
         if attr_name.startswith("wrap_"):
             setattr(torch._VF, attr_name[5:], getattr(wrap_vf.HOOKVfOP, attr_name))
-    
+
     if not is_gpu:
         wrap_npu_custom.wrap_npu_ops_and_bind(hook)
         for attr_name in dir(wrap_npu_custom.HOOKNpuOP):
             if attr_name.startswith("wrap_"):
                 setattr(torch_npu, attr_name[5:], getattr(wrap_npu_custom.HOOKNpuOP, attr_name))
 
+
 def add_clear_overflow(func, pid):
     first_module = True
+
     def clear_overflow_wrapper(*args, **kwargs):
         child_pid = os.getpid()
         if pid != child_pid:
@@ -88,6 +98,7 @@ def add_clear_overflow(func, pid):
             torch_npu._C._clear_overflow_npu()
             first_module = False
         return func(*args, **kwargs)
+
     return clear_overflow_wrapper
 
 
@@ -114,7 +125,7 @@ def register_hook_core(hook, **kwargs):
     if "overflow_check" in hook_name and not is_gpu:
         if hasattr(torch_npu._C, "_enable_overflow_npu"):
             torch_npu._C._enable_overflow_npu()
-            print_info_log("Enable overflow function success.")            
+            print_info_log("Enable overflow function success.")
         else:
             print_warn_log("Api '_enable_overflow_npu' is not exist, "
                            "the overflow detection function on milan platform maybe not work! "
