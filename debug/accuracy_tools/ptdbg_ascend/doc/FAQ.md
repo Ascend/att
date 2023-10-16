@@ -6,6 +6,36 @@
 ```
 __version__ = '3.4'
 ```
+### 2.dump指定操作
+如果需要dump融合算子或者切片操作的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中进行手动添加，切片操作在tensor:下添加
+```
+- __getitem__
+```
+融合算子在torch_npu:下自行添加。目前默认支持的融合算子包括：
+```
+- npu_scaled_masked_softmax
+- torch_npu.npu_rotary_mul
+- torch_npu.npu_roi_align
+- torch_npu.npu_roi_alignbk
+- npu_ptiou
+```
+## 常见问题
+
+### 1. 在同一个目录多次执行dump会冲突吗？
+
+会，同一个目录多次dump，会覆盖上一次结果，可以使用dump_tag参数修改dump目录名称。
+
+### 2. 一个网络中包含多个model，register hook中传入哪一个model？
+
+传入任意一个model即可，工具会自动dump所有model。
+
+### 3. 如何dump算子级的数据？
+
+需要使用acl dump模式，即在dump操作中配置mode="acl"或dump_mode='acl'。
+
+### 4. 工具比对发现NPU和标杆数据的API无法完全对齐？
+
+torch版本和硬件差异属于正常情况
 
 ## 异常情况
 ### 1. 单机多卡场景dump目录下只生成一个rank目录或pkl文件格式损坏
@@ -103,3 +133,11 @@ compare(dump_result_param, "./output", stack_mode=True)
 
 - matmul期望的输入是二维，当输入不是二维时，会将输入通过view操作展成二维，再进行matmul运算，因此在反向求导时，backward_hook能拿到的是UnsafeViewBackward这步操作里面数据的梯度信息，取不到MmBackward这步操作里面数据的梯度信息，即权重的反向梯度数据。
 - 典型的例子有，当linear的输入不是二维，且无bias时，会调用output = input.matmul(weight.t()),因此拿不到linear层的weight的反向梯度数据。
+
+### 13. 使用dataloader后raise异常Exception: ptdbg: exit after iteration [x, x, x]
+
+- 正常现象，dataloader通过raise结束程序，堆栈信息可忽略。
+
+### 14. 工具报错：AssertionError: Please register hooks to nn.Module
+
+- 请在model示例化之后配置register hook。
