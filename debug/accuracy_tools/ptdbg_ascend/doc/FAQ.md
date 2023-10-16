@@ -11,7 +11,17 @@ __version__ = '3.4'
 ```
 - __getitem__
 ```
-融合算子在torch_npu:下自行添加。目前默认支持的融合算子包括：
+如果融合算子无法dump，需要手动添加到support_wrap_ops.yaml中，比如以下算子：
+```
+def npu_forward_fused_softmax(self, input_, mask):
+    resl = torch_npu.npu_scaled_masked_softmax(input_, mask, self.scale, False)
+    return resl
+```
+需要在support_wrap_ops.yaml中的torch_npu: 中自行添加该融合算子即可：
+```
+- npu_scaled_masked_softmax
+```
+目前已默认支持的融合算子包括：
 ```
 - npu_scaled_masked_softmax
 - torch_npu.npu_rotary_mul
