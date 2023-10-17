@@ -1054,9 +1054,9 @@ torch_npu:
   - npu_sign_bits_unpack
   - npu_flash_attention
   - npu_scaled_masked_softmax
-  - torch_npu.npu_rotary_mul
-  - torch_npu.npu_roi_align
-  - torch_npu.npu_roi_alignbk
+  - npu_rotary_mul
+  - npu_roi_align
+  - npu_roi_alignbk
   - npu_ptiou
 
 distributed:
