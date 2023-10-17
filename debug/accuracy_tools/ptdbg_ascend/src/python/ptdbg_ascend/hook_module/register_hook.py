@@ -18,6 +18,7 @@
 import functools
 import os
 
+from inspect import isfunction
 import torch
 import torch.distributed as dist
 
@@ -38,6 +39,7 @@ else:
     from . import wrap_npu_custom
 
 make_dir_flag = True
+REGISTER_HOOK_KWARGS = ["overflow_nums", "dump_mode", "dump_config"]
 
 
 def initialize_hook(hook):
@@ -70,7 +72,7 @@ def initialize_hook(hook):
     for attr_name in dir(wrap_vf.HOOKVfOP):
         if attr_name.startswith("wrap_"):
             setattr(torch._VF, attr_name[5:], getattr(wrap_vf.HOOKVfOP, attr_name))
-    
+
     if not is_gpu:
         wrap_npu_custom.wrap_npu_ops_and_bind(hook)
         for attr_name in dir(wrap_npu_custom.HOOKNpuOP):
@@ -92,13 +94,33 @@ def add_clear_overflow(func, pid):
 
 
 def register_hook(model, hook, **kwargs):
+    check_register_hook(hook, **kwargs)
     print_info_log("Please disable dataloader shuffle before running the program.")
-    OverFlowUtil.overflow_nums = kwargs.get('overflow_nums', 1)
+    overflow_nums = kwargs.get('overflow_nums', 1)
+    init_overflow_nums(overflow_nums)
     dump_mode, dump_config_file = init_dump_config(kwargs)
     if dump_mode == 'acl':
         DumpUtil.dump_switch_mode = dump_mode
         DumpUtil.dump_config = dump_config_file
     register_hook_core(hook, **kwargs)
+
+
+def init_overflow_nums(overflow_nums):
+    if isinstance(overflow_nums, int) and overflow_nums > 0 or overflow_nums == -1:
+        OverFlowUtil.overflow_nums = overflow_nums
+    else:
+        print_error_log("overflow_nums must be an integer greater than 0 or set -1.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
+
+
+def check_register_hook(hook, **kwargs):
+    if not isfunction(hook) or hook.__name__ not in ["overflow_check", "acc_cmp_dump"]:
+        print_error_log("hook function must be set overflow_check or acc_cmp_dump")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
+    for item in kwargs.keys():
+        if item not in REGISTER_HOOK_KWARGS:
+            print_error_log(f"{item} not a valid keyword arguments in register_hook.")
+            raise CompareException(CompareException.INVALID_PARAM_ERROR)
 
 
 def register_hook_core(hook, **kwargs):
@@ -114,7 +136,7 @@ def register_hook_core(hook, **kwargs):
     if "overflow_check" in hook_name and not is_gpu:
         if hasattr(torch_npu._C, "_enable_overflow_npu"):
             torch_npu._C._enable_overflow_npu()
-            print_info_log("Enable overflow function success.")            
+            print_info_log("Enable overflow function success.")
         else:
             print_warn_log("Api '_enable_overflow_npu' is not exist, "
                            "the overflow detection function on milan platform maybe not work! "
