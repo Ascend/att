@@ -26,7 +26,7 @@ class TestCompare(unittest.TestCase):
     def test_convert_dump_to_npy(self):
         dump_file = 'path_to_dump_file'
         data_format = 'data_format'
-        output = 'path_to_output'
+        output = './'
         self.compare.convert_dump_to_npy(dump_file, data_format, output)
 
     def test_convert(self):
