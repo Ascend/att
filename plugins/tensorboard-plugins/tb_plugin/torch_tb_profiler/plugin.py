@@ -111,6 +111,7 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
             '/index.html': self.static_file_route,
             '/trace_viewer_full.html': self.static_file_route,
             '/trace_embedding.html': self.static_file_route,
+            '/trace_script.js': self.static_file_route,
             '/runs': self.runs_route,
             '/views': self.views_route,
             '/workers': self.workers_route,

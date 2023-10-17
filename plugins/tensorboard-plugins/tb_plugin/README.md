@@ -6,11 +6,12 @@
 ### 快速安装说明
 1. 插件方式安装
 
+* 插件下载地址 \
+  正式版：https://mindstudio-sample.obs.cn-north-4.myhuaweicloud.com/torch-tb-profiler-ascend/v0.4.0/torch_tb_profiler_ascend-0.4.0-py3-none-any.whl \
+  离线版：https://mindstudio-sample.obs.cn-north-4.myhuaweicloud.com/torch-tb-profiler-ascend/v0.4.0/offline/torch_tb_profiler_ascend-0.4.0-py3-none-any.whl
+
 * 安装相关依赖：
   pandas >= 1.0.0 ，tensorboard >= 2.11.0
-* 使用依赖：
-  torch >= 1.8，
-  torchvision >= 0.8
 
 * 插件形式为whl包，使用指令安装
 

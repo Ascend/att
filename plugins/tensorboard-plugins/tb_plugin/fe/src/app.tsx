@@ -54,7 +54,6 @@ import { ModuleView } from './components/ModuleView'
 import { Operator } from './components/Operator'
 import { Overview } from './components/Overview'
 import { TraceView } from './components/TraceView'
-import { setup } from './setup'
 import './styles.css'
 import { firstOrUndefined, sleep } from './utils'
 
@@ -203,9 +202,7 @@ export const App = () => {
   // #endregion
 
   React.useEffect(() => {
-    setup().then(() => {
-      setLoaded(true)
-    })
+    setLoaded(true)
   }, [])
 
   const continuouslyFetchRuns = async () => {

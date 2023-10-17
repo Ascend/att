@@ -1,5 +1,18 @@
-/*---------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
+/*--------------------------------------------------------------------------------------------
+ * Copyright (c) 2023, Huawei Technologies.
+ * All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0  (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *--------------------------------------------------------------------------------------------*/
 
 import { makeStyles } from '@material-ui/core/styles'
@@ -7,6 +20,7 @@ import * as React from 'react'
 import { Graph } from '../../api'
 import { value } from '../../utils'
 import { useResizeEventDependency } from '../../utils/resize'
+import * as echarts from 'echarts'
 
 interface IProps {
   graph: Graph
@@ -47,60 +61,97 @@ export const PieChart: React.FC<IProps> = (props) => {
     const element = graphRef.current
     if (!element) return
 
-    const data = new google.visualization.DataTable()
-    graph.columns.forEach((column) => {
-      data.addColumn({
-        type: column.type,
-        label: column.name,
-        role: column.role,
-        p: column.p
-      })
-    })
+    const chart = echarts.init(element)
 
-    const rows =
+    let totalValue = 0
+    const rowsWithUniqueName: Array<{ name: string, value: number }> =
       top === undefined
-        ? graph.rows
+        ? graph.rows.map((item, index) => {
+          totalValue += item[1] as number
+          return { name: `${index}_${item[0]}`, value: item[1] as number }
+        })
         : graph.rows
-            .sort((a, b) => (value(b[1]) as number) - (value(a[1]) as number))
-            .slice(0, top)
-    data.addRows(rows)
+          .sort((a, b) => (value(b[1]) as number) - (value(a[1]) as number))
+          .slice(0, top).map((item, index) => {
+            totalValue += item[1] as number
+            return { name: `${index}_${item[0]}`, value: item[1] as number }
+          })
 
-    const options = {
+    const option: echarts.EChartsOption = {
       height,
       width: '100%',
-      title,
-      pieHole: 0.4,
-      tooltip: { trigger: 'selection', isHtml: true, text: tooltip_mode },
+      title: {
+        text: title
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: (data) => {
+          const typedData = data as echarts.DefaultLabelFormatterCallbackParams
+          const index = typedData.name.indexOf('_')
+          return `${index > -1 ? typedData.name.slice(index + 1) :
+            typedData.name}<br /><b>${tooltip_mode === 'both' ?
+              typedData.value : ''}(${typedData.percent}%)<b />`
+        },
+        confine: true,
+        extraCssText: `max-width: 300px; 
+          word-wrap:break-word;
+          white-space:pre-wrap;
+          padding-right: 10px`
+      },
       chartArea: noLegend ? noLegendArea : !title ? noTitleArea : normalArea,
-      legend: noLegend ? 'none' : undefined,
+      legend: {
+        type: noLegend ? 'plain' : 'scroll',
+        orient: 'vertical',
+        left: 'right',
+        z: 10,
+        // Display at most 36 characters.
+        formatter: (name) => {
+          // Show legends for datas with the same name.
+          const index = name.indexOf('_')
+          if (index > -1) {
+            name = name.slice(index + 1)
+          }
+          return name.length > 36 ? name.slice(0, 34) + "..." : name;
+        },
+        tooltip: {
+          show: true,
+          triggerOn: 'mousemove',
+          formatter: (data) => {
+            const currentItem = rowsWithUniqueName.find(item => item.name === data.name)
+            const index = data.name.indexOf('_')
+            const percent = ((currentItem?.value || 0) * 100 / totalValue).toFixed(2)
+            return `${index > -1 ? data.name.slice(index + 1) : data.name}<br /><b>${tooltip_mode === 'both' ?
+              (currentItem?.value || 0) : ''}(${percent}%)<b />`
+          }
+        }
+      },
       sliceVisibilityThreshold: 0,
-      colors
+      colors,
+      series: [
+        {
+          type: 'pie',
+          radius: ['32%', '80%'],
+          center: ['32%', '50%'],
+          label: {
+            position: 'inside',
+            formatter: `{d}%`,
+            color: '#ffffff'
+          },
+          data: rowsWithUniqueName
+        }
+      ]
     }
 
-    const chart = new google.visualization.PieChart(element)
-
-    google.visualization.events.addListener(
-      chart,
-      'onmouseover',
-      function (entry: any) {
-        chart.setSelection([{ row: entry.row }])
-      }
-    )
-
-    google.visualization.events.addListener(chart, 'onmouseout', function () {
-      chart.setSelection([])
-    })
-
-    chart.draw(data, options)
+    option && chart.setOption(option, true)
 
     return () => {
-      chart.clearChart()
+      chart.dispose()
     }
   }, [graph, height, top, resizeEventDependency])
 
   return (
     <div className={classes.root}>
-      <div ref={graphRef}></div>
+      <div ref={graphRef} style={{ height: '300px' }}></div>
     </div>
   )
 }

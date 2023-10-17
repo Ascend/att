@@ -15,6 +15,7 @@ import * as React from 'react'
 import * as api from '../api'
 import { useResizeEventDependency } from '../utils/resize'
 import { FullCircularProgress } from './FullCircularProgress'
+import * as echarts from 'echarts'
 
 const { Option } = Select
 
@@ -67,6 +68,15 @@ const DiffColumnChart: React.FC<DiffColumnChartIProps> = (
   const graphRef = React.useRef<HTMLDivElement>(null)
   const [resizeEventDependency] = useResizeEventDependency()
 
+  const getAngleByDataLength = (data: number) => {
+    if (data < 10) {
+      return 0
+    } else {
+      // 数量越大越趋近于旋转90度
+      return 90 * (1 - 10 / data)
+    }
+  }
+
   React.useLayoutEffect(() => {
     const element = graphRef.current
     if (!element) return
@@ -100,47 +110,114 @@ const DiffColumnChart: React.FC<DiffColumnChartIProps> = (
       right_accumulated_duration_max
     )
 
-    var options = {
-      title: 'Execution Comparsion',
-      height: 500,
-      seriesType: 'bars',
-      series: {
-        0: { type: 'bars', targetAxisIndex: 0 },
-        1: { type: 'bars', targetAxisIndex: 0 },
-        2: { type: 'line', targetAxisIndex: 1 },
-        3: { type: 'line', targetAxisIndex: 1 }
+    const chart = echarts.init(element)
+
+    const options: echarts.EChartsOption = {
+      title: {
+        text: 'Execution Comparsion'
       },
-      vAxes: {
-        0: {
-          logScale: false,
-          maxValue: duration_max
-        },
-        1: {
-          logScale: false,
-          maxValue: accumulated_max
+      legend: {
+        top: 10,
+        right: 10
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: function (params: any) {
+          const index = params[0].name.indexOf('@')
+          var res = `<b>${index > -1 ? params[0].name.slice(index + 1) : params[0].name}<b/> <br/>`
+          for (const item of params) {
+            if (typeof item.value[item.encode.y[0]] === 'number') {
+              res += `<span style="background: ${item.color}; 
+              height:10px; 
+              width: 10px; 
+              border-radius: 50%;
+              display: inline-block;
+              margin-right:10px;">
+              </span> 
+              ${item.seriesName}: ${item.value[item.encode.y[0]]}<br/>`
+            }
+          }
+          return res
         }
+      },
+      series: [
+        {
+          type: 'bar',
+          itemStyle: {
+            color: '#3366cc'
+          },
+          yAxisIndex: 0,
+
+        },
+        {
+          type: 'bar',
+          itemStyle: {
+            color: '#dc3912'
+          },
+          yAxisIndex: 0
+        },
+        {
+          type: 'line',
+          itemStyle: {
+            color: '#ff9900'
+          },
+          yAxisIndex: 1
+        },
+        {
+          type: 'line',
+          itemStyle: {
+            color: '#109618'
+          },
+          yAxisIndex: 1
+        }
+      ],
+      xAxis: {
+        type: 'category',
+        axisLabel: {
+          interval: 0,
+          rotate: getAngleByDataLength(rawData.length),
+          formatter: (name: string) => {
+            const index = name.indexOf('@')
+            if (index > -1) {
+              name = name.slice(index + 1)
+            }
+            return name.length > 16 ? name.slice(0, 14) + "..." : name;
+          }
+        }
+      },
+      yAxis: [{
+        type: 'value',
+        name: 'Time Difference(us)',
+        scale: true
+      }, {
+        type: 'value',
+        name: 'Accumulated Difference(us)',
+        scale: true
+      }],
+      dataset: {
+        source: rawData.map((item, idx) => {
+          // 添加索引保证x轴刻度不重复
+          let param = [...item]
+          param[0] = `${idx}@${param[0]}`
+          return param
+        })
       }
     }
 
-    const chart = new google.visualization.ComboChart(element)
-    const data = google.visualization.arrayToDataTable(rawData)
-    chart.draw(data, options)
+    options && chart.setOption(options, true)
 
-    google.visualization.events.addListener(chart, 'select', (entry: any) => {
-      var selectedItem = chart.getSelection()[0]
-      if (selectedItem && selectedItem.hasOwnProperty('row')) {
-        selectCallback(selectedItem.row, selectedItem.column)
-      }
+    chart.on('click', (param) => {
+      console.log(param)
     })
 
     return () => {
-      chart.clearChart()
+      chart.dispose()
     }
   }, [rawData, resizeEventDependency])
 
   return (
     <div>
-      <div ref={graphRef}></div>
+      <div ref={graphRef} style={{ height: '400px' }}></div>
     </div>
   )
 }
@@ -801,7 +878,7 @@ export const DiffOverview: React.FC<IProps> = (props: IProps) => {
                       rawData={columnChartData}
                       selectCallback={handleChartColumnSelect}
                     />
-                    <DiffStepChart rawData={stepChartData} />
+                    {/* <DiffStepChart rawData={stepChartData} /> */}
                   </>
                 )}
                 {columnChartData.length === 1 && (
