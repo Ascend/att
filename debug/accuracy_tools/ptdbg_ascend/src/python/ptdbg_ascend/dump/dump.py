@@ -147,7 +147,7 @@ def dump_data(dump_file_name, dump_step, prefix, data_info):
 def dump_stack_info(name_template, dump_file):
     stack_str = []
     try:
-        for (_, path, line, func, code, _) in inspect.stack()[3:]:
+        for (_, path, line, func, code, _) in inspect.stack()[4:]:
             if code:
                 stack_line = [path, str(line), func, code[0].strip() if code else code]
             else:

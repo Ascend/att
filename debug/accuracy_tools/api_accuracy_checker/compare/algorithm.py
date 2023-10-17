@@ -142,11 +142,11 @@ def flatten_compare_result(result):
 def compare_core(bench_out, npu_out, alg):
     msg = ""
     if not isinstance(bench_out, type(npu_out)):
-        return [(CompareConst.NAN, "bench and npu output type is different.")], False, CompareConst.NA, CompareConst.NA, CompareConst.NA
+        return [(CompareConst.NA, "bench and npu output type is different.")], False, CompareConst.NA, CompareConst.NA, CompareConst.NA
     if isinstance(bench_out, (list, tuple)):
         compare_result, test_success, bench_dtype, npu_dtype, shape = [], True, [], [], []
         if len(bench_out) != len(npu_out):
-            return [(CompareConst.NAN, "bench and npu output structure is different")], False, CompareConst.NA, CompareConst.NA, CompareConst.NA
+            return [(CompareConst.NA, "bench and npu output structure is different")], False, CompareConst.NA, CompareConst.NA, CompareConst.NA
         for b_out_i, n_out_i in zip(bench_out, npu_out):
             compare_result_i, test_success_i, bench_dtype_i, npu_dtype_i, shape_i = compare_core(b_out_i, n_out_i, alg)
             compare_result.append(compare_result_i)
@@ -157,7 +157,7 @@ def compare_core(bench_out, npu_out, alg):
     elif isinstance(bench_out, dict):
         b_keys, n_keys = set(bench_out.keys()), set(npu_out.keys())
         if b_keys != n_keys:
-            compare_result, test_success, bench_dtype, npu_dtype, shape = [(CompareConst.NAN, "bench and npu output dict keys are different")], False, \
+            compare_result, test_success, bench_dtype, npu_dtype, shape = [(CompareConst.NA, "bench and npu output dict keys are different")], False, \
                 CompareConst.NA, CompareConst.NA, CompareConst.NA
         compare_result, test_success, bench_dtype, npu_dtype, shape = compare_core(list(bench_out.values()), list(npu_out.values()), alg)
     elif isinstance(bench_out, torch.Tensor):
@@ -177,15 +177,15 @@ def compare_core(bench_out, npu_out, alg):
         shape = str(type(npu_out))
     elif bench_out is None:
         compare_result, test_success, msg = CompareConst.NA, True, "output is None"
-        bench_dtype = CompareConst.NAN
-        npu_dtype = CompareConst.NAN
-        shape = CompareConst.NAN
+        bench_dtype = CompareConst.NA
+        npu_dtype = CompareConst.NA
+        shape = CompareConst.NA
     else:
         compare_result, test_success, msg = CompareConst.NA, True, "Unexpected output type \
                      in compare_core: {}".format(type(bench_out))
-        bench_dtype = CompareConst.NAN
-        npu_dtype = CompareConst.NAN
-        shape = CompareConst.NAN
+        bench_dtype = CompareConst.NA
+        npu_dtype = CompareConst.NA
+        shape = CompareConst.NA
     if isinstance(compare_result, list):
         compare_result = flatten_compare_result(compare_result)
     else:
