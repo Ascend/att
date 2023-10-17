@@ -17,18 +17,11 @@ def npu_forward_fused_softmax(self, input_, mask):
     resl = torch_npu.npu_scaled_masked_softmax(input_, mask, self.scale, False)
     return resl
 ```
-需要在support_wrap_ops.yaml中的torch_npu: 中自行添加该融合算子即可：
+调用了需要在如果需要dump其中调用的npu_scaled_masked_softmax算子的输入输出信息，需要在support_wrap_ops.yaml中的torch_npu: 中自行添加该融合算子即可：
 ```
 - npu_scaled_masked_softmax
 ```
-目前已默认支持的融合算子包括：
-```
-- npu_scaled_masked_softmax
-- torch_npu.npu_rotary_mul
-- torch_npu.npu_roi_align
-- torch_npu.npu_roi_alignbk
-- npu_ptiou
-```
+（仅作举例用，已默认支持）
 ## 常见问题
 
 ### 1. 在同一个目录多次执行dump会冲突吗？
