@@ -7,7 +7,9 @@
 __version__ = '3.4'
 ```
 ### 2.dump指定操作
-如果需要dump融合算子或者切片操作的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中进行手动添加，切片操作在tensor:下添加
+dump指定操作当前支持dump融合算子和dump切片操作的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中添加如下代码：
+
+切片操作，在tensor:下添加：
 ```
 - __getitem__
 ```
@@ -22,6 +24,7 @@ def npu_forward_fused_softmax(self, input_, mask):
 - npu_scaled_masked_softmax
 ```
 （仅作举例用，已默认支持）
+
 ## 常见问题
 
 ### 1. 在同一个目录多次执行dump会冲突吗？
