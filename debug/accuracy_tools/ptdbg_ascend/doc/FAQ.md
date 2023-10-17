@@ -7,7 +7,7 @@
 __version__ = '3.4'
 ```
 ### 2.dump指定融合算子
-dump指定操作当前支持dump指定融合算子的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中添加，比如以下算子：
+dump指定操作当前支持dump指定融合算子的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中添加，比如以下代码段调用的softmax融合算子
 ```
 def npu_forward_fused_softmax(self, input_, mask):
     resl = torch_npu.npu_scaled_masked_softmax(input_, mask, self.scale, False)
@@ -17,7 +17,7 @@ def npu_forward_fused_softmax(self, input_, mask):
 ```
 - npu_scaled_masked_softmax
 ```
-（仅作举例用，已默认支持）
+（npu_scaled_masked_softmax融合算子工具已支持dump，本例仅供参考）
 
 ## 常见问题
 
