@@ -145,3 +145,7 @@ compare(dump_result_param, "./output", stack_mode=True)
 ### 15. 添加ptdbg_ascend工具后截取操作报错：IndexError: too many indices for tensor of dimension x 类似的报错。
 
 删除ptdbg_ascend工具的hook_module目录下yaml文件中Tensor:下的`- __getitem__`即可。
+
+### 16. pkl文件中的某些api的dtype类型为float16，但是读取此api的npy文件显示的dtype类型为float32
+
+- ptdbg工具在dump数据时需要将原始数据从npu to cpu上再转换为numpy类型，npu to cpu的逻辑和gpu to cpu是保持一致的，都存在dtype可能从float16变为float32类型的情况，如果出现dtype不一致的问题，最终dump数据的dtype以pkl文件为准。

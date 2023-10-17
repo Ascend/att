@@ -198,3 +198,19 @@ Workers-Spans: 多线程的情况下Profiling可能包含多组数据，通过Wo
     * Component
 
       图展示的是PTA和GE组件内存使用，表格为各个组件内存使用峰值。
+* Diff View
+
+    Diff视图提供了Profiling数据比对功能。适用于同一网络不同迭代之间采集数据比对算子耗时情况，网络进行优化前后相同位置算子耗时情况比对、单机多卡不同卡之间采集数据比对以及相同网络不同硬件平台上运行性能情况比对等场景。
+    ![Alt text](./docs/images/diff_view.png)
+    
+    * 最上方为整体比对，以采集的step为周期比较两份数据各类算子的耗时情况以及累计耗时变化趋势。点击其中某块柱形，可以单点查看对应详情。
+    
+     ![Alt text](./docs/images/diff_detail.png)
+
+    * 中间视图为差异图，由红蓝两块区域构成。横坐标与上方视图对应，蓝色区域为每类算子的耗时差值，红色区域表示当前所有算子耗时差的累加值。
+
+    * 最下方为算子比对明细表，显示相关差值以及相差比例信息。由于数据条目较多，支持选择是否显示Host Duration、Self Host Duration、Device Duration以及Self Device Duration相关比对信息。
+        * Host Duration：算子在Host侧的累计耗时，包括子算子耗时。
+        * Self Host Duration：算子在Host侧的累计耗时，不包括子算子耗时。
+        * Device Duration：算子在Device侧的累计耗时，包括子算子耗时。
+        * Self Device Duration：算子在Device侧的累计耗时，不包括子算子耗时。
