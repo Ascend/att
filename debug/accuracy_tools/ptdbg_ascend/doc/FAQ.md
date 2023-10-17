@@ -103,3 +103,7 @@ compare(dump_result_param, "./output", stack_mode=True)
 
 - matmul期望的输入是二维，当输入不是二维时，会将输入通过view操作展成二维，再进行matmul运算，因此在反向求导时，backward_hook能拿到的是UnsafeViewBackward这步操作里面数据的梯度信息，取不到MmBackward这步操作里面数据的梯度信息，即权重的反向梯度数据。
 - 典型的例子有，当linear的输入不是二维，且无bias时，会调用output = input.matmul(weight.t()),因此拿不到linear层的weight的反向梯度数据。
+
+### 13. pkl文件中的某些api的dtype类型为float16，但是读取此api的npy文件显示的dtype类型为float32
+
+- ptdbg工具在dump数据时需要将原始数据从npu to cpu上再转换为numpy类型，npu to cpu的逻辑和gpu to cpu是保持一致的，都存在dtype可能从float16变为float32类型的情况，如果出现dtype不一致的问题，最终dump数据的dtype以pkl文件为准。
