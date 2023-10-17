@@ -6,20 +6,14 @@
 ```
 __version__ = '3.4'
 ```
-### 2.dump指定操作
-dump指定操作当前支持dump融合算子和dump切片操作的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中添加如下代码：
-
-切片操作，在tensor:下添加：
-```
-- __getitem__
-```
-如果融合算子无法dump，需要手动添加到support_wrap_ops.yaml中，比如以下算子：
+### 2.dump指定融合算子
+dump指定操作当前支持dump指定融合算子的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中添加，比如以下算子：
 ```
 def npu_forward_fused_softmax(self, input_, mask):
     resl = torch_npu.npu_scaled_masked_softmax(input_, mask, self.scale, False)
     return resl
 ```
-调用了需要在如果需要dump其中调用的npu_scaled_masked_softmax算子的输入输出信息，需要在support_wrap_ops.yaml中的torch_npu: 中自行添加该融合算子即可：
+如果需要dump其中调用的npu_scaled_masked_softmax算子的输入输出信息，需要在support_wrap_ops.yaml中的torch_npu: 中自行添加该融合算子即可：
 ```
 - npu_scaled_masked_softmax
 ```
@@ -147,3 +141,7 @@ compare(dump_result_param, "./output", stack_mode=True)
 ### 14. 工具报错：AssertionError: Please register hooks to nn.Module
 
 - 请在model示例化之后配置register hook。
+
+### 15. 添加ptdbg_ascend工具后截取操作报错：IndexError: too many indices for tensor of dimension x 类似的报错。
+
+删除ptdbg_ascend工具的hook_module目录下yaml文件中Tensor:下的`- __getitem__`即可。

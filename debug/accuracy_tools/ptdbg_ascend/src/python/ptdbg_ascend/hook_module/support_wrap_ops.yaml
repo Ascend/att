@@ -145,6 +145,7 @@ tensor:
   - __div__
   - __eq__
   - __ge__
+  - __getitem__
   - __gt__
   - __iadd__
   - __iand__
