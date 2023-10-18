@@ -91,7 +91,7 @@ def add_clear_overflow(func, pid):
     return clear_overflow_wrapper
 
 
-def register_hook(model, hook, **kwargs):
+def register_hook(hook, **kwargs):
     print_info_log("Please disable dataloader shuffle before running the program.")
     OverFlowUtil.overflow_nums = kwargs.get('overflow_nums', 1)
     dump_mode, dump_config_file = init_dump_config(kwargs)
@@ -101,7 +101,7 @@ def register_hook(model, hook, **kwargs):
     register_hook_core(hook, **kwargs)
 
 
-def register_hook_core(hook, **kwargs):
+def register_hook_core(hook):
     global make_dir_flag
 
     pid = os.getpid()

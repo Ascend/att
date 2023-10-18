@@ -474,20 +474,20 @@ def handle_inf_nan(n_value, b_value):
     return n_value, b_value
 
 
-def compare(input_parma, output_path, **kwargs):
-    if kwargs.get('suffix'):
-        print_error_log("Argument 'suffix' is not supported for compare.")
-        raise CompareException(CompareException.INVALID_PARAM_ERROR)
+def compare(input_parma, output_path, stack_mode=False, auto_analyze=True,
+            fuzzy_match=False):
     try:
-        npu_pkl, bench_pkl = check_compare_param(input_parma, output_path, **kwargs)
+        npu_pkl, bench_pkl = check_compare_param(input_parma, output_path, stack_mode,
+                                                 auto_analyze, fuzzy_match)
     except CompareException as error:
         print_error_log('Compare failed. Please check the arguments and do it again!')
         sys.exit(error.code)
-    compare_core(input_parma, output_path, npu_pkl, bench_pkl, **kwargs)
+    compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode,
+                 auto_analyze, fuzzy_match)
 
 
 def compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=False, auto_analyze=True,
-                 suffix='', fuzzy_match=False):
+                 fuzzy_match=False):
     result = compare_process(npu_pkl, bench_pkl, stack_mode, fuzzy_match)
     npu_pkl.close()
     bench_pkl.close()

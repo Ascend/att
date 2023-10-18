@@ -13,8 +13,6 @@ class Config:
         validators = {
             'dump_path': str,
             'jit_compile': bool,
-            'compile_option': str,
-            'compare_algorithm': str,
             'real_data': bool,
             'dump_step': int,
             'error_data_path': str,
@@ -36,8 +34,14 @@ class Config:
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
-    def update_config(self, **kwargs):
-        for key, value in kwargs.items():
+    def update_config(self, dump_path, real_data=False, enable_dataloader=False, target_iter=1):
+        args = {
+            "dump_path": dump_path,
+            "real_data": real_data,
+            "enable_dataloader": enable_dataloader,
+            "target_iter": target_iter
+        }
+        for key, value in args.items():
             if key in self.config:
                 self.config[key] = self.validate(key, value)
             else:
