@@ -25,7 +25,7 @@ class DumpUtil(object):
     dump_init_enable = False
     dump_api_list = []
     dump_filter_switch = None
-    dump_mode = ['all']
+    dump_mode = ['forward', 'backward', 'input', 'output']
     backward_input = {}
     dump_dir_tag = 'ptdbg_dump'
     dump_config = None
