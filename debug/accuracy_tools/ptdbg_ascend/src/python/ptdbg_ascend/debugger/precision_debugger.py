@@ -30,7 +30,7 @@ class PrecisionDebugger:
         set_dump_path(self.config.dump_path)
         PrecisionDebugger.hook_func = overflow_check if self.config.hook_name == "overflow_check" else acc_cmp_dump
         if not isinstance(enable_dataloader, bool):
-            print_error_log("Params auto_analyze only support True or False.")
+            print_error_log("Params enable_dataloader only support True or False.")
             raise CompareException(CompareException.INVALID_PARAM_ERROR)
         if enable_dataloader:
             DumpUtil.iter_num -= 1
