@@ -113,7 +113,7 @@ def register_hook(model, hook, **kwargs):
     if dump_mode == 'acl':
         DumpUtil.dump_switch_mode = dump_mode
         DumpUtil.dump_config = dump_config_file
-    register_hook_core(hook, **kwargs)
+    register_hook_core(hook)
 
 
 def init_overflow_nums(overflow_nums):
@@ -134,7 +134,7 @@ def check_register_hook(hook, **kwargs):
             raise CompareException(CompareException.INVALID_PARAM_ERROR)
 
 
-def register_hook_core(hook, **kwargs):
+def register_hook_core(hook):
     global make_dir_flag
 
     pid = os.getpid()

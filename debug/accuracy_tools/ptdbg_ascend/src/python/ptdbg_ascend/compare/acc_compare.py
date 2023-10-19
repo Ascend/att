@@ -482,12 +482,12 @@ def compare(input_parma, output_path, stack_mode=False, auto_analyze=True,
     except CompareException as error:
         print_error_log('Compare failed. Please check the arguments and do it again!')
         sys.exit(error.code)
-    compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode,
-                 auto_analyze, fuzzy_match)
+    compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=stack_mode,
+                 auto_analyze=auto_analyze, fuzzy_match=fuzzy_match)
 
 
 def compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=False, auto_analyze=True,
-                 fuzzy_match=False):
+                 suffix='', fuzzy_match=False):
     result = compare_process(npu_pkl, bench_pkl, stack_mode, fuzzy_match)
     npu_pkl.close()
     bench_pkl.close()
