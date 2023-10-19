@@ -165,7 +165,7 @@ def compare_core(bench_out, npu_out, alg):
         copy_npu_out = npu_out.detach().clone()
         bench_dtype = str(copy_bench_out.dtype)
         npu_dtype = str(copy_npu_out.dtype)
-        shape = list(npu_out.shape)
+        shape = tuple(npu_out.shape)
         if copy_npu_out.dtype == torch.bfloat16:
             copy_bench_out = copy_bench_out.to(torch.float32)
             copy_npu_out = copy_npu_out.to(torch.float32)
