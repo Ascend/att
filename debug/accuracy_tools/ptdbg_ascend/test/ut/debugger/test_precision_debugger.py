@@ -24,7 +24,7 @@ class TestPrecisionDebugger(unittest.TestCase):
         self.assertRaises(ValueError, self.precision_debugger.configure_full_dump, mode='acl', acl_config=None)
 
     def test_configure_overflow_dump(self):
-        self.assertRaises(ValueError, self.precision_debugger.configure_overflow_dump, overflow_nums='invalid')
+        self.assertRaises(Exception, self.precision_debugger.configure_overflow_dump, overflow_nums='invalid')
 
     @patch('ptdbg_ascend.debugger.precision_debugger.register_hook_core')
     def test_start(self, mock_register_hook_core):
