@@ -1,12 +1,13 @@
 import os
 import torch
-from ..common.utils import Const, check_switch_valid, generate_compare_script, check_is_npu
+from ..common.utils import Const, check_switch_valid, generate_compare_script, check_is_npu, print_error_log, \
+    CompareException
 from ..dump.dump import DumpUtil, acc_cmp_dump, write_to_disk, get_pkl_file_path
 from ..dump.utils import set_dump_path, set_dump_switch_print_info, generate_dump_path_str, \
         set_dump_switch_config, set_backward_input
 from ..overflow_check.utils import OverFlowUtil
 from ..overflow_check.overflow_check import overflow_check
-from ..hook_module.register_hook import register_hook_core
+from ..hook_module.register_hook import register_hook_core, init_overflow_nums
 from ..hook_module.hook_module import HOOKModule
 from .debugger_config import DebuggerConfig
 
@@ -28,6 +29,9 @@ class PrecisionDebugger:
         DumpUtil.target_rank = self.config.rank
         set_dump_path(self.config.dump_path)
         PrecisionDebugger.hook_func = overflow_check if self.config.hook_name == "overflow_check" else acc_cmp_dump
+        if not isinstance(enable_dataloader, bool):
+            print_error_log("Params enable_dataloader only support True or False.")
+            raise CompareException(CompareException.INVALID_PARAM_ERROR)
         if enable_dataloader:
             DumpUtil.iter_num -= 1
             torch.utils.data.dataloader._BaseDataLoaderIter.__next__ = iter_tracer(torch.utils.data.dataloader._BaseDataLoaderIter.__next__)
@@ -57,10 +61,7 @@ class PrecisionDebugger:
             DumpUtil.dump_config = acl_config
             if acl_config is None:
                 raise ValueError("acl_config must be configured when mode is 'acl'")
-        if isinstance(overflow_nums, int) and overflow_nums >= -1:
-            OverFlowUtil.overflow_nums = overflow_nums
-        else:
-            raise ValueError("overflow_nums must be int")
+        init_overflow_nums(overflow_nums)
         check_switch_valid(filter_switch)
         OverFlowUtil.overflow_filter_switch = filter_switch
 

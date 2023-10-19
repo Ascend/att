@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -25,7 +26,7 @@ class DumpUtil(object):
     dump_init_enable = False
     dump_api_list = []
     dump_filter_switch = None
-    dump_mode = ['all']
+    dump_mode = ['forward', 'backward', 'input', 'output']
     backward_input = {}
     dump_dir_tag = 'ptdbg_dump'
     dump_config = None
@@ -132,6 +133,9 @@ class DumpUtil(object):
 def set_dump_path(fpath=None, dump_tag='ptdbg_dump'):
     fpath = load_env_dump_path(fpath)
     check_file_valid(fpath)
+    if not re.match(Const.FILE_PATTERN, dump_tag):
+        print_error_log('The file path {} contains special characters.'.format(dump_tag))
+        raise CompareException(CompareException.INVALID_PATH_ERROR)
     real_path = os.path.realpath(fpath)
     make_dump_path_if_not_exists(real_path)
     DumpUtil.set_dump_path(real_path)
@@ -184,11 +188,7 @@ def generate_dump_path_str():
 
 
 def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch=Const.ON, dump_mode=[Const.ALL], summary_only=False):
-    try:
-        check_switch_valid(switch)
-    except (CompareException, AssertionError) as err:
-        print_error_log(str(err))
-        sys.exit()
+    check_switch_valid(switch)
     if not DumpUtil.dump_path:
         set_dump_path()
     DumpUtil.set_dump_switch(switch, summary_only=summary_only)
@@ -209,7 +209,7 @@ def set_dump_switch_config(mode=Const.ALL, scope=[], api_list=[], filter_switch=
         summary_only = check_summary_only_valid(summary_only)
     except (CompareException, AssertionError) as err:
         print_error_log(str(err))
-        sys.exit()
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
     switch = DumpUtil.dump_switch
     DumpUtil.set_dump_switch("OFF", mode=mode, scope=scope, api_list=api_list, filter_switch=filter_switch,
                                 dump_mode=dump_mode, summary_only=summary_only)

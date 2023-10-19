@@ -6,6 +6,36 @@
 ```
 __version__ = '3.4'
 ```
+### 2.dump指定融合算子
+dump指定操作当前支持dump指定融合算子的输入输出，需要在att/debug/accuracy_tools/ptdbg_ascend/src/python/ptdbg_ascend/hook_module/support_wrap_ops.yaml中添加，比如以下代码段调用的softmax融合算子
+```
+def npu_forward_fused_softmax(self, input_, mask):
+    resl = torch_npu.npu_scaled_masked_softmax(input_, mask, self.scale, False)
+    return resl
+```
+如果需要dump其中调用的npu_scaled_masked_softmax算子的输入输出信息，需要在support_wrap_ops.yaml中的torch_npu: 中自行添加该融合算子即可：
+```
+- npu_scaled_masked_softmax
+```
+（npu_scaled_masked_softmax融合算子工具已支持dump，本例仅供参考）
+
+## 常见问题
+
+### 1. 在同一个目录多次执行dump会冲突吗？
+
+会，同一个目录多次dump，会覆盖上一次结果，可以使用dump_tag参数修改dump目录名称。
+
+### 2. 一个网络中包含多个model，register hook中传入哪一个model？
+
+传入任意一个model即可，工具会自动dump所有model。
+
+### 3. 如何dump算子级的数据？
+
+需要使用acl dump模式，即在dump操作中配置mode="acl"或dump_mode='acl'。
+
+### 4. 工具比对发现NPU和标杆数据的API无法完全对齐？
+
+torch版本和硬件差异属于正常情况
 
 ## 异常情况
 ### 1. 单机多卡场景dump目录下只生成一个rank目录或pkl文件格式损坏
@@ -107,3 +137,15 @@ compare(dump_result_param, "./output", stack_mode=True)
 ### 13. pkl文件中的某些api的dtype类型为float16，但是读取此api的npy文件显示的dtype类型为float32
 
 - ptdbg工具在dump数据时需要将原始数据从npu to cpu上再转换为numpy类型，npu to cpu的逻辑和gpu to cpu是保持一致的，都存在dtype可能从float16变为float32类型的情况，如果出现dtype不一致的问题，最终dump数据的dtype以pkl文件为准。
+
+### 14. 使用dataloader后raise异常Exception: ptdbg: exit after iteration [x, x, x]
+
+- 正常现象，dataloader通过raise结束程序，堆栈信息可忽略。
+
+### 15. 工具报错：AssertionError: Please register hooks to nn.Module
+
+- 请在model示例化之后配置register hook。
+
+### 16. 添加ptdbg_ascend工具后截取操作报错：`IndexError: too many indices for tensor of dimension x` 或 `TypeError: len() of a 0-d tensor`。
+
+删除ptdbg_ascend工具的hook_module目录下yaml文件中Tensor:下的`- __getitem__`即可。
