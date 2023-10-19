@@ -1265,11 +1265,11 @@ class DistributedRunGenerator(object):
             row = [
                 op,
                 stats[0],
-                stats[1],
+                stats[1] * 1024 * 1024,
                 round(stats[1] * 1024 * 1024 / stats[0]),  # 1MB = 1024 * 1024 bytes
-                stats[2],
+                stats[2] * 1000,
                 round(stats[2] * 1000 / stats[0]),  # 1ms = 1000us
-                stats[3],
+                stats[3] * 1000,
                 round(stats[3] * 1000 / stats[0])  # 1ms = 1000us
             ]
             table['rows'].append(row)
