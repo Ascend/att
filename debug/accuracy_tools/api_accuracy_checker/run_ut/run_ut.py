@@ -143,7 +143,7 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     args, kwargs, need_grad = get_api_info(api_info_dict, api_name)
     in_fwd_data_list.append(args)
     in_fwd_data_list.append(kwargs)
-    need_backward = api_full_name in backward_content and api_name[-1] != "_"
+    need_backward = api_full_name in backward_content
     need_backward = need_backward and need_grad
     if not need_grad:
         print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
@@ -173,7 +173,7 @@ def get_api_info(api_info_dict, api_name):
     need_grad = True
     if api_info_dict.get("kwargs") and "out" in api_info_dict.get("kwargs"):
         need_grad = False
-    if api_name[-1] == "_" or api_name in NO_GRAD_APIS:
+    if api_name in NO_GRAD_APIS:
         need_grad = False
     args, kwargs = gen_api_params(api_info_dict, need_grad, convert_type)
     return args, kwargs, need_grad
