@@ -816,19 +816,17 @@ dump操作必选。
 **函数原型**
 
 ```python
-register_hook(model, hook, overflow_nums=overflow_nums, dump_mode=dump_mode, dump_config=dump_config_file, rank=0)
+register_hook(model, hook, overflow_nums=overflow_nums, dump_mode=dump_mode, dump_config=dump_config_file)
 ```
 
 **参数说明**
 
 | 参数名        | 说明                                                         | 是否必选 |
 | ------------- | ------------------------------------------------------------ | -------- |
-| model         | model对象。                                                  | 是       |
-| hook          | 注册工具的dump和溢出检测钩子。可取值overflow_check和acc_cmp_dump，二选一。 | 是       |
+| hook          | 注册工具的dump和溢出检测钩子。可取值overflow_check（表示溢出检测）和acc_cmp_dump（表示dump数据），二选一。 | 是       |
 | overflow_nums | 控制溢出次数，表示第N次溢出时，停止训练，过程中检测到溢出API对应ACL数据均dump。参数示例：overflow_nums=3。配置overflow_check时可配置，默认不配置，即检测到1次溢出，训练停止。 | 否       |
 | dump_mode     | 控制针对溢出API的dump模式。可取值"api"或"acl"，配置acl时表示dump ACL级别的溢出数据，此时set_dump_path参数不生效，dump数据目录由dump_config的.json文件配置，参数示例：dump_mode="acl"。默认不配置，即dump API级别的溢出数据。 | 否       |
 | dump_config   | acl dump的配置文件。dump_mode="acl"时，该参数必选；dump_mode="api"时，该参数不选。参数示例：dump_config='./dump.json'。 | 否       |
-| rank          | 控制dump数据保存的rank目录名称。参数示例：rank=1。默认不配置，即自动读取dump数据所属的卡并保存在该卡对应的rank目录下。目录结构参见“**dump数据存盘说明**”。<br/>多卡情况下，可能出现工具识别rank出错，导致dump数据保存到错误的rank目录下，此时需要根据“**[rank_id获取方法](https://gitee.com/ascend/att/blob/master/debug/accuracy_tools/ptdbg_ascend/doc/rank_id获取方法.md)**”配置该参数，以获取正确的rank_id；工具可正确识别rank_id时无须配置该参数。 | 否       |
 
 **函数示例**
 
@@ -1170,7 +1168,7 @@ dump结果目录结构示例如下：
 |       └── rank7
 ```
 
-其中ptdbg_dump_{version}为未设置set_dump_path的dump_tag参数时的默认命名；rank为设备上各卡的ID，每张卡上dump的数据会生成对应dump目录，可由register_hook函数的rank参数控制rank目录名称。
+其中ptdbg_dump_{version}为未设置set_dump_path的dump_tag参数时的默认命名；rank为设备上各卡的ID，每张卡上dump的数据会生成对应dump目录。
 
 当使用debugger方式dump数据时，配置了PrecisionDebugger模块的step=[]参数，dump结果目录则以step为父目录，例如配置step=[0,1,2]时，dump结果目录为：
 
@@ -1276,7 +1274,7 @@ compare_distributed('./npu_dump/ptdbg_dump_v2.0', './gpu_dump/ptdbg_dump_v2.0', 
 **函数原型**
 
 ```python
-compare(input_param, output_path, stack_mode=False, auto_analyze=True, suffix='', fuzzy_match=False)
+compare(input_param, output_path, stack_mode=False, auto_analyze=True, fuzzy_match=False)
 ```
 
 **参数说明**
@@ -1287,7 +1285,6 @@ compare(input_param, output_path, stack_mode=False, auto_analyze=True, suffix=''
 | output_path  | 配置比对结果csv文件存盘目录。参数示例：'./output'。文件名称基于时间戳自动生成，格式为：`compare_result_{timestamp}.csv`。 | 是       |
 | stack_mode   | 配置stack_mode的开关。仅当dump数据时配置set_dump_switch的mode="api_stack"时需要开启。参数示例：stack_mode=True，默认为False。 | 否       |
 | auto_analyze | 自动精度分析，开启后工具自动针对比对结果进行分析，识别到第一个精度不达标节点（在比对结果文件中的“Accuracy Reached or Not”列显示为No），并给出问题可能产生的原因（打屏展示并生成advisor_{timestamp}.txt文件）。可取值True或False，参数示例：auto_analyze=False，默认为True。 | 否       |
-| suffix       | 标识比对结果的文件名。配置的suffix值在比对结果文件名的compare_result和{timestamp}中间插入，例如：`compare_result_{suffix}_{timestamp}`。默认为空。 | 否       |
 | fuzzy_match  | 模糊匹配。开启后，对于网络中同一层级且命名仅调用次数不同的API，可匹配并进行比对。可取值True或False，参数示例：fuzzy_match=True，默认为False。 | 否       |
 
 **函数示例**
