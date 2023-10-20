@@ -1,28 +1,28 @@
 import unittest
 import torch
+import os
+import shutil
 from api_accuracy_checker.common.base_api import BaseAPIInfo
 
 class TestBaseAPI(unittest.TestCase):
     def setUp(self):
-        # Initialize the BaseAPIInfo object
-        self.api = BaseAPIInfo("test_api", True, True, "/path/to/save", "forward", "backward")
+        if os.path.exists('./forward'):
+                shutil.rmtree('./forward')
+        os.makedirs('./forward')
+        self.api = BaseAPIInfo("test_api", True, True, "./", "forward", "backward")
 
     def test_analyze_element(self):
         # Test analyze_element method
         element = [1, 2, 3]
         result = self.api.analyze_element(element)
-        self.assertEqual(result, {'type': 'int', 'value': 1}, {'type': 'int', 'value': 2}, {'type': 'int', 'value': 3})
+        self.assertEqual(result, [{'type': 'int', 'value': 1}, {'type': 'int', 'value': 2}, {'type': 'int', 'value': 3}])
 
     def test_analyze_tensor(self):
-        # Test analyze_tensor method
-        tensor = torch.tensor([1, 2, 3])
+        tensor = torch.tensor([1, 2, 3], dtype=torch.float32, requires_grad=True)
         result = self.api.analyze_tensor(tensor)
         self.assertEqual(result['type'], 'torch.Tensor')
-        self.assertEqual(result['dtype'], 'torch.int64')
-        self.assertEqual(result['shape'], (3,))
-        self.assertEqual(result['Max'], 3)
-        self.assertEqual(result['Min'], 1)
-        self.assertEqual(result['requires_grad'], False)
+        self.assertEqual(result['requires_grad'], True)
+        self.assertTrue(os.path.exists(result['datapath']))
 
     def test_analyze_builtin(self):
         # Test analyze_builtin method

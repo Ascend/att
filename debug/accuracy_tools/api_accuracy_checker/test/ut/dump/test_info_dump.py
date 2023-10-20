@@ -9,19 +9,18 @@ from api_accuracy_checker.common.utils import check_file_or_directory_path, init
 class TestInfoDump(unittest.TestCase):
     # def test_write_api_info_json_forward(self):
     #     api_info = ForwardAPIInfo("test_forward_api", [1, 2, 3], {"a": 1, "b": 2})
-    #     api_info.rank = os.getpid()
-    #     with patch('dump.info_dump.write_json') as mock_write_json:
+    #     with patch('api_accuracy_checker.dump.info_dump.write_json') as mock_write_json:
     #         write_api_info_json(api_info)
-    #         mock_write_json.assert_called_with('dump_path/forward_info_rank.json', api_info.api_info_struct)
-    #         mock_write_json.assert_called_with('dump_path/stack_info_rank.json', api_info.stack_info_struct, indent=4)
+    #         rank = os.getpid()
+    #         mock_write_json.assert_called_with('./forward_info_rank.json', api_info.api_info_struct)
+    #         mock_write_json.assert_called_with('./stack_info_rank.json', api_info.stack_info_struct, indent=4)
 
     def test_write_api_info_json_backward(self):
         api_info = BackwardAPIInfo("test_backward_api", [1, 2, 3])
-        api_info.rank = os.getpid()
-        with patch('dump.info_dump.write_json') as mock_write_json:
+        with patch('api_accuracy_checker.dump.info_dump.write_json') as mock_write_json:
             write_api_info_json(api_info)
             rank = os.getpid()
-            mock_write_json.assert_called_with(f'dump_path/backward_info_{rank}.json', api_info.grad_info_struct)
+            mock_write_json.assert_called_with(f'./backward_info_{rank}.json', api_info.grad_info_struct)
 
     def test_write_api_info_json_invalid_type(self):
         api_info = APIInfo("test_api", True, True, "save_path")

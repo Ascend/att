@@ -2,7 +2,7 @@ import unittest
 import os
 import numpy as np
 import torch
-from common.utils import *
+from compare.common.utils import *
 
 class TestUtils(unittest.TestCase):
 
@@ -13,18 +13,16 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(read_json('test.json'), test_dict)
         os.remove('test.json')
 
-    # def test_write_csv(self):
-    #     test_data = [["name", "age"], ["Alice", 20], ["Bob", 30]]
-    #     write_csv(test_data, 'test.csv')
-    #     with open('test.csv', 'r') as f:
-    #         reader = csv.reader(f)
-    #         for i, row in enumerate(reader):
-    #             self.assertEqual(row, test_data[i])
-    #     os.remove('test.csv')
+    def test_write_csv(self):
+        test_data = [["name", "age"], ["Alice", "20"], ["Bob", "30"]]
+        write_csv(test_data, 'test.csv')
+        with open('test.csv', 'r') as f:
+            reader = csv.reader(f)
+            for i, row in enumerate(reader):
+                self.assertEqual(row, test_data[i])
+        os.remove('test.csv')
 
     def test_print_info_log(self):
-        # This function prints to stdout, so it's hard to test it directly.
-        # We can just check that it doesn't raise any exceptions.
         try:
             print_info_log("Test message")
         except Exception as e:
