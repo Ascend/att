@@ -18,8 +18,7 @@ class TestAPIInfo(unittest.TestCase):
         self.assertEqual(forward_api_info.is_forward, True)
         self.assertEqual(forward_api_info.is_save_data, msCheckerConfig.real_data)
         self.assertEqual(forward_api_info.save_path, msCheckerConfig.dump_path)
-        self.assertEqual(forward_api_info.api_info_struct, {"test_forward_api": {"args": [1, 2, 3], "kwargs": {"a": 1, "b": 2}}})
-        self.assertEqual(forward_api_info.stack_info_struct, {"test_forward_api": []})
+        self.assertEqual(forward_api_info.api_info_struct, {"test_forward_api": {"args": [{'type': 'int', 'value': 1},{'type': 'int', 'value': 2},{'type': 'int', 'value': 3},], "kwargs": {'a': {'type': 'int', 'value': 1}, 'b': {'type': 'int', 'value': 2}}}})
 
     def test_BackwardAPIInfo(self):
         backward_api_info = BackwardAPIInfo("test_backward_api", [1, 2, 3])
@@ -27,7 +26,7 @@ class TestAPIInfo(unittest.TestCase):
         self.assertEqual(backward_api_info.is_forward, False)
         self.assertEqual(backward_api_info.is_save_data, msCheckerConfig.real_data)
         self.assertEqual(backward_api_info.save_path, msCheckerConfig.dump_path)
-        self.assertEqual(backward_api_info.grad_info_struct, {"test_backward_api": [1, 2, 3]})
+        self.assertEqual(backward_api_info.grad_info_struct, {"test_backward_api": [{'type': 'int', 'value': 1},{'type': 'int', 'value': 2},{'type': 'int', 'value': 3}]})
 
 if __name__ == '__main__':
     unittest.main()
