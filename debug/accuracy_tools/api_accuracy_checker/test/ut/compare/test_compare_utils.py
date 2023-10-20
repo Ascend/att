@@ -12,8 +12,8 @@ class TestCompareUtils(unittest.TestCase):
         y = np.array([4.0, 5.0, 6.0], dtype=np.float32)
         self.assertTrue(check_dtype_comparable(x, y))
 
-        x = np.array([True, False, True], dtype=np.bool)
-        y = np.array([False, True, False], dtype=np.bool)
+        x = np.array([True, False, True], dtype=np.bool_)
+        y = np.array([False, True, False], dtype=np.bool_)
         self.assertTrue(check_dtype_comparable(x, y))
 
         x = np.array([1, 2, 3], dtype=np.int32)
@@ -21,7 +21,7 @@ class TestCompareUtils(unittest.TestCase):
         self.assertFalse(check_dtype_comparable(x, y))
 
         x = np.array([1, 2, 3], dtype=np.int32)
-        y = np.array([True, False, True], dtype=np.bool)
+        y = np.array([True, False, True], dtype=np.bool_)
         self.assertFalse(check_dtype_comparable(x, y))
 
 if __name__ == '__main__':

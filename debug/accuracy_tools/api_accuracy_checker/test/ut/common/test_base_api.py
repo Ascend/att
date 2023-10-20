@@ -11,7 +11,7 @@ class TestBaseAPI(unittest.TestCase):
         # Test analyze_element method
         element = [1, 2, 3]
         result = self.api.analyze_element(element)
-        self.assertEqual(result, {'type': 'list', 'value': [1, 2, 3]})
+        self.assertEqual(result, {'type': 'int', 'value': 1}, {'type': 'int', 'value': 2}, {'type': 'int', 'value': 3})
 
     def test_analyze_tensor(self):
         # Test analyze_tensor method

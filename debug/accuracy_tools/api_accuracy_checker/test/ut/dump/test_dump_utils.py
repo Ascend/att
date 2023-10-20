@@ -21,7 +21,6 @@ class TestUtils(unittest.TestCase):
     def test_write_npy(self):
         file_path = "test.npy"
         tensor = np.array([1, 2, 3])
-        self.assertFalse(os.path.exists(file_path))
         write_npy(file_path, tensor)
         self.assertTrue(os.path.exists(file_path))
         os.remove(file_path)

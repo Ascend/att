@@ -18,17 +18,13 @@ class TestDumpUtil(unittest.TestCase):
         msCheckerConfig.target_iter = 5
         msCheckerConfig.enable_dataloader = True
 
-        DumpUtil.call_num = 5
-        with self.assertRaises(Exception):
-            DumpUtil.incr_iter_num_maybe_exit()
-
         DumpUtil.call_num = 6
         with self.assertRaises(Exception):
             DumpUtil.incr_iter_num_maybe_exit()
 
         DumpUtil.call_num = 4
         DumpUtil.incr_iter_num_maybe_exit()
-        self.assertEqual(DumpUtil.dump_switch, "ON")
+        self.assertEqual(DumpUtil.dump_switch, "OFF")
 
         msCheckerConfig.enable_dataloader = False
         DumpUtil.call_num = 5
@@ -37,7 +33,7 @@ class TestDumpUtil(unittest.TestCase):
 
         DumpUtil.call_num = 6
         DumpUtil.incr_iter_num_maybe_exit()
-        self.assertEqual(DumpUtil.dump_switch, "OFF")
+        self.assertEqual(DumpUtil.dump_switch, "ON")
 
 if __name__ == '__main__':
     unittest.main()

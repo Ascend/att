@@ -1,9 +1,12 @@
 import unittest
+import os
 from api_accuracy_checker.common.config import Config
 
 class TestConfig(unittest.TestCase):
     def setUp(self):
-        self.yaml_file = "path/to/config.yaml"
+        cur_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+        yaml_path = os.path.join(cur_path, "config.yaml")
+        self.yaml_file = yaml_path
         self.config = Config(self.yaml_file)
 
     def test_validate(self):
