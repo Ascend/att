@@ -2,7 +2,7 @@ import unittest
 import os
 import numpy as np
 import torch
-from compare.common.utils import *
+from api_accuracy_checker.common.utils import *
 
 class TestUtils(unittest.TestCase):
 

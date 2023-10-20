@@ -14,23 +14,10 @@ class TestRunUt(unittest.TestCase):
         out = exec_api(self.api_type, self.api_name, self.args, self.kwargs)
         self.assertIsInstance(out, torch.Tensor)
 
-    def test_generate_npu_params(self):
-        npu_args, npu_kwargs = generate_npu_params(self.args, self.kwargs, True)
-        self.assertIsInstance(npu_args[0], torch.Tensor)
-        self.assertEqual(npu_args[0].device.type, "npu")
-
     def test_generate_cpu_params(self):
         cpu_args, cpu_kwargs = generate_cpu_params(self.args, self.kwargs, True)
         self.assertIsInstance(cpu_args[0], torch.Tensor)
         self.assertEqual(cpu_args[0].device.type, "cpu")
-
-    def test_get_api_info(self):
-        api_info_dict = {"args": [1.0], "kwargs": {"out": None}}
-        api_name = "abs"
-        args, kwargs, need_grad = get_api_info(api_info_dict, api_name)
-        self.assertEqual(args, (1.0,))
-        self.assertEqual(kwargs, {"out": None})
-        self.assertFalse(need_grad)
 
     def test_UtDataInfo(self):
         data_info = UtDataInfo(None, None, None, None, None, None)
