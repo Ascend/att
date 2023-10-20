@@ -300,6 +300,9 @@ export const Operator: React.FC<IProps> = (props) => {
                       onChange={onSearchOperatorChanged}
                       type="search"
                       label="Search by Name"
+                      inputProps={{
+                        maxLength: 200
+                      }}
                     />
                   </Grid>
                 </Grid>
