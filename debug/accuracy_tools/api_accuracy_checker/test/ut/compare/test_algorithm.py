@@ -70,6 +70,3 @@ class TestAlgorithmMethods(unittest.TestCase):
     def test_flatten_compare_result(self):
         result = [[1, 2], [3, 4]]
         self.assertEqual(alg.flatten_compare_result(result), [1, 2, 3, 4])
-
-if __name__ == '__main__':
-    unittest.main()

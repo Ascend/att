@@ -34,6 +34,3 @@ class TestDumpUtil(unittest.TestCase):
         DumpUtil.call_num = 6
         DumpUtil.incr_iter_num_maybe_exit()
         self.assertEqual(DumpUtil.dump_switch, "ON")
-
-if __name__ == '__main__':
-    unittest.main()

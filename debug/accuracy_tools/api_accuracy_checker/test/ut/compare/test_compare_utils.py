@@ -23,6 +23,3 @@ class TestCompareUtils(unittest.TestCase):
         x = np.array([1, 2, 3], dtype=np.int32)
         y = np.array([True, False, True], dtype=np.bool_)
         self.assertFalse(check_dtype_comparable(x, y))
-
-if __name__ == '__main__':
-    unittest.main()

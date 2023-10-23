@@ -28,6 +28,3 @@ class TestConfig(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.config.update_config(invalid_key='value')
-
-if __name__ == '__main__':
-    unittest.main()

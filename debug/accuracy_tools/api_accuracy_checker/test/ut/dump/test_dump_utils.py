@@ -32,6 +32,3 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(ValueError):
             write_npy(file_path, tensor)
         os.remove(file_path)
-
-if __name__ == '__main__':
-    unittest.main()

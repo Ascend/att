@@ -17,6 +17,3 @@ class TestDumpScope(unittest.TestCase):
         result = wrapped_func()
         self.assertEqual(DumpUtil.dump_switch, "ON")
         self.assertEqual(result, 123)
-
-if __name__ == '__main__':
-    unittest.main()

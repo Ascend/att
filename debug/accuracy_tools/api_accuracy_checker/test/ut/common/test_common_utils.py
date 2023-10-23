@@ -62,13 +62,6 @@ class TestUtils(unittest.TestCase):
     def test_execute_command(self):
         execute_command(['echo', 'Hello, World!'])
 
-    # def test_save_numpy_data(self):
-    #     test_array = np.array([1, 2, 3])
-    #     save_numpy_data('test.npy', test_array)
-    #     loaded_array = np.load('test.npy')
-    #     np.testing.assert_array_equal(loaded_array, test_array)
-    #     os.remove('test.npy')
-
     def test_parse_arg_value(self):
         values = "1,2,3;4,5,6"
         expected_result = [[1, 2, 3], [4, 5, 6]]
@@ -133,6 +126,3 @@ class TestUtils(unittest.TestCase):
 
     def test_check_need_convert(self):
         self.assertIsNone(check_need_convert("unknown_api"))
-
-if __name__ == '__main__':
-    unittest.main()
