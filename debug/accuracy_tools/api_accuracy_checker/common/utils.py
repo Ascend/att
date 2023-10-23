@@ -29,6 +29,9 @@ import numpy as np
 import torch
 import csv
 
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, FileChecker
+from ptdbg_ascend.src.python.ptdbg_ascend.common import file_check_util
+
 try:
     import torch_npu
 except ImportError:
@@ -86,7 +89,7 @@ class Const:
     API_PATTERN = r"^[A-Za-z0-9]+[_]+([A-Za-z0-9]+[_]*[A-Za-z0-9]+)[_]+[0-9]+[_]+[A-Za-z0-9]+"
     WRITE_FLAGS = os.O_WRONLY | os.O_CREAT
     WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
-    
+
     RAISE_PRECISION = {
         "torch.float16" : "torch.float32",
         "torch.bfloat16" : "torch.float32",
@@ -377,7 +380,7 @@ def create_directory(dir_path):
     """
     if not os.path.exists(dir_path):
         try:
-            os.makedirs(dir_path, mode=0o700)
+            os.makedirs(dir_path, mode=FileCheckConst.DATA_DIR_AUTHORITY)
         except OSError as ex:
             print_error_log(
                 'Failed to create {}.Please check the path permission or disk space .{}'.format(dir_path, str(ex)))
@@ -606,12 +609,15 @@ def initialize_save_path(save_path, dir_name):
     if os.path.exists(data_path):
         raise ValueError(f"file {data_path} already exists, please remove it first")
     else:
-        os.mkdir(data_path, mode = 0o750)
-    check_file_or_directory_path(data_path, True)
+        os.mkdir(data_path, mode=FileCheckConst.DATA_DIR_AUTHORITY)
+    data_path_checker = FileChecker(data_path, FileCheckConst.DIR)
+    data_path_checker.common_check()
+
 
 def write_pt(file_path, tensor):
     if os.path.exists(file_path):
         raise ValueError(f"File {file_path} already exists")
     torch.save(tensor, file_path)
-    full_path = os.path.abspath(file_path)
+    full_path = os.path.realpath(file_path)
+    file_check_util.change_mode(full_path, FileCheckConst.DATA_FILE_AUTHORITY)
     return full_path

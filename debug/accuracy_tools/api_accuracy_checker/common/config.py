@@ -20,7 +20,7 @@ class Config:
             'target_iter': int,
             'precision': int
         }
-        if not isinstance(value, validators[key]):
+        if not isinstance(value, validators.get(key)):
             raise ValueError(f"{key} must be {validators[key].__name__} type")
         if key == 'target_iter' and value < 0:
             raise ValueError("target_iter must be greater than 0")

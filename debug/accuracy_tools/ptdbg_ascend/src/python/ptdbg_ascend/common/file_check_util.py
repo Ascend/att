@@ -67,6 +67,7 @@ class FileChecker:
 
     Attributes:
         file_path: The file or dictionary path to be verified.
+        path_type: file or dictionary
         ability(str): FileCheckConst.WRITE_ABLE or FileCheckConst.READ_ABLE to set file has writability or readability
         file_type(str): The correct file type for file
     """

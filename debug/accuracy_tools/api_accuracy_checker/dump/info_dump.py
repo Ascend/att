@@ -7,6 +7,9 @@ from .api_info import ForwardAPIInfo, BackwardAPIInfo
 from ..common.utils import check_file_or_directory_path, initialize_save_path
 from ..common.config import msCheckerConfig
 
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker, \
+    change_mode
+
 lock = threading.Lock()
 
 def write_api_info_json(api_info):
@@ -49,8 +52,8 @@ def write_json(file_path, data, indent=None):
 
 
 def initialize_output_json():
-    dump_path = os.path.realpath(msCheckerConfig.dump_path)
-    check_file_or_directory_path(dump_path, True)
+    dump_path_checker = FileChecker(msCheckerConfig.dump_path, FileCheckConst.DIR)
+    dump_path = dump_path_checker.common_check()
     files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
     if msCheckerConfig.real_data:
         initialize_save_path(dump_path, 'forward_real_data')
