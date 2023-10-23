@@ -13,7 +13,7 @@ from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
 from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
-from ut_api_info import UtAPIInfo
+from api_accuracy_checker.run_ut.ut_api_info import UtAPIInfo
 from api_accuracy_checker.common.config import msCheckerConfig
 
 NO_GRAD_APIS = ["hardtanh"]
