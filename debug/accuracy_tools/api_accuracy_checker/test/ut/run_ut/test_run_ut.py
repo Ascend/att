@@ -42,7 +42,7 @@ class TestRunUtMethods(unittest.TestCase):
         args, kwargs, need_grad = get_api_info(api_info, api_name)
         cpu_args, cpu_kwargs = generate_cpu_params(args, kwargs, True)
         self.assertEqual(len(cpu_args), 1)
-        self.assertEqual(cpu_args[0].dtype, torch.float16)
+        self.assertEqual(cpu_args[0].dtype, torch.float32)
         self.assertEqual(cpu_args[0].requires_grad, True)
         self.assertEqual(cpu_args[0].shape, torch.Size([2, 2560, 24, 24]))
         self.assertEqual(cpu_kwargs, {'inplace': False})
