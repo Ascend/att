@@ -10,7 +10,6 @@ from api_accuracy_checker.common.utils import print_info_log, print_warn_log, ge
     print_error_log
 
 
-NO_GRAD_APIS = ["hardtanh"]
 
 init_environment()
 
@@ -77,10 +76,10 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     api_type = api_full_name.split("_")[0]
     api_name = api_full_name.split("_", 1)[1].rsplit("_", 2)[0]
     args, kwargs, need_grad = get_api_info(api_info_dict, api_name)
-    need_backward = api_full_name.replace("forward", "backward") in backward_content and api_name[-1] != "_"
+    need_backward = api_full_name.replace("forward", "backward") in backward_content
     need_backward = need_backward and need_grad
     if not need_grad:
-        print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
+        print_warn_log("%s function with out=... arguments don't support automatic differentiation, skip backward." % api_full_name)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     if kwargs.get("device"):
         del kwargs["device"]
