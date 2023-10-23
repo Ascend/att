@@ -16,7 +16,6 @@ from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
 from ut_api_info import UtAPIInfo
 from api_accuracy_checker.common.config import msCheckerConfig
 
-NO_GRAD_APIS = ["hardtanh"]
 
 
 def init_environment():
@@ -146,7 +145,7 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     need_backward = api_full_name in backward_content
     need_backward = need_backward and need_grad
     if not need_grad:
-        print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
+        print_warn_log("%s function with out=... arguments don't support automatic differentiation, skip backward." % api_full_name)
     cpu_args, cpu_kwargs = generate_cpu_params(args, kwargs, need_backward)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     grad_out, npu_grad_out = None, None
@@ -172,8 +171,6 @@ def get_api_info(api_info_dict, api_name):
     convert_type, api_info_dict = api_info_preprocess(api_name, api_info_dict)
     need_grad = True
     if api_info_dict.get("kwargs") and "out" in api_info_dict.get("kwargs"):
-        need_grad = False
-    if api_name in NO_GRAD_APIS:
         need_grad = False
     args, kwargs = gen_api_params(api_info_dict, need_grad, convert_type)
     return args, kwargs, need_grad
