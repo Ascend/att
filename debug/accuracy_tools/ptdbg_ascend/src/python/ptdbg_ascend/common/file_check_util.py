@@ -138,6 +138,7 @@ class FileOpen:
         support_mode = self.SUPPORT_READ_MODE + self.SUPPORT_WRITE_MODE + self.SUPPORT_READ_WRITE_MODE
         if self.mode not in support_mode:
             print_error_log("File open not support %s mode" % self.mode)
+            raise FileCheckException(FileCheckException.INVALID_PARAM_ERROR)
         check_link(self.file_path)
         check_path_length(self.file_path)
         self.check_ability_and_owner()
