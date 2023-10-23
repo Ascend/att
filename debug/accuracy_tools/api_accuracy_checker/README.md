@@ -67,7 +67,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    | ----------------- | ------------------------------------------------------------ | -------- |
    | dump_path         | 设置dump路径，须为已存在目录，默认为当前目录。               | 否       |
    | real_data         | 真实数据模式，可取值True或False，默认为False，配置为True后开启真实数据模式，dump信息增加forward_real_data和backward_real_data目录，目录下保存每个API输入的具体数值。开启真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。 | 否       |
-   | enable_dataloader | 自动控制开关，可取值True或False，默认为False，配置为True后自动识别dump target_iter参数指定的迭代数据，并在该迭代执行完成后退出训练。 | 否       |
+   | enable_dataloader | 自动控制开关，可取值True或False，默认为True，配置为True后自动识别dump target_iter参数指定的迭代数据，并在该迭代执行完成后退出训练。 | 否       |
    | target_iter       | 指定dump某个step的数据，默认为1，仅支持dump1个step，须指定为训练脚本中存在的step。 | 否       |
 
 3. 将API信息输入给run_ut模块运行精度检测并比对，运行如下命令：
