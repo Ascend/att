@@ -24,8 +24,8 @@ class TestDataGenerateMethods(unittest.TestCase):
         min_diff = abs(args_params[0].min() - min_value)
         self.assertEqual(len(args_params), 1)
         self.assertEqual(args_params[0].dtype, torch.float16)
-        self.assertEqual(max_diff, 0.001)
-        self.assertEqual(min_diff, 0.001)
+        self.assertLessEqual(max_diff, 0.001)
+        self.assertLessEqual(min_diff, 0.001)
         self.assertEqual(args_params[0].shape, torch.Size([2, 2560, 24, 24]))
         self.assertEqual(kwargs_params, {'inplace': False})
 
@@ -35,17 +35,18 @@ class TestDataGenerateMethods(unittest.TestCase):
         min_diff = abs(args_result[0].min() - min_value)
         self.assertEqual(len(args_result), 1)
         self.assertEqual(args_result[0].dtype, torch.float16)
-        self.assertEqual(max_diff, 0.001)
-        self.assertEqual(min_diff, 0.001)
+        self.assertLessEqual(max_diff, 0.001)
+        self.assertLessEqual(min_diff, 0.001)
         self.assertEqual(args_result[0].shape, torch.Size([2, 2560, 24, 24]))
 
     def test_gen_data(self):
-        data = gen_data(api_info_dict.get('args')[0], True, True)
+        data = gen_data(api_info_dict.get('args')[0], True, None)
         max_diff = abs(data.max() - max_value)
         min_diff = abs(data.min() - min_value)
         self.assertEqual(data.dtype, torch.float16)
-        self.assertEqual(max_diff, 0.001)
-        self.assertEqual(min_diff, 0.001)
+        self.assertEqual(data.requires_grad, True)
+        self.assertLessEqual(max_diff, 0.001)
+        self.assertLessEqual(min_diff, 0.001)
         self.assertEqual(data.shape, torch.Size([2, 2560, 24, 24]))
 
     def test_gen_kwargs(self):
@@ -76,8 +77,8 @@ class TestDataGenerateMethods(unittest.TestCase):
         min_diff = abs(data.min() - min_value)
         self.assertEqual(data.dtype, torch.float16)
         self.assertEqual(data.requires_grad, False)
-        self.assertEqual(max_diff, 0.001)
-        self.assertEqual(min_diff, 0.001)
+        self.assertLessEqual(max_diff, 0.001)
+        self.assertLessEqual(min_diff, 0.001)
         self.assertEqual(data.shape, torch.Size([2, 2560, 24, 24]))
         
     def test_gen_common_tensor(self):
@@ -90,8 +91,8 @@ class TestDataGenerateMethods(unittest.TestCase):
         min_diff = abs(data.min() - min_value)
         self.assertEqual(data.dtype, torch.float16)
         self.assertEqual(data.requires_grad, False)
-        self.assertEqual(max_diff, 0.001)
-        self.assertEqual(min_diff, 0.001)
+        self.assertLessEqual(max_diff, 0.001)
+        self.assertLessEqual(min_diff, 0.001)
         self.assertEqual(data.shape, torch.Size([2, 2560, 24, 24]))
         
     def test_gen_bool_tensor(self):
