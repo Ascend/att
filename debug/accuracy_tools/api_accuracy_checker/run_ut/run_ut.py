@@ -17,7 +17,7 @@ from ut_api_info import UtAPIInfo
 from api_accuracy_checker.common.config import msCheckerConfig
 
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker, \
-    change_mode
+    change_mode, check_file_suffix
 
 NO_GRAD_APIS = ["hardtanh"]
 
@@ -250,12 +250,10 @@ def _run_ut():
     except Exception:
         print_error_log(f"Set NPU device id failed. device id is: {args.device_id}")
         raise NotImplementedError
-    forward_file_checker = FileChecker(args.forward_input_file, FileCheckConst.FILE, ability=FileCheckConst.READ_ABLE,
-                                       file_type=FileCheckConst.JSON_SUFFIX)
-    forward_file = forward_file_checker.common_check()
-    backward_file_checker = FileChecker(args.backward_input_file, FileCheckConst.FILE,
-                                        ability=FileCheckConst.READ_ABLE, file_type=FileCheckConst.JSON_SUFFIX)
-    backward_file = backward_file_checker.common_check()
+    forward_file = os.path.realpath(args.forward_input_file)
+    backward_file = os.path.realpath(args.backward_input_file)
+    check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)
+    check_file_suffix(backward_file, FileCheckConst.JSON_SUFFIX)
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     out_path_checker = FileChecker(out_path, FileCheckConst.DIR, ability=FileCheckConst.WRITE_ABLE)
     out_path = out_path_checker.common_check()

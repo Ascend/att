@@ -9,7 +9,7 @@ from api_accuracy_checker.run_ut.run_ut import exec_api, generate_npu_params, ru
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
     print_error_log
 
-from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, FileChecker
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, check_file_suffix
 
 NO_GRAD_APIS = ["hardtanh"]
 
@@ -134,14 +134,12 @@ def _run_overflow_check():
     args = parser.parse_args(sys.argv[1:])
     torch.npu.set_compile_mode(jit_compile=args.jit_compile)
     npu_device = "npu:" + str(args.device_id)
-    forward_file_checker = FileChecker(args.forward_input_file, FileCheckConst.FILE, ability=FileCheckConst.READ_ABLE,
-                                       file_type=FileCheckConst.JSON_SUFFIX)
-    forward_file = forward_file_checker.common_check()
+    forward_file = os.path.realpath(args.forward_input_file)
     backward_file = ""
     if args.backward_input_file:
-        backward_file_checker = FileChecker(args.backward_input_file, FileCheckConst.FILE,
-                                            ability=FileCheckConst.READ_ABLE, file_type=FileCheckConst.JSON_SUFFIX)
-        backward_file = backward_file_checker.common_check()
+        backward_file = os.path.realpath(args.backward_input_file)
+        check_file_suffix(backward_file, FileCheckConst.JSON_SUFFIX)
+    check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)
     try:
         torch.npu.set_device(npu_device)
     except Exception:
