@@ -20,9 +20,9 @@ import pandas as pd
 
 from .advisor_result import AdvisorResult
 from .advisor_const import AdvisorConst
-from ..common import utils
-from ..common.utils import CompareException, CompareConst, Const
+from ..common.utils import CompareException, CompareConst
 from ..common.utils import print_info_log, print_warn_log, print_error_log
+from ..common.file_check_util import FileChecker, FileCheckConst
 
 
 class Advisor:
@@ -35,9 +35,6 @@ class Advisor:
         self.out_path = os.path.realpath(out_path)
 
     def _parse_input_file(self):
-        if not self.input_file.endswith(".csv"):
-            print_error_log("Advisor only support csv file from ptdbg_ascend result.")
-            raise CompareException(CompareException.INVALID_FILE_ERROR)
         try:
             df = pd.read_csv(self.input_file, on_bad_lines='skip')
         except OSError as os_err:
@@ -54,9 +51,12 @@ class Advisor:
         df.iloc[:, 0] += 2
         return df
 
-    def _check_result_file(self):
-        utils.check_file_or_directory_path(self.input_file)
-        utils.check_file_size(self.input_file, Const.ONE_GB)
+    def _check_path_vaild(self):
+        input_file_checker = FileChecker(self.input_file, FileCheckConst.FILE, FileCheckConst.READ_ABLE,
+                                         FileCheckConst.CSV_SUFFIX)
+        input_file_checker.common_check()
+        out_path_checker = FileChecker(self.out_path, FileCheckConst.DIR, FileCheckConst.WRITE_ABLE)
+        out_path_checker.common_check()
 
     def gen_advisor_message(self, node_name):
         if AdvisorConst.FORWARD in node_name:
@@ -107,7 +107,7 @@ class Advisor:
         return result
 
     def analysis(self):
-        self._check_result_file()
+        self._check_path_vaild()
         analyze_data = self._parse_input_file()
         print_info_log("Start analyzing the comparison result: %s" % self.input_file)
         self.analyze_unmatched(analyze_data)

@@ -17,7 +17,7 @@
 import os
 import re
 
-from .utils import print_warn_log, print_error_log
+from .log import print_warn_log, print_error_log
 
 
 class FileCheckConst:
@@ -34,10 +34,12 @@ class FileCheckConst:
     NUMPY_SUFFIX = ".npy"
     JSON_SUFFIX = ".json"
     PT_SUFFIX = ".pt"
+    CSV_SUFFIX = ".csv"
     MAX_PKL_SIZE = 1 * 1024 * 1024 * 1024
     MAX_NUMPY_SIZE = 10 * 1024 * 1024 * 1024
     MAX_JSON_SIZE = 1 * 1024 * 1024 * 1024
     MAX_PT_SIZE = 10 * 1024 * 1024 * 1024
+    MAX_CSV_SIZE = 1 * 1024 * 1024 * 1024
     DIR = "dir"
     FILE = "file"
     DATA_DIR_AUTHORITY = 0o750
@@ -94,6 +96,7 @@ class FileChecker:
         check_link(self.file_path)
         check_path_length(self.file_path)
         check_path_exists(self.file_path)
+        check_path_type(self.file_path, self.path_type)
         self.check_path_ability()
         check_path_owner_consistent(self.file_path)
         check_path_pattern_vaild(self.file_path)
@@ -242,6 +245,8 @@ def check_common_file_size(file_path):
             check_file_size(file_path, FileCheckConst.MAX_JSON_SIZE)
         if file_path.endswith(FileCheckConst.PT_SUFFIX):
             check_file_size(file_path, FileCheckConst.MAX_PT_SIZE)
+        if file_path.endswith(FileCheckConst.CSV_SUFFIX):
+            check_file_size(file_path, FileCheckConst.MAX_CSV_SIZE)
 
 
 def check_file_suffix(file_path, file_suffix):
@@ -252,7 +257,7 @@ def check_file_suffix(file_path, file_suffix):
             raise FileCheckException(FileCheckException.INVALID_FILE_TYPE_ERROR)
 
 
-def check_file_type(file_path, file_type):
+def check_path_type(file_path, file_type):
     real_path = os.path.realpath(file_path)
     if file_type == FileCheckConst.FILE:
         if not os.path.isfile(real_path):
