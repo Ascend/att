@@ -8,7 +8,7 @@ class TestBaseAPI(unittest.TestCase):
     def setUp(self):
         if os.path.exists('./forward'):
             shutil.rmtree('./forward')
-        os.makedirs('./forward')
+        os.makedirs('./forward', mode=0o755)
         self.api = BaseAPIInfo("test_api", True, True, "./", "forward", "backward")
 
     def test_analyze_element(self):
