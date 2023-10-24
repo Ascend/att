@@ -60,7 +60,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    ```Python
    	from api_accuracy_checker.dump import msCheckerConfig
-   	msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True, enable_dataloader=True, target_iter=1)
+   	msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True, target_iter=1)
    ```
 
    | 参数名称          | 说明                                                         | 是否必选 |
