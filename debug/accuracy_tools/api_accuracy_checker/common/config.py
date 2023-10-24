@@ -7,6 +7,7 @@ class Config:
         check_file_or_directory_path(yaml_file, False)
         with open(yaml_file, 'r') as file:
             config = yaml.safe_load(file)
+        config['enable_dataloader'] = True
         self.config = {key: self.validate(key, value) for key, value in config.items()}
 
     def validate(self, key, value):
@@ -34,11 +35,10 @@ class Config:
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
-    def update_config(self, dump_path, real_data=False, enable_dataloader=True, target_iter=1):
+    def update_config(self, dump_path, real_data=False, target_iter=1):
         args = {
             "dump_path": dump_path,
             "real_data": real_data,
-            "enable_dataloader": enable_dataloader,
             "target_iter": target_iter
         }
         for key, value in args.items():
