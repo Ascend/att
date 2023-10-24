@@ -112,7 +112,7 @@ def register_hook(model, hook, **kwargs):
     dump_mode, dump_config_file = init_dump_config(kwargs)
     if dump_mode == 'acl':
         DumpUtil.dump_switch_mode = dump_mode
-        DumpUtil.dump_config = dump_config_file
+        DumpUtil.set_acl_config(dump_config_file)
     register_hook_core(hook)
 
 
