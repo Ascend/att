@@ -21,7 +21,6 @@ import numpy as np
 
 from api_accuracy_checker.common.utils import Const, check_file_or_directory_path, check_object_type, print_warn_log, print_error_log, \
     CompareException
-from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, FileChecker, FileOpen
 
 TORCH_TYPE = ["torch.device", "torch.dtype"]
 TENSOR_DATA_LIST = ["torch.Tensor", "torch.nn.parameter.Parameter"]
@@ -66,8 +65,8 @@ def gen_real_tensor(data_path, convert_type):
         data_path: API data path
         convert_type: convert ori_type to dist_type flag.
     """
-    data_path_checker = FileChecker(data_path, FileCheckConst.FILE)
-    data_path = data_path_checker.common_check()
+    data_path = os.path.realpath(data_path)
+    check_file_or_directory_path(data_path)
     if not data_path.endswith('.pt') and not data_path.endswith('.npy'):
         print_error_log(f"The file: {data_path} is not a pt or numpy file.")
         raise CompareException.INVALID_FILE_ERROR
