@@ -41,8 +41,10 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    
    ...
    
-   DP.dump.set_dump_switch("OFF")    # 可选，未配置该参数时表示dump从DP.dump.set_dump_switch("ON")开始的所有数据
+   DP.dump.set_dump_switch("OFF")    # 可选，未配置"OFF"参数时表示dump从DP.dump.set_dump_switch("ON")开始的所有数据
      ```
+
+   DP.dump.set_dump_switch：开启工具dump模块，该接口取值为"ON"和OFF"OFF"。
 
    上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
 
