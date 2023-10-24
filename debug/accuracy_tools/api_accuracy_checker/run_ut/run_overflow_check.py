@@ -9,6 +9,7 @@ from api_accuracy_checker.run_ut.run_ut import exec_api, generate_npu_params, ru
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
     print_error_log
 
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, check_file_suffix
 
 NO_GRAD_APIS = ["hardtanh"]
 
@@ -137,10 +138,8 @@ def _run_overflow_check():
     backward_file = ""
     if args.backward_input_file:
         backward_file = os.path.realpath(args.backward_input_file)
-        if not backward_file.endswith(".json"):
-            raise ValueError("The backward_input_file should be a json file!")
-    if not forward_file.endswith(".json"):
-        raise ValueError("The forward_input_file should be a json file!")
+        check_file_suffix(backward_file, FileCheckConst.JSON_SUFFIX)
+    check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)
     try:
         torch.npu.set_device(npu_device)
     except Exception:

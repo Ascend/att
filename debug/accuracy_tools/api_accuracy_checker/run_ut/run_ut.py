@@ -16,13 +16,16 @@ from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
 from ut_api_info import UtAPIInfo
 from api_accuracy_checker.common.config import msCheckerConfig
 
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker, \
+    change_mode, check_file_suffix
+
 NO_GRAD_APIS = ["hardtanh"]
 
 
 def init_environment():
     cur_path = os.path.dirname(os.path.realpath(__file__))
     yaml_path = os.path.join(cur_path, "../hook_module/support_wrap_ops.yaml")
-    with open(yaml_path, 'r') as f:
+    with FileOpen(yaml_path, 'r') as f:
         WrapFunctionalOps = yaml.safe_load(f).get('functional')
     for f in dir(torch.nn.functional):
         if f != "__name__":
@@ -121,6 +124,8 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
             else:
                 print_error_log(f"Run {api_full_name} UT Error: %s" % str(err))
             compare.write_summary_csv((api_full_name, "SKIP", "SKIP", str(err)))
+    change_mode(compare.save_path, FileCheckConst.DATA_FILE_AUTHORITY)
+    change_mode(compare.detail_save_path, FileCheckConst.DATA_FILE_AUTHORITY)
     compare.print_pretest_result()
 
 
@@ -208,8 +213,9 @@ def run_backward(api_full_name, args, backward_content, grad_index, npu_args, np
 
 
 def initialize_save_error_data():
-    error_data_path = os.path.realpath(msCheckerConfig.error_data_path)
-    check_file_or_directory_path(error_data_path, True)
+    error_data_path_checker = FileChecker(msCheckerConfig.error_data_path, FileCheckConst.DIR,
+                                          ability=FileCheckConst.WRITE_ABLE)
+    error_data_path = error_data_path_checker.common_check()
     initialize_save_path(error_data_path, 'ut_error_data')
 
 
@@ -246,9 +252,11 @@ def _run_ut():
         raise NotImplementedError
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
-    if not forward_file.endswith(".json") or not backward_file.endswith(".json"):
-        raise ValueError("The forward_input_file and backward_input_file should be a json file!")
+    check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)
+    check_file_suffix(backward_file, FileCheckConst.JSON_SUFFIX)
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
+    out_path_checker = FileChecker(out_path, FileCheckConst.DIR, ability=FileCheckConst.WRITE_ABLE)
+    out_path = out_path_checker.common_check()
     save_error_data = args.save_error_data
     if save_error_data:
         initialize_save_error_data()
@@ -263,6 +271,7 @@ class UtDataInfo:
         self.bench_out = bench_out
         self.grad_in = grad_in
         self.in_fwd_data_list = in_fwd_data_list
+
 
 if __name__ == '__main__':
     _run_ut()
