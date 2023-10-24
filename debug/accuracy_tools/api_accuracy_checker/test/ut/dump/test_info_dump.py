@@ -19,3 +19,10 @@ class TestInfoDump(unittest.TestCase):
         api_info = APIInfo("test_api", True, True, "save_path")
         with self.assertRaises(ValueError):
             write_api_info_json(api_info)
+    
+    def tearDown(self):
+        rank = os.getpid()
+        files = [f'./backward_info_{rank}.json']
+        for file in files:
+            if os.path.exists(file):
+                os.remove(file)

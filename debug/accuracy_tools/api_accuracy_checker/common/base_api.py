@@ -119,9 +119,9 @@ class BaseAPIInfo:
             elif operator == 'min':
                 return False not in data
         if operator == 'max':
-            return torch._C._VariableFunctionsClass.max(data).item()
+            return torch._C._VariableFunctionsClass.max(data.float()).item()
         else:
-            return torch._C._VariableFunctionsClass.min(data).item()
+            return torch._C._VariableFunctionsClass.min(data.float()).item()
 
     def get_type_name(self, name):
 

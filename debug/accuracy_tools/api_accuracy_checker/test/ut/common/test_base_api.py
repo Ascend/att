@@ -7,7 +7,7 @@ from api_accuracy_checker.common.base_api import BaseAPIInfo
 class TestBaseAPI(unittest.TestCase):
     def setUp(self):
         if os.path.exists('./forward'):
-                shutil.rmtree('./forward')
+            shutil.rmtree('./forward')
         os.makedirs('./forward')
         self.api = BaseAPIInfo("test_api", True, True, "./", "forward", "backward")
 
@@ -60,3 +60,7 @@ class TestBaseAPI(unittest.TestCase):
         name = "<class 'int'>"
         result = self.api.get_type_name(name)
         self.assertEqual(result, 'int')
+
+    def tearDown(self):
+        if os.path.exists('./forward'):
+            shutil.rmtree('./forward')
