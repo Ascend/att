@@ -226,6 +226,11 @@ export const ModuleView: React.FC<IProps> = (props) => {
     <div className={classes.root}>
       <Card variant="outlined" ref={cardRef}>
         <CardHeader title="Module View" />
+
+        {/* defaultExpandAllRows will only valid when first render the Table
+          if row is null, then it will be ignored so all data will be collapse.
+          see https://segmentfault.com/a/1190000007830998 for more information.
+          */}
         {rows && rows.length > 0 && (
           <Table
             size="small"

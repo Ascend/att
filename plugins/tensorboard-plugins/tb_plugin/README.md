@@ -249,7 +249,3 @@ Workers-Spans: 多线程的情况下Profiling可能包含多组数据，通过Wo
     | Avg Elapse Time(us) | 单个算子平均耗时。    |
     | Transit Time(us) | 此类算子传输总耗时。   |
     | Avg Transit Time(us) | 单个算子平均传输耗时。  |
-
-### 公网URL说明
-
-[公网URL说明](./docs/公网URL说明.xlsx)
