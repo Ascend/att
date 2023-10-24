@@ -35,7 +35,7 @@ class Config:
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
-    def update_config(self, dump_path, real_data=False, enable_dataloader=False, target_iter=1):
+    def update_config(self, dump_path, real_data=False, enable_dataloader=True, target_iter=1):
         args = {
             "dump_path": dump_path,
             "real_data": real_data,
