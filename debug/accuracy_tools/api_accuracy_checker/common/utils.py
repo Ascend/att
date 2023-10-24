@@ -516,7 +516,6 @@ def get_json_contents(file_path):
 
 
 def get_file_content_bytes(file):
-    check_input_file_valid(file)
     with FileOpen(file, 'rb') as file_handle:
         return file_handle.read()
 
