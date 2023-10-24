@@ -3,7 +3,6 @@ jit_compile: True
 real_data: False
 dump_step: 1000
 error_data_path: './'
-enable_dataloader: True
 target_iter: 1
 precision: 14
  
