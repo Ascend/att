@@ -33,9 +33,11 @@ class FileCheckConst:
     PKL_SUFFIX = ".pkl"
     NUMPY_SUFFIX = ".npy"
     JSON_SUFFIX = ".json"
+    PT_SUFFIX = ".pt"
     MAX_PKL_SIZE = 1 * 1024 * 1024 * 1024
     MAX_NUMPY_SIZE = 10 * 1024 * 1024 * 1024
     MAX_JSON_SIZE = 1 * 1024 * 1024 * 1024
+    MAX_PT_SIZE = 10 * 1024 * 1024 * 1024
     DIR = "dir"
     FILE = "file"
     DATA_DIR_AUTHORITY = 0o750
@@ -238,6 +240,8 @@ def check_common_file_size(file_path):
             check_file_size(file_path, FileCheckConst.MAX_NUMPY_SIZE)
         if file_path.endswith(FileCheckConst.JSON_SUFFIX):
             check_file_size(file_path, FileCheckConst.MAX_JSON_SIZE)
+        if file_path.endswith(FileCheckConst.PT_SUFFIX):
+            check_file_size(file_path, FileCheckConst.MAX_PT_SIZE)
 
 
 def check_file_suffix(file_path, file_suffix):

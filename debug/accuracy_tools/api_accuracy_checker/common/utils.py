@@ -29,7 +29,7 @@ import numpy as np
 import torch
 import csv
 
-from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, FileChecker
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, FileChecker, FileOpen
 from ptdbg_ascend.src.python.ptdbg_ascend.common import file_check_util
 
 try:
@@ -195,12 +195,12 @@ class DumpException(CompareException):
     pass
 
 def read_json(file):
-    with open(file, 'r') as f:
+    with FileOpen(file, 'r') as f:
         obj = json.load(f)
     return obj
 
 def write_csv(data, filepath):
-    with open(filepath, 'a') as f:
+    with FileOpen(filepath, 'a') as f:
         writer = csv.writer(f)
         writer.writerows(data)
 
@@ -517,7 +517,7 @@ def get_json_contents(file_path):
 
 def get_file_content_bytes(file):
     check_input_file_valid(file)
-    with open(file, 'rb') as file_handle:
+    with FileOpen(file, 'rb') as file_handle:
         return file_handle.read()
 
 

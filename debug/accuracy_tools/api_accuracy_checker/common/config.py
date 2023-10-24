@@ -1,11 +1,12 @@
 import yaml
 import os
 from api_accuracy_checker.common.utils import check_file_or_directory_path
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 
 class Config:
     def __init__(self, yaml_file):
         check_file_or_directory_path(yaml_file, False)
-        with open(yaml_file, 'r') as file:
+        with FileOpen(yaml_file, 'r') as file:
             config = yaml.safe_load(file)
         self.config = {key: self.validate(key, value) for key, value in config.items()}
 

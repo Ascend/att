@@ -7,8 +7,7 @@ from .api_info import ForwardAPIInfo, BackwardAPIInfo
 from ..common.utils import check_file_or_directory_path, initialize_save_path
 from ..common.config import msCheckerConfig
 
-from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker, \
-    change_mode
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker
 
 lock = threading.Lock()
 
@@ -30,10 +29,10 @@ def write_api_info_json(api_info):
 def write_json(file_path, data, indent=None):
     check_file_or_directory_path(os.path.dirname(file_path),True)
     if not os.path.exists(file_path):
-        with open(file_path, 'w') as f:
+        with FileOpen(file_path, 'w') as f:
             f.write("{\n}")
     lock.acquire()
-    with open(file_path, 'a+') as f:
+    with FileOpen(file_path, 'a+') as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
             f.seek(0, os.SEEK_END)
