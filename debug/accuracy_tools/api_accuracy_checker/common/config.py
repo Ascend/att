@@ -8,7 +8,6 @@ class Config:
         check_file_or_directory_path(yaml_file, False)
         with FileOpen(yaml_file, 'r') as file:
             config = yaml.safe_load(file)
-        config['enable_dataloader'] = True
         self.config = {key: self.validate(key, value) for key, value in config.items()}
 
     def validate(self, key, value):
@@ -18,7 +17,6 @@ class Config:
             'real_data': bool,
             'dump_step': int,
             'error_data_path': str,
-            'enable_dataloader': bool,
             'target_iter': int,
             'precision': int
         }
