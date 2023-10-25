@@ -34,7 +34,7 @@ else:
 from .utils import DumpUtil, check_if_in_api_list, make_dump_data_dir, get_tensor_rank, create_dirs_if_not_exist
 from ..common.utils import print_warn_log, Const, print_info_log, modify_dump_path
 from ..dump.utils import check_writable
-from ..common.file_check_util import FileOpen, change_mode, FileCheckConst, check_path_pattern_vaild
+from ..common.file_check_util import FileOpen, change_mode, FileCheckConst, check_path_pattern_vaild, check_path_length
 
 forward_init_status = False
 backward_init_status = False
@@ -135,6 +135,7 @@ def dump_data(dump_file_name, dump_step, prefix, data_info):
     try:
         if json_dump_condition(prefix):
             output_path = os.path.join(DumpUtil.dump_data_dir, f'{prefix}.npy')
+            check_path_length(output_path)
             check_path_pattern_vaild(output_path)
             if not DumpUtil.summary_only:
                 np.save(output_path, data_info.save_data)
@@ -228,6 +229,8 @@ def dump_acc_cmp(name, in_feat, out_feat, dump_step, module):
             if rank != DumpUtil.target_rank:
                 return
         dump_file = create_dirs_if_not_exist(rank, dump_file)
+        check_path_pattern_vaild(dump_file)
+        check_path_length(dump_file)
         global pkl_name
         pkl_name = dump_file
         if DumpUtil.dump_init_enable:

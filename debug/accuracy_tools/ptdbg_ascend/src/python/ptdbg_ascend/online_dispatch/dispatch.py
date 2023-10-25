@@ -6,7 +6,6 @@ from pathlib import Path
 from multiprocessing import Manager, Pool
 import torch
 from torch.utils._python_dispatch import TorchDispatchMode
-from ..common.file_check_util import FileOpen
 
 try:
     import torch_npu

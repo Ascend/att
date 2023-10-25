@@ -9,7 +9,7 @@ from ..common.utils import Const, CompareConst, add_time_as_suffix
 from ..compare.acc_compare import cosine_similarity, get_max_abs_err, get_max_relative_err, check_accuracy
 from .utils import np_save_data, logger_debug, logger_error, logger_user, COLOR_RED, COLOR_GREEN, COLOR_RESET, \
     CSV_COLUMN_NAME
-from ..common.file_check_util import FileOpen
+from ..common.file_check_util import FileOpen, change_mode, FileCheckConst
 
 
 class DispatchRunParam:
@@ -297,3 +297,4 @@ def save_csv(all_summery, call_stack_list, csv_path):
             df = pd.concat([df, row_df])
 
     df.to_csv(csv_path, index=False)
+    change_mode(csv_path, FileCheckConst.DATA_FILE_AUTHORITY)

@@ -9,7 +9,7 @@ from ..dump import dump
 from ..common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
     check_mode_valid, get_api_name_from_matcher, check_switch_valid, check_dump_mode_valid, check_summary_only_valid, generate_compare_script, \
     check_is_npu, check_file_valid, make_dump_path_if_not_exists
-from ..common.file_check_util import FileChecker, FileCheckConst
+from ..common.file_check_util import FileChecker, FileCheckConst, check_path_length, check_path_pattern_vaild
 
 from ..common.version import __version__
 
@@ -266,6 +266,8 @@ def make_dump_dirs():
     dump_file_name, dump_file_name_body = "dump.pkl", "dump"
     dump_root_dir = load_env_dump_path(DumpUtil.dump_path)
     tag_dir = os.path.join(dump_root_dir, DumpUtil.dump_dir_tag + f'_v{__version__}')
+    check_path_length(tag_dir)
+    check_path_pattern_vaild(tag_dir)
     Path(tag_dir).mkdir(mode=0o750, parents=True, exist_ok=True)
     DumpUtil.dump_dir = tag_dir
     dump_file_path = os.path.join(tag_dir, dump_file_name)
