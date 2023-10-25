@@ -296,20 +296,19 @@ set_dump_switch("ON", mode="api_list", api_list=["distributed"])
 
 通信类API支持列表：
 
-| 序号 | Distributed       |
-| :--- | ----------------- |
-| 1    | send              |
-| 2    | recv              |
-| 3    | broadcast         |
-| 4    | all_reduce        |
-| 5    | reduce            |
-| 6    | all_gather        |
-| 7    | gather            |
-| 8    | batch_isend_irecv |
-| 9    | isend             |
-| 10   | irecv             |
-| 11   | scatter           |
-| 12   | reduce_scatter    |
+| 序号 | Distributed    |
+| :--- | -------------- |
+| 1    | send           |
+| 2    | recv           |
+| 3    | broadcast      |
+| 4    | all_reduce     |
+| 5    | reduce         |
+| 6    | all_gather     |
+| 7    | gather         |
+| 8    | isend          |
+| 9    | irecv          |
+| 10   | scatter        |
+| 11   | reduce_scatter |
 
 ### 溢出检测场景
 
