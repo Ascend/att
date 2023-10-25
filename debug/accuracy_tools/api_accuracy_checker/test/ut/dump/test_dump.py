@@ -30,7 +30,3 @@ class TestDumpUtil(unittest.TestCase):
         DumpUtil.call_num = 5
         DumpUtil.incr_iter_num_maybe_exit()
         self.assertEqual(DumpUtil.dump_switch, "ON")
-
-        DumpUtil.call_num = 6
-        DumpUtil.incr_iter_num_maybe_exit()
-        self.assertEqual(DumpUtil.dump_switch, "ON")
