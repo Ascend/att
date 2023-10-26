@@ -27,7 +27,8 @@ import pandas as pd
 from ..advisor.advisor import Advisor
 from ..common.utils import check_compare_param, add_time_as_suffix, \
     print_warn_log, print_error_log, CompareException, Const,\
-    CompareConst, format_value, check_file_not_exists, check_file_valid
+    CompareConst, format_value, check_file_not_exists
+from ..common.file_check_util import FileChecker, FileCheckConst, change_mode
 
 
 def correct_data(result):
@@ -88,13 +89,13 @@ def get_max_relative_err(n_value, b_value):
     np.seterr(divide='ignore', invalid='ignore')
     if b_value.dtype in CompareConst.FLOAT_TYPE:
         zero_mask = (b_value == 0)
-        b_value[zero_mask] += np.finfo(b_value.dtype).eps 
-        n_value[zero_mask] += np.finfo(b_value.dtype).eps 
+        b_value[zero_mask] += np.finfo(b_value.dtype).eps
+        n_value[zero_mask] += np.finfo(b_value.dtype).eps
     else:
         n_value, b_value = n_value.astype(float), b_value.astype(float)
         zero_mask = (b_value == 0)
-        b_value[zero_mask] += np.finfo(float).eps 
-        n_value[zero_mask] += np.finfo(float).eps 
+        b_value[zero_mask] += np.finfo(float).eps
+        n_value[zero_mask] += np.finfo(float).eps
     relative_err = np.divide((n_value - b_value), b_value)
     max_relative_err = np.max(np.abs(relative_err))
     if np.isnan(max_relative_err):
@@ -144,7 +145,7 @@ def check_type_shape_match(npu_struct, bench_struct):
         shape_match = npu_shape == bench_shape
         type_match = npu_type == bench_type
         if not type_match:
-            if [npu_type, bench_type] in [["torch.float16", "torch.float32"], ["torch.float32", "torch.float16"], 
+            if [npu_type, bench_type] in [["torch.float16", "torch.float32"], ["torch.float32", "torch.float16"],
                                           ["torch.float16", "torch.bfloat16"], ["torch.bfloat16", "torch.float16"]]:
                 type_match = True
             else:
@@ -412,8 +413,12 @@ def compare_by_op(op_name, op_name_mapping_dict, input_parma):
     try:
         n_path = os.path.join(input_parma.get("npu_dump_data_dir"), npu_bench_name_list[0] + ".npy")
         b_path = os.path.join(input_parma.get("bench_dump_data_dir"), npu_bench_name_list[1] + ".npy")
-        check_file_valid(n_path)
-        check_file_valid(b_path)
+        n_path_checker = FileChecker(n_path, FileCheckConst.FILE, FileCheckConst.READ_ABLE,
+                                     FileCheckConst.NUMPY_SUFFIX)
+        b_path_checker = FileChecker(b_path, FileCheckConst.FILE, FileCheckConst.READ_ABLE,
+                                     FileCheckConst.NUMPY_SUFFIX)
+        n_path = n_path_checker.common_check()
+        b_path = b_path_checker.common_check()
         n_value = np.load(n_path)
         b_value = np.load(b_path)
     except IOError as error:
@@ -434,11 +439,10 @@ def compare_by_op(op_name, op_name_mapping_dict, input_parma):
         err_msg = " Dtype of NPU and bench Tensor do not match."
     else:
         err_msg = ""
-    
+
     n_value, b_value = handle_inf_nan(n_value, b_value)
     if n_value is CompareConst.NAN or b_value is CompareConst.NAN:
         return "N/A", "N/A", "N/A",  "The position of inf or nan in NPU and bench Tensor do not match."
-        
 
     n_value = n_value.reshape(-1).astype(float)
     b_value = b_value.reshape(-1).astype(float)
@@ -509,6 +513,7 @@ def compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=False,
         result_df.to_csv(fout, index=False)
 
     _do_multi_process(input_parma, file_path)
+    change_mode(file_path, FileCheckConst.DATA_FILE_AUTHORITY)
     if auto_analyze:
         advisor = Advisor(file_path, output_path)
         advisor.analysis()
