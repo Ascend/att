@@ -198,6 +198,7 @@ Workers-Spans: 多线程的情况下Profiling可能包含多组数据，通过Wo
     * Component
 
       图展示的是PTA和GE组件内存使用，表格为各个组件内存使用峰值。
+
 * Diff View
 
     Diff视图提供了Profiling数据比对功能。适用于同一网络不同迭代之间采集数据比对算子耗时情况，网络进行优化前后相同位置算子耗时情况比对、单机多卡不同卡之间采集数据比对以及相同网络不同硬件平台上运行性能情况比对等场景。
@@ -214,3 +215,41 @@ Workers-Spans: 多线程的情况下Profiling可能包含多组数据，通过Wo
         * Self Host Duration：算子在Host侧的累计耗时，不包括子算子耗时。
         * Device Duration：算子在Device侧的累计耗时，包括子算子耗时。
         * Self Device Duration：算子在Device侧的累计耗时，不包括子算子耗时。
+
+* Distributed View
+
+    Distributed视图展示的是多卡采集数据情况，包括每张卡的计算、通信信息以及通信算子的详细信息，界面由两张柱状图和一个通信算子信息表构成，如下图。
+    ![Alt text](./docs/images/distributed_view.PNG)
+    
+    * 左侧柱状图呈现了每张卡计算和通信等项的耗时，各项定义如下：
+
+    | 字段 | 含义 |
+    |------|------|
+    | Computation   | 计算时间：在NPU上的计算时间减去和通信重叠的时间。|
+    | Communication | 通信时间：总通讯时间减去和计算重叠的时间。|
+    | Overlapp      | 重叠时间：计算和通信重叠的时间。此项占比越大代表计算和通信的并行性越好，理想情况下计算和通信完全重叠。|
+    | Other         | 除去计算和通信的其他部分耗时，包括初始化、数据加载等。|
+    
+    * 右侧柱状图将通信时间分为数据传输时间和同步时间进行统计，定义如下：
+    
+    | 字段 | 含义 |
+    |------|------|
+    | Data Transfer Time | 通信时间中实际的数据传输时间。     |
+    | Synchronizing Time | 通信时间中等待以及和其他卡同步的时间。 | 
+
+    * 界面下方为通信算子信息表，统计了各张卡的通信算子详情。
+
+    | 字段 | 含义 |
+    |------|------|
+    | Name | 通信算子名称       |
+    | Calls | 调用次数。        |
+    | Total Transit Size(bytes) | 传输的总数据大小。    |
+    | Avg Transit Size(bytes) | 平均每次传输的数据大小。 |
+    | Elapse Time(us) | 此类算子总耗时。     |
+    | Avg Elapse Time(us) | 单个算子平均耗时。    |
+    | Transit Time(us) | 此类算子传输总耗时。   |
+    | Avg Transit Time(us) | 单个算子平均传输耗时。  |
+
+### 公网URL说明
+
+[公网URL说明](./docs/公网URL说明.xlsx)

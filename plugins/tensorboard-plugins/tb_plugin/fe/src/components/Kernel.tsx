@@ -281,6 +281,9 @@ export const Kernel: React.FC<IProps> = (props) => {
                       onChange={onSearchKernelChanged}
                       type="search"
                       label="Search by Name"
+                      inputProps={{
+                        maxLength: 200
+                      }}
                     />
                   </Grid>
                   {deviceTarget === 'Ascend' ?
@@ -292,6 +295,9 @@ export const Kernel: React.FC<IProps> = (props) => {
                           onChange={onSearchOpChanged}
                           type="search"
                           label="Search by Step Id"
+                          inputProps={{
+                            maxLength: 200
+                          }}
                         />
                       </Grid>)
                     :
@@ -303,6 +309,9 @@ export const Kernel: React.FC<IProps> = (props) => {
                           onChange={onSearchOpChanged}
                           type="search"
                           label="Search by Operator Name"
+                          inputProps={{
+                            maxLength: 200
+                          }}
                         />
                       </Grid>)
                   }

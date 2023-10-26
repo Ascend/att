@@ -17,12 +17,15 @@
 
 from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
 from api_accuracy_checker.dump.info_dump import write_api_info_json, initialize_output_json
-from api_accuracy_checker.common.utils import print_error_log
+from api_accuracy_checker.common.utils import print_error_log, CompareException
 from api_accuracy_checker.hook_module.register_hook import initialize_hook
 from api_accuracy_checker.common.config import msCheckerConfig
 
 
 def set_dump_switch(switch):
+    if switch not in ["ON", "OFF"]:
+        print_error_log("Please set switch with 'ON' or 'OFF'.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
     if switch == "ON":
         initialize_hook(pretest_hook)
         initialize_output_json()
@@ -39,16 +42,16 @@ class DumpUtil(object):
     @staticmethod
     def get_dump_switch():
         return DumpUtil.dump_switch == "ON"
-    
-    @staticmethod 
+
+    @staticmethod
     def incr_iter_num_maybe_exit():
-        if DumpUtil.call_num == msCheckerConfig.target_iter or not msCheckerConfig.enable_dataloader:
+        if DumpUtil.call_num == msCheckerConfig.target_iter:
             set_dump_switch("ON")
-        elif DumpUtil.call_num > msCheckerConfig.target_iter and msCheckerConfig.enable_dataloader:
+        elif DumpUtil.call_num > msCheckerConfig.target_iter:
             raise Exception("Model pretest: exit after iteration {}".format(msCheckerConfig.target_iter))
         else:
             set_dump_switch("OFF")
-        DumpUtil.call_num += 1 
+        DumpUtil.call_num += 1
 
 
 class DumpConst:
@@ -59,7 +62,7 @@ class DumpConst:
 
 def pretest_info_dump(name, out_feat, module, phase):
     if not DumpUtil.get_dump_switch():
-        return 
+        return
     if phase == DumpConst.forward:
         api_info = ForwardAPIInfo(name, module.input_args, module.input_kwargs)
     elif phase == DumpConst.backward:
@@ -68,14 +71,14 @@ def pretest_info_dump(name, out_feat, module, phase):
         msg = "Unexpected training phase {}.".format(phase)
         print_error_log(msg)
         raise NotImplementedError(msg)
-    
+
     write_api_info_json(api_info)
 
 def pretest_hook(name, phase):
     def pretest_info_dump_hook(module, in_feat, out_feat):
         pretest_info_dump(name, out_feat, module, phase)
         if hasattr(module, "input_args"):
-            del module.input_args 
+            del module.input_args
         if hasattr(module, "input_kwargs"):
-            del module.input_kwargs 
-    return pretest_info_dump_hook 
+            del module.input_kwargs
+    return pretest_info_dump_hook

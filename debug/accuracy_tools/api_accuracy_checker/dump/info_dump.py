@@ -7,6 +7,8 @@ from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
 from api_accuracy_checker.common.utils import check_file_or_directory_path, initialize_save_path
 from api_accuracy_checker.common.config import msCheckerConfig
 
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker
+
 lock = threading.Lock()
 
 def write_api_info_json(api_info):
@@ -27,10 +29,10 @@ def write_api_info_json(api_info):
 def write_json(file_path, data, indent=None):
     check_file_or_directory_path(os.path.dirname(file_path),True)
     if not os.path.exists(file_path):
-        with open(file_path, 'w') as f:
+        with FileOpen(file_path, 'w') as f:
             f.write("{\n}")
     lock.acquire()
-    with open(file_path, 'a+') as f:
+    with FileOpen(file_path, 'a+') as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
             f.seek(0, os.SEEK_END)
@@ -49,8 +51,8 @@ def write_json(file_path, data, indent=None):
 
 
 def initialize_output_json():
-    dump_path = os.path.realpath(msCheckerConfig.dump_path)
-    check_file_or_directory_path(dump_path, True)
+    dump_path_checker = FileChecker(msCheckerConfig.dump_path, FileCheckConst.DIR)
+    dump_path = dump_path_checker.common_check()
     files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
     if msCheckerConfig.real_data:
         initialize_save_path(dump_path, 'forward_real_data')

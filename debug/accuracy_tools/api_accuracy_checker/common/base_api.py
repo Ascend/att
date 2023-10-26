@@ -41,7 +41,6 @@ class BaseAPIInfo:
             raise NotImplementedError(msg)
         return out
 
-
     def analyze_tensor(self, arg):
         single_arg = {}
         if not self.is_save_data:

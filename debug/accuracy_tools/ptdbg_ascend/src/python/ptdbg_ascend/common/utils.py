@@ -99,6 +99,9 @@ class Const:
     ASCEND_WORK_PATH = "ASCEND_WORK_PATH"
     DUMP_DIR = "dump_data"
 
+    MAX_SEED_VALUE = 2**32 - 1
+
+
 class CompareConst:
     """
     Class for compare module const
@@ -251,7 +254,7 @@ def print_warn_log(warn_msg):
 def check_mode_valid(mode, scope=[], api_list=[]):
     if not isinstance(scope, list):
         raise ValueError("scope param set invalid, it's must be a list.")
-    elif not isinstance(api_list, list):
+    if not isinstance(api_list, list):
         raise ValueError("api_list param set invalid, it's must be a list.")
     mode_check = {
         Const.ALL: lambda: None,
@@ -259,7 +262,7 @@ def check_mode_valid(mode, scope=[], api_list=[]):
         Const.LIST: lambda:  ValueError("set_dump_switch, scope param set invalid, it's should not be an empty list.") if len(scope) == 0 else None,
         Const.STACK: lambda:  ValueError("set_dump_switch, scope param set invalid, it's must be [start, end] or [].") if len(scope) > 2 else None,
         Const.ACL: lambda:  ValueError("set_dump_switch, scope param set invalid, only one api name is supported in acl mode.") if len(scope) != 1 else None,
-        Const.API_LIST: lambda:  ValueError("Current dump mode is 'api_list', but the content of api_list parameter is empty or valid.") if not isinstance(api_list, list) or len(api_list) < 1 else None,
+        Const.API_LIST: lambda:  ValueError("Current dump mode is 'api_list', but the content of api_list parameter is empty or valid.") if len(api_list) < 1 else None,
         Const.API_STACK: lambda: None,
     }
     if mode not in Const.DUMP_MODE:
@@ -270,9 +273,11 @@ def check_mode_valid(mode, scope=[], api_list=[]):
     if mode_check[mode]() is not None:
         raise mode_check[mode]()
 
+
 def check_switch_valid(switch):
     if switch not in ["ON", "OFF"]:
-        raise ValueError("Please set switch with 'ON' or 'OFF'.")
+        print_error_log("Please set switch with 'ON' or 'OFF'.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
 
 def check_dump_mode_valid(dump_mode):
     if not isinstance(dump_mode, list):
@@ -290,7 +295,7 @@ def check_dump_mode_valid(dump_mode):
 
 def check_summary_only_valid(summary_only):
     if not isinstance(summary_only, bool):
-        print_error_log("Params auto_analyze only support True or False.")
+        print_error_log("Params summary_only only support True or False.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
     return summary_only
 
@@ -545,6 +550,7 @@ def torch_device_guard(func):
 
 
 def seed_all(seed=1234, mode=False):
+    check_seed_all(seed, mode)
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
@@ -559,6 +565,19 @@ def seed_all(seed=1234, mode=False):
     else:
         torch_npu.npu.manual_seed_all(seed)
         torch_npu.npu.manual_seed(seed)
+
+
+def check_seed_all(seed, mode):
+    if isinstance(seed, int):
+        if seed < 0 or seed > Const.MAX_SEED_VALUE:
+            print_error_log(f"Seed must be between 0 and {Const.MAX_SEED_VALUE}.")
+            raise CompareException(CompareException.INVALID_PARAM_ERROR)
+    else:
+        print_error_log(f"Seed must be integer.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
+    if not isinstance(mode, bool):
+        print_error_log(f"seed_all mode must be bool.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
 
 
 def get_process_rank(model):
