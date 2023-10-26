@@ -1,5 +1,5 @@
 # coding=utf-8
-from api_accuracy_checker.run_ut.run_ut import generate_cpu_params, get_api_info
+from api_accuracy_checker.run_ut.run_ut import generate_cpu_params, get_api_info, UtDataInfo
 import unittest
 import numpy as np
 import os
@@ -46,3 +46,12 @@ class TestRunUtMethods(unittest.TestCase):
         self.assertEqual(cpu_args[0].requires_grad, True)
         self.assertEqual(cpu_args[0].shape, torch.Size([2, 2560, 24, 24]))
         self.assertEqual(cpu_kwargs, {'inplace': False})
+    
+    def test_UtDataInfo(self):
+        data_info = UtDataInfo(None, None, None, None, None, None)
+        self.assertIsNone(data_info.bench_grad_out)
+        self.assertIsNone(data_info.npu_grad_out)
+        self.assertIsNone(data_info.npu_out)
+        self.assertIsNone(data_info.bench_out)
+        self.assertIsNone(data_info.grad_in)
+        self.assertIsNone(data_info.in_fwd_data_list)
