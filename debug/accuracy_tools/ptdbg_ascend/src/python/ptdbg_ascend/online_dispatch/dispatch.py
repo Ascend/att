@@ -157,8 +157,13 @@ class PtdbgDispatch(TorchDispatchMode):
             logger_error("Please confirm you run environment installed torch_npu!")
             return func(*args, **kwargs)
 
-        aten_api = func.__name__.split(".")[0]
-        aten_api_overload_name = func.__name__.split(".")[1]
+        func_name_split_list = func.__name__.split(".")
+        aten_api = func_name_split_list[0]
+        try:
+            aten_api_overload_name = func_name_split_list[1]
+        except IndexError:
+            logger_error(f"Please check the func name {func.__name__}!")
+            return func(*args, **kwargs)
 
         if aten_api in self.aten_ops_blacklist:
             npu_out = func(*args, **kwargs)
