@@ -3,9 +3,9 @@ import json
 import os
 import threading
 
-from .api_info import ForwardAPIInfo, BackwardAPIInfo
-from ..common.utils import check_file_or_directory_path, initialize_save_path
-from ..common.config import msCheckerConfig
+from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
+from api_accuracy_checker.common.utils import check_file_or_directory_path, initialize_save_path
+from api_accuracy_checker.common.config import msCheckerConfig
 
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker
 

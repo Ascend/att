@@ -21,10 +21,10 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
 
-   安装依赖tqdm、prettytable、pyyaml
+   安装依赖tqdm、rich、pyyaml
 
    ```bash
-   pip3 install tqdm prettytable pyyaml
+   pip3 install tqdm rich pyyaml
    ```
 
 2. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
@@ -38,7 +38,13 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
      ```Python
    import api_accuracy_checker.dump as DP
    DP.dump.set_dump_switch("ON")
+   
+   ...
+   
+   DP.dump.set_dump_switch("OFF")    # 可选，未配置"OFF"参数时表示dump从DP.dump.set_dump_switch("ON")开始的所有数据
      ```
+
+   DP.dump.set_dump_switch：开启工具dump模块，该接口取值为"ON"和"OFF"。
 
    上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
 
@@ -60,14 +66,13 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    ```Python
    	from api_accuracy_checker.dump import msCheckerConfig
-   	msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True, enable_dataloader=True, target_iter=1)
+   	msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True, target_iter=1)
    ```
 
    | 参数名称          | 说明                                                         | 是否必选 |
    | ----------------- | ------------------------------------------------------------ | -------- |
    | dump_path         | 设置dump路径，须为已存在目录，默认为当前目录。               | 否       |
    | real_data         | 真实数据模式，可取值True或False，默认为False，配置为True后开启真实数据模式，dump信息增加forward_real_data和backward_real_data目录，目录下保存每个API输入的具体数值。开启真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。 | 否       |
-   | enable_dataloader | 自动控制开关，可取值True或False，默认为False，配置为True后自动识别dump target_iter参数指定的迭代数据，并在该迭代执行完成后退出训练。 | 否       |
    | target_iter       | 指定dump某个step的数据，默认为1，仅支持dump1个step，须指定为训练脚本中存在的step。 | 否       |
 
 3. 将API信息输入给run_ut模块运行精度检测并比对，运行如下命令：
@@ -77,12 +82,14 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json
    ```
 
-   | 参数名称         | 说明                                                         | 是否必选 |
-   | ---------------- | ------------------------------------------------------------ | -------- |
-   | -forward         | 指定前向API信息文件forward_info_{pid}.json。                 | 是       |
-   | -backward        | 指定反向API信息文件backward_info_{pid}.json。                | 是       |
-   | -save_error_data | 保存精度未达标的API输入输出数据。                            | 否       |
-   | --out_path       | 指指定run_ut执行结果存盘路径，默认“./”（相对于run_ut的路径）。 | 否       |
+   | 参数名称                         | 说明                                                         | 是否必选 |
+   | -------------------------------- | ------------------------------------------------------------ | -------- |
+   | -forward或--forward_input_file   | 指定前向API信息文件forward_info_{pid}.json。                 | 是       |
+   | -backward或--backward_input_file | 指定反向API信息文件backward_info_{pid}.json。                | 是       |
+   | -save_error_data                 | 保存精度未达标的API输入输出数据。                            | 否       |
+   | -o或--out_path                   | 指指定run_ut执行结果存盘路径，默认“./”（相对于run_ut的路径）。 | 否       |
+   | -j或--jit_compile                | 开启jit编译。                                                | 否       |
+   | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。           | 否       |
 
    run_ut执行结果包括accuracy_checking_result.csv和accuracy_checking_details.csv两个文件。accuracy_checking_result.csv是API粒度的，标明每个API是否通过测试。建议用户先查看accuracy_checking_result.csv文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在accuracy_checking_details.csv中查询其各个输出的达标情况以及比较指标。
 
@@ -113,10 +120,10 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
 
-   安装依赖tqdm、prettytable、pyyaml
+   安装依赖tqdm、rich、pyyaml
 
    ```bash
-   pip3 install tqdm prettytable pyyaml
+   pip3 install tqdm rich pyyaml
    ```
 
 2. 执行溢出API解析操作
@@ -126,6 +133,13 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    python run_overflow_check.py -forward ./forward_info_0.json
    ```
 
+   | 参数名称                         | 说明                                               | 是否必选 |
+   | -------------------------------- | -------------------------------------------------- | -------- |
+   | -forward或--forward_input_file   | 指定前向API信息文件forward_info_{pid}.json。       | 是       |
+   | -backward或--backward_input_file | 指定反向API信息文件backward_info_{pid}.json。      | 是       |
+   | -j或--jit_compile                | 开启jit编译。                                      | 否       |
+   | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。 | 否       |
+   
    反向过程溢出的API暂不支持该功能。
 
 

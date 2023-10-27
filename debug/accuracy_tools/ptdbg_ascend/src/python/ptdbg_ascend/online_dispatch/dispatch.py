@@ -20,6 +20,7 @@ from ..common.version import __version__
 from .dump_compare import dispatch_workflow, dispatch_multiprocess, error_call, TimeStatistics, \
     DispatchRunParam, save_csv
 from .utils import get_callstack, data_to_cpu, logger_debug, logger_error, logger_warn, logger_logo, get_sys_info
+from ..common.file_check_util import FileOpen
 
 
 class PtdbgDispatch(TorchDispatchMode):
@@ -53,7 +54,7 @@ class PtdbgDispatch(TorchDispatchMode):
             dir_name = f'ptdbg_v{__version__}_{tag}_rank{self.device_id}_{time_now}'
         self.root_path = os.path.join(os.path.realpath(dump_path), dir_name)
         self.root_cpu_path = os.path.join(self.root_path, f'cpu')
-        self.root_npu_path = os.path.join(self.root_path, f'npu') 
+        self.root_npu_path = os.path.join(self.root_path, f'npu')
         file_name = add_time_as_suffix(f'compare_result_rank{self.device_id}')
         self.csv_path = os.path.join(self.root_path, file_name)
         check_path_before_create(self.root_cpu_path)
@@ -63,7 +64,7 @@ class PtdbgDispatch(TorchDispatchMode):
 
         self.aten_ops_blacklist = []
         yaml_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "unsupport_torch_ops.yaml")
-        with open(yaml_path, 'r') as f:
+        with FileOpen(yaml_path, 'r') as f:
             self.aten_ops_blacklist = yaml.safe_load(f).get('aten')
 
         self.process_num = process_num
@@ -85,10 +86,10 @@ class PtdbgDispatch(TorchDispatchMode):
             for aten_api in api_list:
                 if aten_api in aten_api_list:
                     dump_api_list.append(aten_api)
-                else: 
+                else:
                     logger_warn(f'{aten_api} is not aten api will not dump, please refer to torch.ops.aten')
         return dump_api_list
-    
+
     def get_dump_flag(self, aten_api):
         dump_flag = False
         auto_dump_flag = False
@@ -110,7 +111,7 @@ class PtdbgDispatch(TorchDispatchMode):
                     run_param.func_namespace = "aten"
                     return True
         return False
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         super().__exit__(exc_type, exc_val, exc_tb)
 
@@ -134,12 +135,12 @@ class PtdbgDispatch(TorchDispatchMode):
                 if len(json_line_data) == 0:
                     break
                 msg = json.loads(json_line_data)
-                self.all_summery[msg[0]] = msg[1]    
+                self.all_summery[msg[0]] = msg[1]
             fp_handle.close()
 
         if self.debug_flag:
             input_num = 0
-            output_num = 0 
+            output_num = 0
             total_num = 0
 
             for list_data in self.all_summery:
@@ -152,10 +153,10 @@ class PtdbgDispatch(TorchDispatchMode):
                     total_num = total_num + 1
             logger_debug(f'Dispatch exit: Device[{self.device_id}], Pid[{os.getpid()} Input[{input_num}] '
                          f'Output[{output_num}] Total[{total_num}] API_Total[{self.api_index}]]')
-        
+
         save_csv(self.all_summery, self.call_stack_list, self.csv_path)
 
-    def __torch_dispatch__(self, func, types, args=(), kwargs=None):  
+    def __torch_dispatch__(self, func, types, args=(), kwargs=None):
         if not is_npu:
             logger_error("Please confirm you run environment installed torch_npu!")
             return func(*args, **kwargs)
@@ -187,7 +188,7 @@ class PtdbgDispatch(TorchDispatchMode):
         run_param.aten_api = aten_api
         run_param.aten_api_overload_name = aten_api_overload_name
         run_param.single_api_index = self.single_api_index_dict[aten_api]
-        run_param.api_index = self.api_index 
+        run_param.api_index = self.api_index
 
         if self.debug_flag:
             logger_debug(f'Dispatch Info: Rank[{self.device_id}], Pid[{os.getpid()}], Func[{func.__name__}], '
@@ -200,7 +201,7 @@ class PtdbgDispatch(TorchDispatchMode):
         data_to_cpu(kwargs, 0, cpu_kwargs)
         cpu_args = cpu_args[0]
         cpu_kwargs = cpu_kwargs[0]
-    
+
         with TimeStatistics("NPU RUN", run_param):
             npu_out = func(*args, **kwargs)
         npu_out_cpu = []
@@ -212,7 +213,7 @@ class PtdbgDispatch(TorchDispatchMode):
             run_param.process_flag = False
             dispatch_workflow(run_param, cpu_args, cpu_kwargs, self.all_summery, func, npu_out_cpu, self.lock)
         else:
-            self.lock.acquire() 
+            self.lock.acquire()
             self.all_summery.append([])
             self.lock.release()
             run_param.process_flag = True

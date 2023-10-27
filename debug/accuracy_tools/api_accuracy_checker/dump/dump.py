@@ -45,9 +45,9 @@ class DumpUtil(object):
 
     @staticmethod
     def incr_iter_num_maybe_exit():
-        if DumpUtil.call_num == msCheckerConfig.target_iter or not msCheckerConfig.enable_dataloader:
+        if DumpUtil.call_num == msCheckerConfig.target_iter:
             set_dump_switch("ON")
-        elif DumpUtil.call_num > msCheckerConfig.target_iter and msCheckerConfig.enable_dataloader:
+        elif DumpUtil.call_num > msCheckerConfig.target_iter:
             raise Exception("Model pretest: exit after iteration {}".format(msCheckerConfig.target_iter))
         else:
             set_dump_switch("OFF")

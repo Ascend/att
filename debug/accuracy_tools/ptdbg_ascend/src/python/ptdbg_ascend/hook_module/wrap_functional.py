@@ -22,6 +22,8 @@ import yaml
 
 from .hook_module import HOOKModule
 from ..common.utils import torch_device_guard, print_info_log
+from ..common.file_check_util import FileOpen
+
 
 def remove_dropout():
     if torch.__version__ > "1.8":
@@ -62,7 +64,7 @@ def remove_dropout():
 
 cur_path = os.path.dirname(os.path.realpath(__file__))
 yaml_path = os.path.join(cur_path, "support_wrap_ops.yaml")
-with open(yaml_path, 'r') as f:
+with FileOpen(yaml_path, 'r') as f:
     WrapFunctionalOps = yaml.safe_load(f).get('functional')
 
 for f in dir(torch.nn.functional):

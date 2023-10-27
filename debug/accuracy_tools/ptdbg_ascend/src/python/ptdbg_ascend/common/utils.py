@@ -29,6 +29,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from .file_check_util import FileOpen, FileChecker, FileCheckConst
+
 try:
     import torch_npu
 except ImportError:
@@ -332,29 +334,10 @@ def check_file_or_directory_path(path, isdir=False):
         when invalid data throw exception
     """
     if isdir:
-        if not os.path.exists(path):
-            print_error_log('The path {} is not exist.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-        if not os.path.isdir(path):
-            print_error_log('The path {} is not a directory.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-        if not os.access(path, os.W_OK):
-            print_error_log(
-                'The path {} does not have permission to write. Please check the path permission'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
+        path_checker = FileChecker(path, FileCheckConst.DIR, FileCheckConst.WRITE_ABLE)
     else:
-        if not os.path.isfile(path):
-            print_error_log('{} is an invalid file or non-exist.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-    check_file_valid(path)
-
-    if not os.access(path, os.R_OK):
-        print_error_log(
-            'The path {} does not have permission to read. Please check the path permission'.format(path))
-        raise CompareException(CompareException.INVALID_PATH_ERROR)
+        path_checker = FileChecker(path, FileCheckConst.FILE, FileCheckConst.READ_ABLE)
+    path_checker.common_check()
 
 
 def _check_pkl(pkl_file_handle, file_name):
@@ -632,7 +615,7 @@ def generate_compare_script(dump_path, pkl_file_path, dump_switch_mode):
     is_api_stack = "True" if dump_switch_mode == Const.API_STACK else "False"
 
     try:
-        with open(template_path, 'r') as ftemp, \
+        with FileOpen(template_path, 'r') as ftemp, \
            os.fdopen(os.open(compare_script_path, Const.WRITE_FLAGS, Const.WRITE_MODES), 'w+') as fout:
             code_temp = ftemp.read()
             fout.write(code_temp % (pkl_file_path, dump_path, is_api_stack))

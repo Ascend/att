@@ -9,6 +9,7 @@ from ..dump import dump
 from ..common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
     check_mode_valid, get_api_name_from_matcher, check_switch_valid, check_dump_mode_valid, check_summary_only_valid, generate_compare_script, \
     check_is_npu, check_file_valid, make_dump_path_if_not_exists, check_path_before_create
+from ..common.file_check_util import FileChecker, FileCheckConst, check_path_length, check_path_pattern_vaild
 
 from ..common.version import __version__
 
@@ -42,8 +43,13 @@ class DumpUtil(object):
         DumpUtil.dump_init_enable = True
 
     @staticmethod
-    def set_dump_config(dump_config):
-        DumpUtil.dump_config = dump_config
+    def set_acl_config(acl_config):
+        if not acl_config:
+            raise ValueError("acl_config must be configured when mode is 'acl'")
+        acl_config_checker = FileChecker(acl_config, FileCheckConst.FILE, FileCheckConst.READ_ABLE,
+                                         FileCheckConst.JSON_SUFFIX)
+        acl_config = acl_config_checker.common_check()
+        DumpUtil.dump_config = acl_config
 
     @staticmethod
     def set_dump_switch(switch, mode=None, scope=None, api_list=None, filter_switch=None, dump_mode=None, summary_only=False):
@@ -138,6 +144,8 @@ def set_dump_path(fpath=None, dump_tag='ptdbg_dump'):
         raise CompareException(CompareException.INVALID_PATH_ERROR)
     real_path = os.path.realpath(fpath)
     make_dump_path_if_not_exists(real_path)
+    fpath_checker = FileChecker(real_path, FileCheckConst.DIR, FileCheckConst.WRITE_ABLE)
+    fpath_checker.common_check()
     DumpUtil.set_dump_path(real_path)
     DumpUtil.dump_dir_tag = dump_tag
 
@@ -169,7 +177,7 @@ def create_dirs_if_not_exist(rank, dump_file):
     rank_dir = os.path.join(dump_path, f"rank{rank}")
     dump_file = os.path.join(rank_dir, file_name)
     if not os.path.isdir(rank_dir):
-        Path(rank_dir).mkdir(mode=0o750, exist_ok=True)
+        Path(rank_dir).mkdir(mode=FileCheckConst.DATA_DIR_AUTHORITY, exist_ok=True)
     return dump_file
 
 
@@ -259,7 +267,8 @@ def make_dump_dirs():
     dump_file_name, dump_file_name_body = "dump.pkl", "dump"
     dump_root_dir = load_env_dump_path(DumpUtil.dump_path)
     tag_dir = os.path.join(dump_root_dir, DumpUtil.dump_dir_tag + f'_v{__version__}')
-    check_path_before_create(tag_dir)
+    check_path_length(tag_dir)
+    check_path_pattern_vaild(tag_dir)
     Path(tag_dir).mkdir(mode=0o750, parents=True, exist_ok=True)
     DumpUtil.dump_dir = tag_dir
     dump_file_path = os.path.join(tag_dir, dump_file_name)
