@@ -14,7 +14,8 @@ except ImportError:
 else:
     is_npu = True
 
-from ..common.utils import Const, CompareConst, add_time_as_suffix, check_file_or_directory_path
+from ..common.utils import Const, CompareConst, add_time_as_suffix, check_file_or_directory_path, \
+    check_path_before_create
 from ..common.version import __version__
 from .dump_compare import dispatch_workflow, dispatch_multiprocess, error_call, TimeStatistics, \
     DispatchRunParam, save_csv
@@ -55,6 +56,8 @@ class PtdbgDispatch(TorchDispatchMode):
         self.root_npu_path = os.path.join(self.root_path, f'npu') 
         file_name = add_time_as_suffix(f'compare_result_rank{self.device_id}')
         self.csv_path = os.path.join(self.root_path, file_name)
+        check_path_before_create(self.root_cpu_path)
+        check_path_before_create(self.root_npu_path)
         Path(self.root_cpu_path).mkdir(mode=0o750, parents=True, exist_ok=True)
         Path(self.root_npu_path).mkdir(mode=0o750, parents=True, exist_ok=True)
 
