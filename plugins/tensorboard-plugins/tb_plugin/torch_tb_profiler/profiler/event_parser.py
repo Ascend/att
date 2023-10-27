@@ -387,7 +387,7 @@ class StepParser:
                 self.steps[i_step] = (step_start_time, step_end_time)  # Update step time considering device side.
                 prev_step_end_time = step_end_time
 
-        is_remove_tail_steps = True  # TODO: Use tensorboard argument instead.
+        is_remove_tail_steps = True
         if is_use_gpu and len(self.steps) > 1 and is_remove_tail_steps:
             i_step = len(self.steps) - 1
             while i_step >= 0:

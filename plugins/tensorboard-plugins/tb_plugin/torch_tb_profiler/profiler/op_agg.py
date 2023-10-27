@@ -25,7 +25,6 @@ class OperatorAgg:
         self.tc_eligible = op.tc_eligible
         self.tc_self_duration: int = 0
         self.tc_total_duration: int = 0
-        # TODO: Think about adding these avgs to UI.
 
     @property
     def tc_self_ratio(self) -> float:
@@ -81,7 +80,7 @@ class KernelAggByNameOp:
 
     @property
     def avg_duration(self):
-        return self.total_duration / self.calls
+        return self.total_duration / self.calls if self.calls > 0 else 0
 
     @property
     def avg_blocks_per_sm(self) -> float:

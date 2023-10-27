@@ -94,11 +94,11 @@ class Canonicalizer:
         self.canonical_time_metrics = {
             'micro': 'us', 'microsecond': 'us', 'us': 'us',
             'milli': 'ms', 'millisecond': 'ms', 'ms': 'ms',
-            '':  's',      'second':  's',  's':  's',
+            '': 's', 'second': 's', 's': 's',
         }
         # canonicalize the memory metric to a string
         self.canonical_memory_metrics = {
-            '':  'B',  'B':  'B',
+            '': 'B', 'B': 'B',
             'K': 'KB', 'KB': 'KB',
             'M': 'MB', 'MB': 'MB',
             'G': 'GB', 'GB': 'GB',
