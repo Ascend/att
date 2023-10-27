@@ -14,16 +14,23 @@
 # limitations under the License.
 
 from pathlib import Path
-
-import pandas as pd
+import sys
 import argparse
 import re
+import os
+import stat
+import shutil
+import warnings
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from plotly.offline import plot
-import os
+import pandas as pd
 
-import warnings
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from common_func.path_manager import PathManager
+
+MAX_READ_FILE_BYTES = 64 * 1024 * 1024
 
 
 class FormDataProcessor:
@@ -33,7 +40,9 @@ class FormDataProcessor:
 
     def get_files_with_prefix_recursive(self, csv_path, match_str):
         matched_ir_files = list(Path(csv_path).rglob(match_str))
-        assert len(matched_ir_files) > 0, f"Didn't find any file in folder {csv_path} that matches {match_str}"
+        if not matched_ir_files:
+            msg = f"Didn't find any file in folder {csv_path} that matches {match_str}"
+            raise RuntimeError(msg)
         return [str(item) for item in matched_ir_files]
 
     def readSummaryData(self, columns_to_keep):
@@ -42,6 +51,8 @@ class FormDataProcessor:
         for f in self.files:
             if "mindstudio_profiler_output" in f:
                 continue
+            # 判断csv文件大小
+            PathManager.check_path_readable(f)
             # 读取CSV文件
             df = pd.read_csv(f)
             # 保留需要的列
@@ -51,13 +62,19 @@ class FormDataProcessor:
                 print(f"{f}文件没有所需的列，请确认profiling数据的正确性:\n,以下列可能不存在{columns_to_keep}\n")
                 continue
             # 从文件名提取设备ID
+            try:
+                df['device_id'] = self.getDeviceId(f)
+            except Exception:
+                print(f"文件 \"{f}\" 的路径或者是文件夹名没有按照要求，请确保存在[device_]这一级文件夹,具体操作指导见readme\n")
+                continue
             # 添加新列 "device_id"
-            df['device_id'] = self.getDeviceId(f)
-            df['node_id'] = self.getNodeId(f)
-
+            try:
+                df['node_id'] = self.getNodeId(f)
+            except Exception:
+                print(f"文件 \"{f}\" 的路径或者是文件夹名没有按照要求，请确保存在[node*]这一级文件夹,具体操作指导见readme\n")
+                continue
             # 将数据添加到最终的数据框中
-            
-            all_data = all_data.append(df, ignore_index=True)
+            all_data = all_data._append(df, ignore_index=True)
         return all_data
 
     def getChipType(self):
@@ -129,8 +146,6 @@ class ViewInfoManager:
 class OpSummaryAnalyzerBase:
     def __init__(self, chip_type, analyzer_type, dir_path):
         self.chip_type = chip_type
-        self.result_dir = f"{dir_path}/result"
-        os.makedirs(self.result_dir, exist_ok=True)  # 文件路径不存在则创建
         view_info = ViewInfoManager(chip_type).getColumnsInfo(analyzer_type)
         self.columns_to_view = view_info['columns_to_view']
         self.calculate_fun = view_info['calculate_fun']
@@ -139,6 +154,13 @@ class OpSummaryAnalyzerBase:
         if 'extend_attr_to_group' in view_info:
             extend_attr_to_group = view_info['extend_attr_to_group']
             self.attrs_to_group.extend(extend_attr_to_group)
+        # 创建结果文件
+        self.result_dir = os.path.join(dir_path, "result")
+        PathManager.check_path_length(self.result_dir)
+        if os.path.exists(self.result_dir):
+            shutil.rmtree(self.result_dir, onerror=self.on_rm_error)
+        PathManager.check_path_writeable(dir_path)
+        PathManager.make_dir_safety(self.result_dir)
 
     def getColumnsToGroup(self):
         return self.columns_to_group
@@ -152,6 +174,13 @@ class OpSummaryAnalyzerBase:
         view_data = summary_data.groupby(self.attrs_to_group).agg(calculate_dict).reset_index()
         return view_data
 
+    def on_rm_error(self, func, path, exc_info):
+        # path contains the path of the file that couldn't be removed
+        # let's just assume that it's read-only and unlink it.
+        os.chmod(path, stat.S_IWRITE)
+        os.unlink(path)
+
+
 class TimeToCsvAnalyzer(OpSummaryAnalyzerBase):
     def __init__(self, chip_type, dir_path):
         super().__init__(chip_type, "TimeToCsvAnalyzer", dir_path)
@@ -160,9 +189,16 @@ class TimeToCsvAnalyzer(OpSummaryAnalyzerBase):
         view_data = self.calculateViewData(summary_data)
         # 规范化列名
         view_data.columns = [''.join(col) if col[1] == "" else '_'.join(col) for col in view_data.columns]
-        for column in self.columns_to_view:
-            view_data[column + '_range'] = view_data[column + '_max'] - view_data[column + '_min']
-        view_data.to_csv(self.result_dir + "/cluster_duration_time_analysis.csv", index=False)
+        try:
+            for column in self.columns_to_view:
+                view_data[column + '_range'] = view_data[column + '_max'] - view_data[column + '_min']
+        except Exception as e:
+            raise RuntimeError("Invalid view data!") from e
+        save_path = os.path.join(self.result_dir, "cluster_duration_time_analysis.csv")
+        PathManager.check_path_length(save_path)
+        view_data.to_csv(save_path, index=False)
+        # 该文件权限设置为只读权限，不允许修改
+        os.chmod(save_path, stat.S_IROTH)
         return view_data
 
 
@@ -210,7 +246,11 @@ class StatisticalInfoToHtmlAnalyzer(OpSummaryAnalyzerBase):
                           height=int(500 * row_num),
                           width=int(rank_num * 100 * col_num),
                           title_text="Op Performance Comparison")
-        plot(fig, filename=self.result_dir + "/" + column + "_Info.html")
+        save_plot_path = os.path.join(self.result_dir, column + "_Info.html")
+        PathManager.check_path_length(save_plot_path)
+        plot(fig, filename=save_plot_path)
+        # 该文件权限设置为只读权限，不允许修改
+        os.chmod(save_plot_path, stat.S_IROTH)
 
     def getCalNum(self, rank_num):
         # 计算每行应该画多少个子图
@@ -230,18 +270,28 @@ class DeliverableGenerator:
 
     def run(self):
         summary_data = self.formProcess.readSummaryData(self.columns_to_keep)
+        # 判断summarydata 数据是否为空，如果是空， 说明所有csv读取数据都失败了
+        if summary_data.empty:
+            print("没有符合要求的csv表格数据，请排查您的PROFILING数据")
+            return
         rank_num = self.formProcess.getRankNum()
         for analyzer in self.analyzers:
             analyzer.GenerateDeliverable(summary_data, rank_num)
 
     def setAnalyzers(self, args):
         chip_type = self.formProcess.getChipType()
+        # 判断该路径是不是软链接，并修改为绝对路径
+        if os.path.islink(args.dir):
+            print(f"The file: \"{args.dir}\" is link. Please check the path.")
+            return
+        prof_path = os.path.realpath(args.dir)
+        PathManager.input_path_common_check(prof_path)
         if args.type == "all":
-            self.analyzers = [TimeToCsvAnalyzer(chip_type, args.dir), StatisticalInfoToHtmlAnalyzer(chip_type, args.top_n, args.dir)]
+            self.analyzers = [TimeToCsvAnalyzer(chip_type, prof_path), StatisticalInfoToHtmlAnalyzer(chip_type, args.top_n, prof_path)]
         elif args.type == "html":
-            self.analyzers = [StatisticalInfoToHtmlAnalyzer(chip_type, args.top_n, args.dir)]
+            self.analyzers = [StatisticalInfoToHtmlAnalyzer(chip_type, args.top_n, prof_path)]
         elif args.type == "csv":
-            self.analyzers = [TimeToCsvAnalyzer(chip_type, args.dir)]
+            self.analyzers = [TimeToCsvAnalyzer(chip_type, prof_path)]
         else:
             warnings.warn("参数错误，请输入 all html csv 这三种类型")  # 发出一个警告信息
 
@@ -255,15 +305,15 @@ class DeliverableGenerator:
 
 
 def main():
-        # 解析命令行参数
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--dir", "-d", default=None, help="root dir of PROF_* data")
-        parser.add_argument("--top_n", "-n", default=10, help="how many operators to show", type=int)
-        parser.add_argument("--type", "-t", default='html', help="compare ratio or aicore-time", type=str)
-        args = parser.parse_args()
+    # 解析命令行参数
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dir", "-d", default=None, help="root dir of PROF_* data")
+    parser.add_argument("--top_n", "-n", default=10, help="how many operators to show", type=int)
+    parser.add_argument("--type", "-t", default='html', help="compare ratio or aicore-time", type=str)
+    args = parser.parse_args()
 
-        deviverable_gen = DeliverableGenerator(args)
-        deviverable_gen.run()
+    deviverable_gen = DeliverableGenerator(args)
+    deviverable_gen.run()
 
 if __name__ == "__main__":
     main()
