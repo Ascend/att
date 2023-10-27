@@ -100,7 +100,7 @@ class FormDataProcessor:
 class ViewInfoManager:
     def __init__(self, chip_type):
         self.chip_type = chip_type
-        self.op_summary_columns_dict = []
+        self.op_summary_columns_dict = {}
         self.setOpSummaryColumnsParams()
 
     def setOpSummaryColumnsParams(self):
@@ -140,7 +140,7 @@ class ViewInfoManager:
         }
 
     def getColumnsInfo(self, analyzer_type):
-        return self.op_summary_columns_dict[self.chip_type][analyzer_type]
+        return self.op_summary_columns_dict.get(self.chip_type, {}).get(analyzer_type)
 
 
 class OpSummaryAnalyzerBase:
@@ -258,6 +258,7 @@ class StatisticalInfoToHtmlAnalyzer(OpSummaryAnalyzerBase):
             return 2
         else:
             return 1
+
 
 class DeliverableGenerator:
     def __init__(self, args):
