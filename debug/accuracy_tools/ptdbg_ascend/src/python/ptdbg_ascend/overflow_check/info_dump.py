@@ -8,6 +8,7 @@ import threading
 import numpy as np
 
 from ..common.utils import print_error_log
+from ..common.file_check_util import FileOpen
 
 
 special_torch_object = ["memory_format"]
@@ -205,10 +206,10 @@ def write_api_info_json(api_info):
 
 def write_json(file_path, data, indent=None):
     if not os.path.exists(file_path):
-        with open(file_path, 'w') as f:
+        with FileOpen(file_path, 'w') as f:
             f.write("{\n}")
     lock.acquire()
-    with open(file_path, 'a+') as f:
+    with FileOpen(file_path, 'a+') as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
             f.seek(0, os.SEEK_END)

@@ -9,6 +9,7 @@ from ..common.utils import Const, CompareConst, add_time_as_suffix
 from ..compare.acc_compare import cosine_similarity, get_max_abs_err, get_max_relative_err, check_accuracy
 from .utils import np_save_data, logger_debug, logger_error, logger_user, COLOR_RED, COLOR_GREEN, COLOR_RESET, \
     CSV_COLUMN_NAME
+from ..common.file_check_util import FileOpen, change_mode, FileCheckConst
 
 
 class DispatchRunParam:
@@ -19,7 +20,7 @@ class DispatchRunParam:
         self.root_npu_path = root_npu_path
         self.root_cpu_path = root_cpu_path
         self.process_num = process_num
-        self.process_flag = None 
+        self.process_flag = None
         self.func_name = None
         self.func_namespace = None
         self.aten_api = None
@@ -66,11 +67,11 @@ def get_compare_result(npu_data, cpu_data):
         # Do not check dtype, there maybe type cast
         if npu_npy.size == 0 or cpu_npy.size == 0:
             return "unsupported", 0, 0, "This is empty data, can not compare."
-        
+
         if npu_npy.shape != cpu_npy.shape:
             return CompareConst.SHAPE_UNMATCH, CompareConst.SHAPE_UNMATCH, CompareConst.SHAPE_UNMATCH, \
                    "Shape of NPU and bench Tensor do not match. Skipped."
-        
+
         npu_npy = npu_npy.reshape(-1).astype(float)
         cpu_npy = cpu_npy.reshape(-1).astype(float)
         err_msg = ""
@@ -78,7 +79,7 @@ def get_compare_result(npu_data, cpu_data):
         max_relative_err, message = get_max_relative_err(npu_npy, cpu_npy)
         if npu_npy.shape == 0:
             return "unsupported", max_abs_err, max_relative_err, "This is type of scalar data, can not compare."
-        
+
         cos_sim, message = cosine_similarity(npu_npy, cpu_npy)
         err_msg += message
 
@@ -149,7 +150,7 @@ def save_summery(run_param, npu_data, cpu_data, prefix, summery_list, compute_fl
         data_dict[CompareConst.ACCURACY] = CompareConst.ACCURACY_CHECK_YES
 
     summery_list.append(data_dict)
-    
+
     if data_dict[CompareConst.ACCURACY] == CompareConst.ACCURACY_CHECK_NO:
         logger_user(f'rank{run_param.device_id} {prefix} index={run_param.single_api_index}, '
                     f'overload={run_param.aten_api_overload_name}, shape={data_dict[CompareConst.NPU_SHAPE]} '
@@ -191,7 +192,7 @@ def compare_data(run_param, npu_data, cpu_data, prefix, summery_list, compute_fl
             return True
         if type(npu_data) != type(cpu_data):
             logger_warn(f'{prefix} can not compare npu type={str(type(npu_data))} cpu type={str(type(cpu_data))}')
-            
+
             return True
         return save_summery(run_param, npu_data, cpu_data, prefix, summery_list, compute_flag)
     return True
@@ -200,7 +201,7 @@ def compare_data(run_param, npu_data, cpu_data, prefix, summery_list, compute_fl
 def save_temp_summery(api_index, single_api_summery, path, lock):
     summery_path = os.path.join(path, f'summery.json')
     lock.acquire()
-    with open(summery_path, "a") as f:
+    with FileOpen(summery_path, "a") as f:
         json.dump([api_index, single_api_summery], f)
         f.write('\n')
     lock.release()
@@ -275,8 +276,8 @@ def save_csv(all_summery, call_stack_list, csv_path):
     for index, list_data in enumerate(all_summery):
         for data in list_data:
             csv_row_data = {CompareConst.NPU_NAME: data[CompareConst.NPU_NAME],
-                            CompareConst.BENCH_NAME: data[CompareConst.BENCH_NAME], 
-                            CompareConst.NPU_DTYPE: data[CompareConst.NPU_DTYPE], 
+                            CompareConst.BENCH_NAME: data[CompareConst.BENCH_NAME],
+                            CompareConst.NPU_DTYPE: data[CompareConst.NPU_DTYPE],
                             CompareConst.BENCH_DTYPE: data[CompareConst.BENCH_DTYPE],
                             CompareConst.NPU_SHAPE: data[CompareConst.NPU_SHAPE],
                             CompareConst.BENCH_SHAPE: data[CompareConst.BENCH_SHAPE],
@@ -294,5 +295,6 @@ def save_csv(all_summery, call_stack_list, csv_path):
                             CompareConst.ERROR_MESSAGE: data[CompareConst.ERROR_MESSAGE]}
             row_df = pd.DataFrame.from_dict(csv_row_data, orient='index').T
             df = pd.concat([df, row_df])
-    
+
     df.to_csv(csv_path, index=False)
+    change_mode(csv_path, FileCheckConst.DATA_FILE_AUTHORITY)
