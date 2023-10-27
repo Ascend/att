@@ -111,8 +111,8 @@ class Operators(Operator):
         ops: List[OperatorNode] = []
         kernels: List[DeviceNode] = []
         for n in nodes:
-            o, k = n.get_operator_and_kernels()
-            ops.extend(o)
+            op, k = n.get_operator_and_kernels()
+            ops.extend(op)
             kernels.extend(k)
         return ops, kernels
 

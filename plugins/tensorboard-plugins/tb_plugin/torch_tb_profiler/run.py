@@ -192,7 +192,7 @@ class RunProfile(object):
 
     def get_memory_stats(self, start_ts=None, end_ts=None, memory_metric='K'):
         cano = Canonicalizer(memory_metric=memory_metric)
-        round = DisplayRounder(ndigits=2)
+        rounder = DisplayRounder(ndigits=2)
 
         stats = self.memory_snapshot.get_memory_statistics(self.tid2tree, start_ts=start_ts, end_ts=end_ts)
 
@@ -232,12 +232,12 @@ class RunProfile(object):
                 these_rows.append([
                     op_name,
                     stat[6],
-                    round(cano.convert_memory(stat[MemoryMetrics.IncreaseSize])),
-                    round(cano.convert_memory(stat[MemoryMetrics.SelfIncreaseSize])),
+                    rounder(cano.convert_memory(stat[MemoryMetrics.IncreaseSize])),
+                    rounder(cano.convert_memory(stat[MemoryMetrics.SelfIncreaseSize])),
                     stat[MemoryMetrics.AllocationCount],
                     stat[MemoryMetrics.SelfAllocationCount],
-                    round(cano.convert_memory(stat[MemoryMetrics.AllocationSize])),
-                    round(cano.convert_memory(stat[MemoryMetrics.SelfAllocationSize])),
+                    rounder(cano.convert_memory(stat[MemoryMetrics.AllocationSize])),
+                    rounder(cano.convert_memory(stat[MemoryMetrics.SelfAllocationSize])),
                 ])
 
         for dev_name in sorted(stats.keys()):
@@ -366,7 +366,7 @@ class RunProfile(object):
             return name
 
         cano = Canonicalizer(time_metric=time_metric, memory_metric=memory_metric)
-        round = DisplayRounder(ndigits=2)
+        rounder = DisplayRounder(ndigits=2)
 
         profiler_start_ts = self.profiler_start_ts
         memory_records = RunProfile._filtered_by_ts(self.memory_snapshot.memory_records, start_ts, end_ts)
@@ -394,10 +394,10 @@ class RunProfile(object):
                     free_ts = r.ts
                     events[alloc_r.device_name].append([
                         get_op_name_or_ctx(alloc_r),
-                        round(cano.convert_memory(-size)),
-                        round(cano.convert_time(alloc_ts - profiler_start_ts)),
-                        round(cano.convert_time(free_ts - profiler_start_ts)),
-                        round(cano.convert_time(free_ts - alloc_ts)),
+                        rounder(cano.convert_memory(-size)),
+                        rounder(cano.convert_time(alloc_ts - profiler_start_ts)),
+                        rounder(cano.convert_time(free_ts - profiler_start_ts)),
+                        rounder(cano.convert_time(free_ts - alloc_ts)),
                     ])
                     del alloc[addr]
                 else:
@@ -409,8 +409,8 @@ class RunProfile(object):
             r = memory_records[i]
             events[r.device_name].append([
                 get_op_name_or_ctx(r),
-                round(cano.convert_memory(r.bytes)),
-                round(cano.convert_time(r.ts - profiler_start_ts)),
+                rounder(cano.convert_memory(r.bytes)),
+                rounder(cano.convert_time(r.ts - profiler_start_ts)),
                 None,
                 None,
             ])
@@ -419,9 +419,9 @@ class RunProfile(object):
             r = memory_records[i]
             events[r.device_name].append([
                 get_op_name_or_ctx(r),
-                round(cano.convert_memory(-r.bytes)),
+                rounder(cano.convert_memory(-r.bytes)),
                 None,
-                round(cano.convert_time(r.ts - profiler_start_ts)),
+                rounder(cano.convert_time(r.ts - profiler_start_ts)),
                 None,
             ])
 

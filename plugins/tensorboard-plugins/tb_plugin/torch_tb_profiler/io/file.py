@@ -286,8 +286,8 @@ class S3FileSystem(RemotePath, BaseFileSystem):
         p = client.get_paginator("list_objects")
         keys = []
         for r in p.paginate(Bucket=bucket, Prefix=path):
-            for o in r.get("Contents", []):
-                key = o["Key"][len(path):]
+            for content in r.get("Contents", []):
+                key = content["Key"][len(path):]
                 if key:
                     keys.append(filename + key)
         return keys
@@ -313,10 +313,10 @@ class S3FileSystem(RemotePath, BaseFileSystem):
         keys = []
         for r in p.paginate(Bucket=bucket, Prefix=path, Delimiter="/"):
             keys.extend(
-                o["Prefix"][len(path): -1] for o in r.get("CommonPrefixes", [])
+                prefixes["Prefix"][len(path): -1] for prefixes in r.get("CommonPrefixes", [])
             )
-            for o in r.get("Contents", []):
-                key = o["Key"][len(path):]
+            for content in r.get("Contents", []):
+                key = content["Key"][len(path):]
                 if key:
                     keys.append(key)
         return keys

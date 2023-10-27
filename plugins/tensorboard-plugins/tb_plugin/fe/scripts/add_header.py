@@ -24,9 +24,9 @@ def add_header(file):
 
 
 if __name__ == '__main__':
-    dir = sys.argv[1]
-    if not os.path.isdir(dir):
-        raise ValueError('{} is not a directory'.format(dir))
+    directory = sys.argv[1]
+    if not os.path.isdir(directory):
+        raise ValueError('{} is not a directory'.format(directory))
 
-    for file in glob.glob(dir + '/*.ts'):
-        add_header(file)
+    for ts_file in glob.glob(directory + '/*.ts'):
+        add_header(ts_file)

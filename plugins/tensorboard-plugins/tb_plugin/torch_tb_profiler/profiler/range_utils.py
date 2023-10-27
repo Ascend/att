@@ -155,10 +155,10 @@ def intersection_ranges_lists(range_list1: List[Tuple[int, int]],
 
 
 def get_ranges_sum(ranges: List[Tuple[int, int]]) -> int:
-    sum: int = 0
-    for range in ranges:
-        sum += (range[1] - range[0])
-    return sum
+    total: int = 0
+    for item in ranges:
+        total += (item[1] - item[0])
+    return total
 
 
 def pop_list(range_list, index):

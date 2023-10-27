@@ -50,7 +50,7 @@ class OpTreeBuilder:
         backward_modules: List[BackwardNode] = []
         for module in modules:
             OpTreeBuilder._build_backward_module(module, None, fwd_bwd_root, backward_modules)
-        OpTreeBuilder._insert_backward_modules(self.tid2tree[self.main_tid], backward_modules)
+        OpTreeBuilder._insert_backward_modules(self.tid2tree.get(self.main_tid), backward_modules)
         self.tid2tree = {tid: root for tid, root in self.tid2tree.items() if len(root.children) > 0}
 
         return self.tid2tree
@@ -104,7 +104,6 @@ class OpTreeBuilder:
             if staled_device_nodes:
                 # Note: Although kernels of this dummy runtime is put under main thread's tree,
                 # we don't know which thread launches them.
-                # TODO: Don't make belonging thread assumption on future usage if we need special handling
                 dummpy_rt.append(RuntimeNode(
                     name='dummy',
                     start_time=None,
@@ -143,7 +142,6 @@ class OpTreeBuilder:
         # Merge the consecutive calls to same function into one.
         # Just follow the same pattern in torch/autograd/profiler.py,
         # EventList._remove_dup_nodes
-        # TODO: Replace recursive by for loop, in case of too deep callstack.
         def remove_dup_nodes(node: OperatorNode):
             if node.type == EventTypes.RUNTIME:
                 return
@@ -259,6 +257,7 @@ class OpTreeBuilder:
 
         return fwd_to_bwdroot
 
+    @staticmethod
     def _build_backward_module(node: ModuleNode,
                                parent: Optional[BackwardNode],
                                fwd_bwd_map: Dict[int, List[OperatorNode]],

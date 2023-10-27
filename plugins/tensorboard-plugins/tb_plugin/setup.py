@@ -20,8 +20,8 @@
 # --------------------------------------------------------------------------
 import os
 import pathlib
-import setuptools
 import subprocess
+import setuptools
 
 
 def read(rel_path):
