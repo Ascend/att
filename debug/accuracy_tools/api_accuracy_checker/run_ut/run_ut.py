@@ -247,9 +247,9 @@ def _run_ut():
     npu_device = "npu:" + str(args.device_id)
     try:
         torch.npu.set_device(npu_device)
-    except Exception:
+    except Exception as error:
         print_error_log(f"Set NPU device id failed. device id is: {args.device_id}")
-        raise NotImplementedError
+        raise NotImplementedError from error
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
     check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)

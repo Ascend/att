@@ -142,9 +142,9 @@ def _run_overflow_check():
     check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)
     try:
         torch.npu.set_device(npu_device)
-    except Exception:
+    except Exception as error:
         print_error_log(f"Set NPU device id failed. device id is: {args.device_id}")
-        raise NotImplementedError
+        raise NotImplementedError from error
     run_overflow_check(forward_file, backward_file)
 
 

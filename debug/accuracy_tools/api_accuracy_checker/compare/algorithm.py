@@ -20,6 +20,8 @@ def compare_bool_tensor(cpu_output, npu_output):
     if cpu_shape != npu_shape:
         return CompareConst.NAN, False, ""
     error_nums = (cpu_output != npu_output).sum()
+    if cpu_output.size == 0:
+        return CompareConst.NAN, False, "There is not cpu calculation result."
     error_rate = float(error_nums / cpu_output.size)
     return error_rate, error_rate == 0, ""
 
@@ -142,11 +144,11 @@ def flatten_compare_result(result):
 def compare_core(bench_out, npu_out, alg):
     msg = ""
     if not isinstance(bench_out, type(npu_out)):
-        return [(CompareConst.NA, "bench and npu output type is different.")], False, CompareConst.NA, CompareConst.NA, CompareConst.NA
+        return [(CompareConst.NA, "bench and npu output type is different.")], False, [CompareConst.NA], [CompareConst.NA], [CompareConst.NA]
     if isinstance(bench_out, (list, tuple)):
         compare_result, test_success, bench_dtype, npu_dtype, shape = [], True, [], [], []
         if len(bench_out) != len(npu_out):
-            return [(CompareConst.NA, "bench and npu output structure is different")], False, CompareConst.NA, CompareConst.NA, CompareConst.NA
+            return [(CompareConst.NA, "bench and npu output structure is different")], False, [CompareConst.NA], [CompareConst.NA], [CompareConst.NA]
         for b_out_i, n_out_i in zip(bench_out, npu_out):
             compare_result_i, test_success_i, bench_dtype_i, npu_dtype_i, shape_i = compare_core(b_out_i, n_out_i, alg)
             compare_result.append(compare_result_i)
@@ -158,34 +160,35 @@ def compare_core(bench_out, npu_out, alg):
         b_keys, n_keys = set(bench_out.keys()), set(npu_out.keys())
         if b_keys != n_keys:
             compare_result, test_success, bench_dtype, npu_dtype, shape = [(CompareConst.NA, "bench and npu output dict keys are different")], False, \
-                CompareConst.NA, CompareConst.NA, CompareConst.NA
-        compare_result, test_success, bench_dtype, npu_dtype, shape = compare_core(list(bench_out.values()), list(npu_out.values()), alg)
+                [CompareConst.NA], [CompareConst.NA], [CompareConst.NA]
+        else:
+            compare_result, test_success, bench_dtype, npu_dtype, shape = compare_core(list(bench_out.values()), list(npu_out.values()), alg)
     elif isinstance(bench_out, torch.Tensor):
         copy_bench_out = bench_out.detach().clone()
         copy_npu_out = npu_out.detach().clone()
-        bench_dtype = str(copy_bench_out.dtype)
-        npu_dtype = str(copy_npu_out.dtype)
-        shape = tuple(npu_out.shape)
+        bench_dtype = [str(copy_bench_out.dtype)]
+        npu_dtype = [str(copy_npu_out.dtype)]
+        shape = [tuple(npu_out.shape)]
         if copy_npu_out.dtype == torch.bfloat16:
             copy_bench_out = copy_bench_out.to(torch.float32)
             copy_npu_out = copy_npu_out.to(torch.float32)
         compare_result, test_success, msg = compare_torch_tensor(copy_bench_out.numpy(), copy_npu_out.cpu().numpy(), alg)
     elif isinstance(bench_out, (bool, int, float, str)):
         compare_result, test_success, msg = compare_builtin_type(bench_out, npu_out)
-        bench_dtype = str(type(bench_out))
-        npu_dtype = str(type(npu_out))
-        shape = str(type(npu_out))
+        bench_dtype = [str(type(bench_out))]
+        npu_dtype = [str(type(npu_out))]
+        shape = [str(type(npu_out))]
     elif bench_out is None:
         compare_result, test_success, msg = CompareConst.NA, True, "output is None"
-        bench_dtype = CompareConst.NA
-        npu_dtype = CompareConst.NA
-        shape = CompareConst.NA
+        bench_dtype = [CompareConst.NA]
+        npu_dtype = [CompareConst.NA]
+        shape = [CompareConst.NA]
     else:
         compare_result, test_success, msg = CompareConst.NA, True, "Unexpected output type \
                      in compare_core: {}".format(type(bench_out))
-        bench_dtype = CompareConst.NA
-        npu_dtype = CompareConst.NA
-        shape = CompareConst.NA
+        bench_dtype = [CompareConst.NA]
+        npu_dtype = [CompareConst.NA]
+        shape = [CompareConst.NA]
     if isinstance(compare_result, list):
         compare_result = flatten_compare_result(compare_result)
     else:
