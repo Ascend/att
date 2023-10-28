@@ -8,7 +8,7 @@ import torch
 from ..dump import dump
 from ..common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
     check_mode_valid, get_api_name_from_matcher, check_switch_valid, check_dump_mode_valid, check_summary_only_valid, generate_compare_script, \
-    check_is_npu, check_file_valid, make_dump_path_if_not_exists
+    check_is_npu, check_file_valid, make_dump_path_if_not_exists, check_path_before_create
 from ..common.file_check_util import FileChecker, FileCheckConst, check_path_length, check_path_pattern_vaild
 
 from ..common.version import __version__
@@ -254,6 +254,7 @@ def make_dump_data_dir(dump_file_name):
     dump_path, file_name = os.path.split(os.path.realpath(dump_file_name))
     name_body, name_extension = os.path.splitext(file_name)
     output_dir = os.path.join(dump_path, f"{name_body}")
+    check_path_before_create(output_dir)
     if not os.path.exists(output_dir):
         Path(output_dir).mkdir(mode=0o750, exist_ok=True)
     else:
