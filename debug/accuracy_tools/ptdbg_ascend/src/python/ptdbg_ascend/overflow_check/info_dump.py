@@ -7,7 +7,7 @@ import threading
 
 import numpy as np
 
-from ..common.utils import print_error_log
+from ..common.utils import print_error_log, get_time
 from ..common.file_check_util import FileOpen
 
 
@@ -80,13 +80,13 @@ class APIInfo:
             api_args = self.api_name + '.' + str(self.args_num)
             rank = arg.device.index
             if self.is_forward:
-                forward_real_data_path = os.path.join(dump_path, 'forward_real_data', f"rank{rank}")
+                forward_real_data_path = os.path.join(dump_path, "forward_real_data_" + get_time(), f"rank{rank}")
                 if not os.path.exists(forward_real_data_path):
                     os.makedirs(forward_real_data_path, 0o755)
 
                 file_path = os.path.join(forward_real_data_path, f'{api_args}.npy')
             else:
-                backward_real_data_path = os.path.join(dump_path, 'backward_real_data', f"rank{rank}")
+                backward_real_data_path = os.path.join(dump_path, "backward_real_data_" + get_time(), f"rank{rank}")
                 if not os.path.exists(backward_real_data_path):
                     os.makedirs(backward_real_data_path, 0o755)
                 file_path = os.path.join(backward_real_data_path, f'{api_args}.npy')
