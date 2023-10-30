@@ -38,9 +38,10 @@
 
 * 准备profiling数据
   
-  需要在读取的目录下放置指定格式的profiling数据。格式为包含3个层级的目录结构：runs层级为最外层目录（我们将一个完整的Profiling数据视为一个runs\
-  进行可视化处理），其子目录为worker_span层级（命名格式为{worker}_{span}_ascend_pt），下一层级为规定命名的ASCEND_PROFILER_OUTPUT目录，此目录中包含\
-  此插件加载展示的数据文件，如trace_view.json、kernel_details.csv、operator_details.csv等。目录结构如下：
+  需要在读取的目录下放置指定格式的profiling数据。格式为包含3个层级的目录结构：runs层级为最外层目录（我们将一个完整的Profiling数据视为一个runs
+  进行可视化处理），其子目录为worker_span层级（命名格式为{worker}_{span}_ascend_pt，<font color='red'>注：此处span为数字，代表时间戳</font>），
+  下一层级为规定命名的ASCEND_PROFILER_OUTPUT目录，此目录中包含此插件加载展示的数据文件，如trace_view.json、kernel_details.csv、operator_details.csv等。
+  目录结构如下：
 *  E.g. there are 2 runs: run1, run2 \
             `run1` \
                 `--[worker1]_[span1]_ascend_pt` \

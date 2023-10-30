@@ -18,13 +18,13 @@ class Module:
     def __hash__(self):
         return hash((self.name, self.module_id, tuple(self.children)))
 
-    def __eq__(self, o) -> bool:
-        if not isinstance(o, Module):
+    def __eq__(self, obj) -> bool:
+        if not isinstance(obj, Module):
             return False
 
-        return (self.name == o.name and
-                self.module_id == o.module_id and
-                self.children == o.children)
+        return (self.name == obj.name and
+                self.module_id == obj.module_id and
+                self.children == obj.children)
 
 
 class ModuleStats:

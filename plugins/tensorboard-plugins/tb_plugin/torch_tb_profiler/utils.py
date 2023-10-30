@@ -104,14 +104,14 @@ class Canonicalizer:
             'G': 'GB', 'GB': 'GB',
         }
 
-        self.time_metric = self.canonical_time_metrics[time_metric]
-        self.memory_metric = self.canonical_memory_metrics[memory_metric]
+        self.time_metric = self.canonical_time_metrics.get(time_metric)
+        self.memory_metric = self.canonical_memory_metrics.get(memory_metric)
 
         # scale factor scale input to output
-        self.time_factor = time_metric_to_factor[self.canonical_time_metrics[input_time_metric]] /\
-            time_metric_to_factor[self.time_metric]
-        self.memory_factor = memory_metric_to_factor[self.canonical_memory_metrics[input_memory_metric]] /\
-            memory_metric_to_factor[self.memory_metric]
+        self.time_factor = time_metric_to_factor.get(self.canonical_time_metrics.get(input_time_metric)) /\
+            time_metric_to_factor.get(self.time_metric)
+        self.memory_factor = memory_metric_to_factor.get(self.canonical_memory_metrics.get(input_memory_metric)) /\
+            memory_metric_to_factor.get(self.memory_metric)
 
     def convert_time(self, t):
         return self.time_factor * t
