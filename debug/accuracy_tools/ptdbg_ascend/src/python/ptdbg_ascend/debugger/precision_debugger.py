@@ -40,7 +40,7 @@ class PrecisionDebugger:
         hook_dict = {"dump": self.configure_full_dump, "overflow_check": self.configure_overflow_dump}
         return hook_dict.get(hook_name, lambda: ValueError("hook name {} is not in ['dump', 'overflow_check']".format(hook_name)))
 
-    def configure_full_dump(self, mode='api_stack', scope=[], api_list=[], filter_switch=Const.ON,
+    def configure_full_dump(self, mode='api_stack', scope=[], api_list=[], filter_switch=Const.OFF,
             input_output_mode=[Const.ALL], acl_config=None, backward_input=[], summary_only=False):
         set_dump_switch_config(mode=mode, scope=scope, api_list=api_list,
                                filter_switch=filter_switch, dump_mode=input_output_mode, summary_only=summary_only)
