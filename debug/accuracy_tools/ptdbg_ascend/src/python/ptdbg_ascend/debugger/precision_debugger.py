@@ -53,13 +53,18 @@ class PrecisionDebugger:
             elif 'backward' in scope[0]:
                 set_backward_input(backward_input)
 
-    def configure_overflow_dump(self, mode="api", acl_config=None, overflow_nums=1, filter_switch = Const.OFF):
+    def configure_overflow_dump(self, mode="api", acl_config=None, overflow_nums=1, filter_switch=Const.OFF, need_replicate=False):
         if mode == "acl":
             DumpUtil.dump_switch_mode = mode
             DumpUtil.set_acl_config(acl_config)
         init_overflow_nums(overflow_nums)
         check_switch_valid(filter_switch)
         OverFlowUtil.overflow_filter_switch = filter_switch
+        if not isinstance(need_replicate, bool):
+            print_error_log("Params autojudge only support True or False.")
+            raise CompareException(CompareException.INVALID_PARAM_ERROR)
+        if need_replicate:
+            DumpUtil.need_replicate = True
 
     @classmethod
     def start(cls):
