@@ -178,7 +178,7 @@ ptdbg_ascend精度工具的安装方式包括：**下载whl包安装**和**源�
 3. 配置安装环境。
 
    ```bash
-   cd tools/ptdbg_ascend
+   cd att/debug/accuracy_tools/ptdbg_ascend
    bash ./configure
    ```
 

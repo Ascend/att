@@ -125,8 +125,7 @@ def overflow_check(name, **kwargs):
             if hasattr(module, 'input_kwargs'):
                 del module.input_kwargs
         if module.has_overflow and OverFlowUtil.check_overflow_dump_times(overflow_nums):
-            need_replicate = overflow_type_judge(in_feat, out_feat, module_name)
-            if need_replicate:
+            if overflow_type_judge(in_feat, out_feat, module_name) and DumpUtil.need_replicate:
                 if module_name.endswith(Const.FORWARD):
                     forward_api_info.update({name: ForwardAPIInfo(name, True, module.input_args, module.input_kwargs)})
                     api_overflow.append(module_name)

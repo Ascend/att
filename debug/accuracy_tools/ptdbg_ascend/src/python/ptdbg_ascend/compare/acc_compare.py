@@ -67,15 +67,33 @@ def cosine_similarity(n_value, b_value):
 
 
 def get_rmse(n_value, b_value):
-    rmse = np.linalg.norm(n_value - b_value) / np.sqrt(len(n_value))
+    if len(n_value) == 0 and len(b_value) == 0:
+        rmse = '0'
+    elif len(n_value) == 0:
+        rmse = CompareConst.NAN
+    elif len(b_value) == 0:
+        rmse = CompareConst.NAN
+    else:
+        rmse = np.linalg.norm(n_value - b_value) / np.sqrt(len(n_value))
     if np.isnan(rmse):
         rmse = CompareConst.NAN
     return rmse, ""
 
 
 def get_mape(n_value, b_value):
-    mape_val = np.sum(np.abs((n_value - b_value) / b_value)) / len(b_value) * 100
-    mape = CompareConst.NAN if np.isnan(mape_val) else str(round(mape_val, 4)) + '%'
+    if len(n_value) == 0 and len(b_value) == 0:
+        mape = '0'
+    elif len(n_value) == 0:
+        mape = CompareConst.NAN
+    elif len(b_value) == 0:
+        mape = CompareConst.NAN
+    elif not np.all(n_value) and not np.all(b_value):
+        mape = '0'
+    elif not np.all(b_value):
+        mape = CompareConst.NAN
+    else:
+        mape_val = np.sum(np.abs((n_value - b_value) / b_value)) / len(b_value) * 100
+        mape = CompareConst.NAN if np.isnan(mape_val) else str(round(mape_val, 4)) + '%'
     return mape, ""
 
 
@@ -116,8 +134,7 @@ def check_op(npu_dict, bench_dict, fuzzy_match):
     except Exception as err:
         print_warn_log("%s and %s can not fuzzy match." % (a_op_name, b_op_name))
         is_match = False
-    finally:
-        return is_match and struct_match
+    return is_match and struct_match
 
 
 def check_struct_match(npu_dict, bench_dict):
@@ -305,12 +322,12 @@ def read_dump_path(result_path):
             bench_dump_name = bench_dump_name_list[index]
             op_name_mapping_dict[npu_dump_name] = [npu_dump_name, bench_dump_name]
         return op_name_mapping_dict
-    except FileNotFoundError as error:
-        print(error)
-        raise FileNotFoundError(error)
-    except IOError as error:
-        print(error)
-        raise IOError(error)
+    except FileNotFoundError as e:
+        print_error_log('{} file is not found.'.format(result_path))
+        raise CompareException(CompareException.OPEN_FILE_ERROR) from e
+    except IOError as e:
+        print_error_log('{} read csv failed.'.format(result_path))
+        raise CompareException(CompareException.READ_FILE_ERROR) from e
 
 
 def _handle_multi_process(func, input_parma, result_path, lock):
@@ -326,13 +343,13 @@ def _handle_multi_process(func, input_parma, result_path, lock):
     pool = multiprocessing.Pool(process_num)
 
     def err_call(args):
+        print_error_log('multiprocess compare failed! season:{}'.format(args))
         try:
             pool.terminate()
             if os.path.exists(result_path):
                 os.remove(result_path)
-            sys.exit(args)
-        except SystemExit as error:
-            print('multiprocess compare failed! season:{}'.format(args))
+        except OSError as e:
+            print_error_log("pool terminate failed")
 
     for process_idx, fusion_op_names in enumerate(op_names):
         idx = [process_num, process_idx]
@@ -377,12 +394,12 @@ def _save_cmp_result(idx, cos_result, max_err_result, max_relative_err_result, e
             csv_pd.loc[process_index, CompareConst.ERROR_MESSAGE] = err_msg[i]
             csv_pd.loc[process_index, CompareConst.ACCURACY] = check_accuracy(cos_result[i], max_err_result[i])
         csv_pd.to_csv(result_path, index=False)
-    except FileNotFoundError as error:
-        print(error)
-        raise FileNotFoundError(error)
-    except IOError as error:
-        print(error)
-        raise IOError(error)
+    except FileNotFoundError as e:
+        print_error_log('{} file is not found.'.format(result_path))
+        raise CompareException(CompareException.OPEN_FILE_ERROR) from e
+    except IOError as e:
+        print_error_log('{} read csv failed.'.format(result_path))
+        raise CompareException(CompareException.READ_FILE_ERROR) from e
     finally:
         lock.release()
 
