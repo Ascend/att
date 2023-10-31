@@ -17,7 +17,7 @@ class TestUtilsMethods(unittest.TestCase):
         self.assertTrue(dump_util.dump_init_enable)
         self.assertEqual(dump_util.dump_switch_scope, [])
         self.assertEqual(dump_util.dump_api_list, [])
-        self.assertEqual(dump_util.dump_filter_switch, "OFF")
+        self.assertEqual(dump_util.dump_filter_switch, switch_on)
         self.assertEqual(dump_count, 0)
 
     def test_set_dump_switch_mode_is_list(self):
