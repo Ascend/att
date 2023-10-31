@@ -54,18 +54,12 @@ class BaseAPIInfo:
 
         else:
             api_args = self.api_name + '.' + str(self.args_num)
-            rank = self.get_tensor_rank(arg)
-            if rank is not None:
-                rank = "rank"+str(rank)
             if self.is_forward:
-                forward_real_data_path = os.path.join(self.save_path, self.forward_path, rank) if rank else os.path.join(self.save_path, self.forward_path)
-                if not os.path.exists(forward_real_data_path):
-                    os.makedirs(forward_real_data_path)
+                forward_real_data_path = os.path.join(self.save_path, self.forward_path)
+
                 file_path = os.path.join(forward_real_data_path, f'{api_args}.pt')
             else:
-                backward_real_data_path = os.path.join(self.save_path, self.backward_path, rank) if rank else os.path.join(self.save_path, self.backward_path)
-                if not os.path.exists(backward_real_data_path):
-                    os.makedirs(backward_real_data_path)
+                backward_real_data_path = os.path.join(self.save_path, self.backward_path)
                 file_path = os.path.join(backward_real_data_path, f'{api_args}.pt')
             self.args_num += 1
             pt_path = write_pt(file_path, arg.contiguous().cpu().detach())
@@ -73,24 +67,6 @@ class BaseAPIInfo:
             single_arg.update({'datapath' : pt_path})
             single_arg.update({'requires_grad': arg.requires_grad})
         return single_arg
-
-    def get_tensor_rank(self, arg):
-        def get_tensor_rank_single(x):
-            if isinstance(x, (list, tuple)):
-                if len(x) > 0:
-                    return get_tensor_rank_single(x[0])
-                return None
-            elif isinstance(x, torch.Tensor):
-                device = x.device
-                if device.type == 'cpu':
-                    return None
-                else:
-                    return device.index
-            return None
-        rank = get_tensor_rank_single(arg)
-        if rank is None:
-            return None
-        return rank
 
     def analyze_builtin(self, arg):
         single_arg = {}
