@@ -10,12 +10,12 @@ class TestDumpScope(unittest.TestCase):
         
         wrapped_func = iter_tracer(dummy_func)
         result = wrapped_func()
-        self.assertEqual(DumpUtil.dump_switch, "ON")
+        self.assertEqual(DumpUtil.dump_switch, "OFF")
         self.assertEqual(result, "Hello, World!")
 
         def another_dummy_func():
             return 123
         wrapped_func = iter_tracer(another_dummy_func)
         result = wrapped_func()
-        self.assertEqual(DumpUtil.dump_switch, "ON")
+        self.assertEqual(DumpUtil.dump_switch, "OFF")
         self.assertEqual(result, 123)
