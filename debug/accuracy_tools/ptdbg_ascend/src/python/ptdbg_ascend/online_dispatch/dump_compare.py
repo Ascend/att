@@ -45,11 +45,13 @@ class TimeStatistics:
     def __enter__(self):
         if self.debug:
             self.time = datetime.now()
+            logger_debug(f'Time[{self.tag}]-ENTER: Dev[{self.device}], Pid[{os.getpid()}], Fun[{self.fun}], ' \
+                         f'Id[{self.index}]')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.debug:
             cost_time = datetime.now() - self.time
-            time_cost = f'Time[{self.tag}]: Dev[{self.device}], Pid[{os.getpid()}], Fun[{self.fun}], ' \
+            time_cost = f'Time[{self.tag}]-EXIT: Dev[{self.device}], Pid[{os.getpid()}], Fun[{self.fun}], ' \
                         f'Id[{self.index}], time[{cost_time}]'
             hot_time_cost = "Hotspot " + time_cost
 
@@ -62,8 +64,8 @@ class TimeStatistics:
 def get_compare_result(npu_data, cpu_data):
     # Do not modify the original data, output delay dump
     if isinstance(npu_data, torch.Tensor):
-        npu_npy = npu_data.numpy()
-        cpu_npy = cpu_data.numpy()
+        npu_npy = npu_data.detach().numpy()
+        cpu_npy = cpu_data.detach().numpy()
         # Do not check dtype, there maybe type cast
         if npu_npy.size == 0 or cpu_npy.size == 0:
             return "unsupported", 0, 0, "This is empty data, can not compare."
