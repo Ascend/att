@@ -71,14 +71,16 @@ class DumpUtil(object):
             DumpUtil.dump_switch_scope = [api_name.replace("backward", "forward") for api_name in scope]
         DumpUtil.summary_only = summary_only
 
-    def check_list_or_acl_mode(self, name_prefix):
+    @staticmethod
+    def check_list_or_acl_mode(name_prefix):
         global dump_count
         for item in DumpUtil.dump_switch_scope:
             if name_prefix.startswith(item):
                 dump_count = dump_count + 1
                 return True
 
-    def check_range_mode(self, name_prefix):
+    @staticmethod
+    def check_range_mode(name_prefix):
         global range_begin_flag
         global range_end_flag
         if name_prefix.startswith(DumpUtil.dump_switch_scope[0]):
@@ -91,7 +93,8 @@ class DumpUtil(object):
             return True
         return False
 
-    def check_stack_mode(self, name_prefix):
+    @staticmethod
+    def check_stack_mode(name_prefix):
         if len(DumpUtil.dump_switch_scope) == 0:
             return True
         elif len(DumpUtil.dump_switch_scope) == 1:
