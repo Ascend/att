@@ -17,11 +17,12 @@ class PrecisionDebugger:
     hook_func = None
     config = None
 
-    def __init__(self, dump_path=None, hook_name=None, rank=None, step=[], enable_dataloader=False):
+    def __init__(self, dump_path=None, hook_name=None, rank=None, step=None, enable_dataloader=False):
         if hook_name is None:
             err_msg = "You must provide hook_name argument to PrecisionDebugger\
                             when config is not provided."
             raise Exception(err_msg)
+        step = step or []
         self.config = DebuggerConfig(dump_path, hook_name, rank, step)
         self.configure_hook = self.get_configure_hook(self.config.hook_name)
         self.configure_hook()
@@ -40,8 +41,11 @@ class PrecisionDebugger:
         hook_dict = {"dump": self.configure_full_dump, "overflow_check": self.configure_overflow_dump}
         return hook_dict.get(hook_name, lambda: ValueError("hook name {} is not in ['dump', 'overflow_check']".format(hook_name)))
 
-    def configure_full_dump(self, mode='api_stack', scope=[], api_list=[], filter_switch=Const.ON,
-            input_output_mode=[Const.ALL], acl_config=None, backward_input=[], summary_only=False):
+    def configure_full_dump(self, mode='api_stack', scope=None, api_list=None, filter_switch=Const.ON,
+            input_output_mode=[Const.ALL], acl_config=None, backward_input=None, summary_only=False):
+        scope = scope or [] 
+        api_list = api_list or []
+        backward_input = backward_input or []
         set_dump_switch_config(mode=mode, scope=scope, api_list=api_list,
                                filter_switch=filter_switch, dump_mode=input_output_mode, summary_only=summary_only)
         if mode == 'acl':

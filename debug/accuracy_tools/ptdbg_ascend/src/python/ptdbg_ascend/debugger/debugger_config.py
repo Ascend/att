@@ -3,11 +3,11 @@ from ..common.utils import print_warn_log
 
 
 class DebuggerConfig:
-    def __init__(self, dump_path, hook_name, rank=None, step=[]):
+    def __init__(self, dump_path, hook_name, rank=None, step=None):
         self.dump_path = dump_path
         self.hook_name = hook_name
         self.rank = rank
-        self.step = step
+        self.step = step or []
         self.check()
         if self.step:
             self.step.sort()

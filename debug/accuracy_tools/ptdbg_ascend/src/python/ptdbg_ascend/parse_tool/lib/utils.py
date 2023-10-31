@@ -37,8 +37,7 @@ except ImportError as err:
     Table = None
     Columns = None
     rich_print = None
-    print("[Warning] Failed to import rich.", err)
-    print("[Warning] Some features may not be available. Please run 'pip install rich' to fix it.")
+    print("[Warning] Failed to import rich, Some features may not be available. Please run 'pip install rich' to fix it.")
 
 
 class Util:
@@ -107,8 +106,8 @@ class Util:
         try:
             os.makedirs(path, mode=0o750)
         except OSError as e:
-            self.log.error("Failed to create %s. %s", path, str(e))
-            raise ParseException(ParseException.PARSE_INVALID_PATH_ERROR)
+            self.log.error("Failed to create %s.", path)
+            raise ParseException(ParseException.PARSE_INVALID_PATH_ERROR) from e
 
     def gen_npy_info_txt(self, source_data):
         shape, dtype, max_data, min_data, mean = \

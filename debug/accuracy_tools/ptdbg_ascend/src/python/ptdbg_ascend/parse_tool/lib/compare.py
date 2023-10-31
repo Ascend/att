@@ -90,10 +90,10 @@ class Compare:
         except UnicodeError as e:
             self.log.error("%s %s" % ("UnicodeError", str(e)))
             self.log.warning("Please check the npy file")
-            raise ParseException(ParseException.PARSE_UNICODE_ERROR)
+            raise ParseException(ParseException.PARSE_UNICODE_ERROR) from e
         except IOError:
             self.log.error("Failed to load npy %s or %s." % (left, right))
-            raise ParseException(ParseException.PARSE_LOAD_NPY_ERROR)
+            raise ParseException(ParseException.PARSE_LOAD_NPY_ERROR) from e
 
         # save to txt
         if save_txt:
@@ -147,6 +147,9 @@ class Compare:
                 if err_cnt < diff_count:
                     err_table.add_row(str(i), str(data_left[i]), str(data_right[i]), str(abs_diff))
                 err_cnt += 1
-        err_percent = float(err_cnt / total_cnt)
+        if total_cnt == 0:
+            err_percent = float(0)
+        else:  
+            err_percent = float(err_cnt / total_cnt)
         self.util.print(self.util.create_columns([err_table, top_table]))
         return total_cnt, all_close, cos_sim, err_percent
