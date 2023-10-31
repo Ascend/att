@@ -17,6 +17,41 @@ dump_count = 0
 range_begin_flag, range_end_flag = False, False
 
 
+def check_list_or_acl_mode(name_prefix):
+    global dump_count
+    for item in DumpUtil.dump_switch_scope:
+        if name_prefix.startswith(item):
+            dump_count = dump_count + 1
+            return True
+
+
+def check_range_mode(name_prefix):
+    global range_begin_flag
+    global range_end_flag
+    if name_prefix.startswith(DumpUtil.dump_switch_scope[0]):
+        range_begin_flag = True
+        return True
+    if name_prefix.startswith(DumpUtil.dump_switch_scope[1]):
+        range_end_flag = True
+        return True
+    if range_begin_flag and not range_end_flag:
+        return True
+    return False
+
+
+def check_stack_mode(name_prefix):
+    if len(DumpUtil.dump_switch_scope) == 0:
+        return True
+    elif len(DumpUtil.dump_switch_scope) == 1:
+        return name_prefix.startswith(DumpUtil.dump_switch_scope[0])
+    elif len(DumpUtil.dump_switch_scope) == 2:
+        return check_range_mode(name_prefix)
+    else:
+        print_error_log("dump scope is invalid, Please set the scope mode in"
+                        " set_dump_switch with 'all', 'list', 'range', 'stack', 'acl', 'api_list'!")
+    return False
+
+
 class DumpUtil(object):
     dump_root = None
     dump_data_dir = None
@@ -70,41 +105,6 @@ class DumpUtil(object):
         if mode == Const.ACL:
             DumpUtil.dump_switch_scope = [api_name.replace("backward", "forward") for api_name in scope]
         DumpUtil.summary_only = summary_only
-
-    @staticmethod
-    def check_list_or_acl_mode(name_prefix):
-        global dump_count
-        for item in DumpUtil.dump_switch_scope:
-            if name_prefix.startswith(item):
-                dump_count = dump_count + 1
-                return True
-
-    @staticmethod
-    def check_range_mode(name_prefix):
-        global range_begin_flag
-        global range_end_flag
-        if name_prefix.startswith(DumpUtil.dump_switch_scope[0]):
-            range_begin_flag = True
-            return True
-        if name_prefix.startswith(DumpUtil.dump_switch_scope[1]):
-            range_end_flag = True
-            return True
-        if range_begin_flag and not range_end_flag:
-            return True
-        return False
-
-    @staticmethod
-    def check_stack_mode(name_prefix):
-        if len(DumpUtil.dump_switch_scope) == 0:
-            return True
-        elif len(DumpUtil.dump_switch_scope) == 1:
-            return name_prefix.startswith(DumpUtil.dump_switch_scope[0])
-        elif len(DumpUtil.dump_switch_scope) == 2:
-            return DumpUtil.check_range_mode(name_prefix)
-        else:
-            print_error_log("dump scope is invalid, Please set the scope mode in"
-                            " set_dump_switch with 'all', 'list', 'range', 'stack', 'acl', 'api_list'!")
-        return False
 
     check_mapper = {
         Const.LIST: check_list_or_acl_mode,
