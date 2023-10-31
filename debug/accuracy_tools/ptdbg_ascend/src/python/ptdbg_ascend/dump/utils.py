@@ -71,14 +71,14 @@ class DumpUtil(object):
             DumpUtil.dump_switch_scope = [api_name.replace("backward", "forward") for api_name in scope]
         DumpUtil.summary_only = summary_only
 
-    def check_list_or_acl_mode(name_prefix):
+    def check_list_or_acl_mode(self, name_prefix):
         global dump_count
         for item in DumpUtil.dump_switch_scope:
             if name_prefix.startswith(item):
                 dump_count = dump_count + 1
                 return True
 
-    def check_range_mode(name_prefix):
+    def check_range_mode(self, name_prefix):
         global range_begin_flag
         global range_end_flag
         if name_prefix.startswith(DumpUtil.dump_switch_scope[0]):
@@ -91,7 +91,7 @@ class DumpUtil(object):
             return True
         return False
 
-    def check_stack_mode(name_prefix):
+    def check_stack_mode(self, name_prefix):
         if len(DumpUtil.dump_switch_scope) == 0:
             return True
         elif len(DumpUtil.dump_switch_scope) == 1:
@@ -196,7 +196,14 @@ def generate_dump_path_str():
     return dump_path
 
 
-def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch=Const.ON, dump_mode=[Const.ALL], summary_only=False):
+def set_dump_switch(switch, mode=Const.ALL, scope=None, api_list=None, filter_switch=Const.ON, dump_mode=None,
+                    summary_only=False):
+    if scope is None:
+        scope = []
+    if api_list is None:
+        api_list = []
+    if dump_mode is None:
+        dump_mode = [Const.ALL]
     check_switch_valid(switch)
     if not DumpUtil.dump_path:
         set_dump_path()
@@ -207,10 +214,18 @@ def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch
         if check_is_npu() and DumpUtil.dump_switch_mode in [Const.ALL, Const.API_STACK, Const.LIST, Const.RANGE]:
             generate_compare_script(DumpUtil.dump_data_dir, dump.get_pkl_file_path(), DumpUtil.dump_switch_mode)
     set_dump_switch_print_info(switch, mode, dump_path_str)
-    set_dump_switch_config(mode=mode, scope=scope, api_list=api_list, filter_switch=filter_switch, dump_mode=dump_mode,summary_only=summary_only)
+    set_dump_switch_config(mode=mode, scope=scope, api_list=api_list, filter_switch=filter_switch, dump_mode=dump_mode,
+                           summary_only=summary_only)
 
 
-def set_dump_switch_config(mode=Const.ALL, scope=[], api_list=[], filter_switch=Const.ON, dump_mode=[Const.ALL], summary_only=False):
+def set_dump_switch_config(mode=Const.ALL, scope=None, api_list=None, filter_switch=Const.ON, dump_mode=None,
+                           summary_only=False):
+    if scope is None:
+        scope = []
+    if api_list is None:
+        api_list = []
+    if dump_mode is None:
+        dump_mode = [Const.ALL]
     try:
         check_mode_valid(mode, scope, api_list)
         check_switch_valid(filter_switch)
@@ -218,10 +233,10 @@ def set_dump_switch_config(mode=Const.ALL, scope=[], api_list=[], filter_switch=
         summary_only = check_summary_only_valid(summary_only)
     except (CompareException, AssertionError) as err:
         print_error_log(str(err))
-        raise CompareException(CompareException.INVALID_PARAM_ERROR)
+        raise CompareException(CompareException.INVALID_PARAM_ERROR) from err
     switch = DumpUtil.dump_switch
     DumpUtil.set_dump_switch("OFF", mode=mode, scope=scope, api_list=api_list, filter_switch=filter_switch,
-                                dump_mode=dump_mode, summary_only=summary_only)
+                             dump_mode=dump_mode, summary_only=summary_only)
     DumpUtil.dump_switch = switch
 
 
@@ -290,9 +305,9 @@ def load_env_dump_path(dump_path):
         if dump_path:
             try:
                 dump_path = os.path.join(str(dump_path), Const.DUMP_DIR)
-            except TypeError:
+            except TypeError as err:
                 print_error_log("Generating dump path from environment variables ASCEND_WORK_PATH failed.")
-                raise DumpException(DumpException.INVALID_PATH_ERROR)
+                raise DumpException(DumpException.INVALID_PATH_ERROR) from err
         else:
             print_error_log("Dump path is None, you can configure it in the following ways:\n"
                             "1. Configure set_dump_path function.\n"
