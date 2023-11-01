@@ -24,8 +24,10 @@ import torch.utils.hooks as full_hooks
 
 g_stop_hook = False
 
+
 class HOOKModule(nn.Module):
     module_count = {}
+    
     def __init__(self, hook) -> None:
         super(HOOKModule, self).__init__()
         self.has_overflow = False

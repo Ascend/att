@@ -108,6 +108,7 @@ class PrecisionDebugger:
         PrecisionDebugger.step()
         PrecisionDebugger.start()
 
+
 def iter_tracer(func):
     def func_wrapper(*args, **kwargs):
         PrecisionDebugger.stop()

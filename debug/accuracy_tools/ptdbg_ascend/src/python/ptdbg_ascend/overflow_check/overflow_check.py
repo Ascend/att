@@ -1,12 +1,7 @@
 import os
-import torch
 from pathlib import Path
-from ..common.utils import print_warn_log, get_time, print_info_log
-from ..dump.dump import forward_init_status, forward_acl_dump
-from .utils import OverFlowUtil, dump_overflow
-from ..dump.utils import DumpUtil, Const, get_tensor_rank, create_dirs_if_not_exist
-from .info_dump import write_api_info_json, ForwardAPIInfo, BackwardAPIInfo
-from ..dump import dump
+
+import torch
 
 try:
     import torch_npu
@@ -14,6 +9,13 @@ except ImportError:
     is_gpu = True
 else:
     is_gpu = False
+
+from ..common.utils import print_warn_log, get_time, print_info_log
+from ..dump.dump import forward_init_status, forward_acl_dump
+from .utils import OverFlowUtil, dump_overflow
+from ..dump.utils import DumpUtil, Const, get_tensor_rank, create_dirs_if_not_exist
+from .info_dump import write_api_info_json, ForwardAPIInfo, BackwardAPIInfo
+from ..dump import dump
 
 backward_init_status = False
 api_overflow = []

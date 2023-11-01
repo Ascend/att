@@ -2,6 +2,7 @@ import os
 import time
 import sys
 
+
 def _print_log(level, msg, end='\n'):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
     pid = os.getgid()

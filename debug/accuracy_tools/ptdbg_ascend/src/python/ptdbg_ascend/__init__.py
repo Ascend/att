@@ -30,6 +30,7 @@ from .common.utils import seed_all, torch_without_guard_version, print_info_log
 from .debugger.precision_debugger import PrecisionDebugger
 seed_all()
 
+
 def jit_script(obj, optimize=None, _frames_up=0, _rcb=None, example_input=None):
     print_info_log("The torch_npu earlier than 2.1 does not support torch.jit.script. "
                    "Therefore, to ensure that the dump data of the GPU and NPU is consistent, "
