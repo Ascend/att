@@ -22,6 +22,7 @@ backward_api_info = {}
 FORWARD_REAL_DATA_PATH = os.path.join('./', 'forward_real_data')
 BACKWARD_REAL_DATA_PATH = os.path.join('./', 'backward_real_data')
 rank = os.getpid()
+pkl_name = ''
 
 
 def check_overflow_environment(pid):
@@ -154,7 +155,6 @@ def overflow_check(name, **kwargs):
                     write_api_info_json(backward_api_info[key])
                 raise ValueError("[overflow {} times]: dump file is saved in '{}'."
                                  .format(OverFlowUtil.real_overflow_dump_times, os.path.realpath(dump_file_name)))
-                return
 
     def overflow_type_judge(in_feat, out_feat, module_name):
         if module_name.endswith(Const.BACKWARD):
