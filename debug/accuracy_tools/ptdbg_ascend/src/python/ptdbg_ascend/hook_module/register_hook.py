@@ -24,6 +24,7 @@ import torch.distributed as dist
 
 from . import wrap_torch, wrap_functional, wrap_tensor, wrap_vf, wrap_distributed, wrap_aten
 from .hook_module import HOOKModule
+from .api_registry import api_register
 from .wrap_functional import remove_dropout
 from ..common.utils import check_file_or_directory_path, print_error_log, CompareException, Const, \
     print_info_log, print_warn_log, get_process_rank, torch_without_guard_version
@@ -42,50 +43,6 @@ else:
 
 make_dir_flag = True
 REGISTER_HOOK_KWARGS = ["overflow_nums", "dump_mode", "dump_config"]
-
-
-def initialize_hook(hook):
-    wrap_tensor.wrap_tensor_ops_and_bind(hook)
-    for attr_name in dir(wrap_tensor.HOOKTensor):
-        if attr_name.startswith("wrap_"):
-            setattr(torch.Tensor, attr_name[5:], getattr(wrap_tensor.HOOKTensor, attr_name))
-
-    wrap_torch.wrap_torch_ops_and_bind(hook)
-    for attr_name in dir(wrap_torch.HOOKTorchOP):
-        if attr_name.startswith("wrap_"):
-            setattr(torch, attr_name[5:], getattr(wrap_torch.HOOKTorchOP, attr_name))
-
-    wrap_functional.wrap_functional_ops_and_bind(hook)
-    for attr_name in dir(wrap_functional.HOOKFunctionalOP):
-        if attr_name.startswith("wrap_"):
-            setattr(torch.nn.functional, attr_name[5:], getattr(wrap_functional.HOOKFunctionalOP, attr_name))
-
-    wrap_distributed.wrap_distributed_ops_and_bind(hook)
-    for attr_name in dir(wrap_distributed.HOOKDistributedOP):
-        if attr_name.startswith("wrap_"):
-            setattr(dist, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
-            setattr(dist.distributed_c10d, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
-            if not is_gpu and not torch_without_guard_version:
-                setattr(torch_npu.distributed, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
-                setattr(torch_npu.distributed.distributed_c10d, attr_name[5:],
-                        getattr(wrap_distributed.HOOKDistributedOP, attr_name))
-
-    if torch_version_above_2:
-        wrap_aten.wrap_aten_ops_and_bind(hook)
-        for attr_name in dir(wrap_aten.HOOKAtenOP):
-            if attr_name.startswith("wrap_"):
-                setattr(torch.ops.aten, attr_name[5:], getattr(wrap_aten.HOOKAtenOP, attr_name))
-
-    wrap_vf.wrap_vf_ops_and_bind(hook)
-    for attr_name in dir(wrap_vf.HOOKVfOP):
-        if attr_name.startswith("wrap_"):
-            setattr(torch._VF, attr_name[5:], getattr(wrap_vf.HOOKVfOP, attr_name))
-
-    if not is_gpu:
-        wrap_npu_custom.wrap_npu_ops_and_bind(hook)
-        for attr_name in dir(wrap_npu_custom.HOOKNpuOP):
-            if attr_name.startswith("wrap_"):
-                setattr(torch_npu, attr_name[5:], getattr(wrap_npu_custom.HOOKNpuOP, attr_name))
 
 
 def add_clear_overflow(func, pid):
@@ -160,7 +117,8 @@ def register_hook_core(hook):
     hook = functools.partial(hook, dump_step=0, pid=pid)
     print_info_log("The {} hook function is successfully mounted to the model.".format(hook_name))
 
-    initialize_hook(hook)
+    api_register.initialize_hook(hook)
+    api_register.api_modularity()
 
     if "acc_cmp_dump" in hook_name:
         remove_dropout()
