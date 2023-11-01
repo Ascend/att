@@ -196,7 +196,7 @@ def generate_dump_path_str():
     return dump_path
 
 
-def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch=Const.ON, dump_mode=[Const.ALL], summary_only=False):
+def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch=Const.OFF, dump_mode=[Const.ALL], summary_only=False):
     check_switch_valid(switch)
     if not DumpUtil.dump_path:
         set_dump_path()
@@ -210,7 +210,7 @@ def set_dump_switch(switch, mode=Const.ALL, scope=[], api_list=[], filter_switch
     set_dump_switch_config(mode=mode, scope=scope, api_list=api_list, filter_switch=filter_switch, dump_mode=dump_mode,summary_only=summary_only)
 
 
-def set_dump_switch_config(mode=Const.ALL, scope=[], api_list=[], filter_switch=Const.ON, dump_mode=[Const.ALL], summary_only=False):
+def set_dump_switch_config(mode=Const.ALL, scope=[], api_list=[], filter_switch=Const.OFF, dump_mode=[Const.ALL], summary_only=False):
     try:
         check_mode_valid(mode, scope, api_list)
         check_switch_valid(filter_switch)
