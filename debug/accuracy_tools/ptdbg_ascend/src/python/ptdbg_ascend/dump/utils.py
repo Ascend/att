@@ -36,6 +36,7 @@ class DumpUtil(object):
     iter_num = 0
     target_rank = None
     summary_only = False
+    need_replicate = False
 
     @staticmethod
     def set_dump_path(save_path):
