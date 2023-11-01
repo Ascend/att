@@ -199,7 +199,7 @@ def generate_dump_path_str():
     return dump_path
 
 
-def set_dump_switch(switch, mode=Const.ALL, scope=None, api_list=None, filter_switch=Const.ON, dump_mode=None,
+def set_dump_switch(switch, mode=Const.ALL, scope=None, api_list=None, filter_switch=Const.OFF, dump_mode=None,
                     summary_only=False):
     if scope is None:
         scope = []
@@ -221,7 +221,7 @@ def set_dump_switch(switch, mode=Const.ALL, scope=None, api_list=None, filter_sw
                            summary_only=summary_only)
 
 
-def set_dump_switch_config(mode=Const.ALL, scope=None, api_list=None, filter_switch=Const.ON, dump_mode=None,
+def set_dump_switch_config(mode=Const.ALL, scope=None, api_list=None, filter_switch=Const.OFF, dump_mode=None,
                            summary_only=False):
     if scope is None:
         scope = []

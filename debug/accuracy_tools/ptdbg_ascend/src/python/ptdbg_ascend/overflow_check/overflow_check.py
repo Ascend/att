@@ -136,7 +136,7 @@ def overflow_check(name, **kwargs):
                     backward_api_info.update({name: BackwardAPIInfo(name, out_feat)})
             OverFlowUtil.inc_overflow_dump_times()
             dump_file_name = os.path.join(dump_dir,
-                "Overflow_info_{}_{}.pkl".format(get_time(), OverFlowUtil.real_overflow_dump_times))
+                                          "{}_{}.pkl".format(module_name, OverFlowUtil.real_overflow_dump_times))
             dump_overflow(module_name, in_feat, out_feat, dump_file_name)
             dump.pkl_name = dump_file_name
 
