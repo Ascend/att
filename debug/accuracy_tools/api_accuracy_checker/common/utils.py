@@ -29,15 +29,15 @@ import numpy as np
 import torch
 import csv
 
-from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, FileChecker, FileOpen
-from ptdbg_ascend.src.python.ptdbg_ascend.common import file_check_util
-
 try:
     import torch_npu
 except ImportError:
     IS_GPU = True
 else:
     IS_GPU = False
+
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, FileChecker, FileOpen
+from ptdbg_ascend.src.python.ptdbg_ascend.common import file_check_util
 
 torch_without_guard_version_list = ['2.1']
 for version in torch_without_guard_version_list:
@@ -65,7 +65,7 @@ class Const:
     DOT = "."
     DUMP_RATIO_MAX = 100
     SUMMERY_DATA_NUMS = 256
-    ONE_HUNDRED_MB = 100*1024*1024
+    ONE_HUNDRED_MB = 100 * 1024 * 1024
     FLOAT_EPSILON = np.finfo(float).eps
     SUPPORT_DUMP_MODE = ['api', 'acl']
     ON = 'ON'
@@ -102,6 +102,7 @@ class Const:
     CONVERT_API = {
         "int32_to_int64": ["cross_entropy"]
     }
+
 
 class CompareConst:
     """
@@ -191,18 +192,22 @@ class CompareException(Exception):
     def __str__(self):
         return self.error_info
 
+
 class DumpException(CompareException):
     pass
+
 
 def read_json(file):
     with FileOpen(file, 'r') as f:
         obj = json.load(f)
     return obj
 
+
 def write_csv(data, filepath):
     with FileOpen(filepath, 'a') as f:
         writer = csv.writer(f)
         writer.writerows(data)
+
 
 def _print_log(level, msg):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
@@ -295,6 +300,7 @@ def check_file_or_directory_path(path, isdir=False):
         print_error_log(
             'The path {} does not have permission to read. Please check the path permission'.format(path))
         raise CompareException(CompareException.INVALID_PATH_ERROR)
+
 
 def _check_pkl(pkl_file_handle, file_name):
     tensor_line = pkl_file_handle.readline()
@@ -573,6 +579,7 @@ def check_need_convert(api_name):
             convert_type = key
     return convert_type
 
+
 def api_info_preprocess(api_name, api_info_dict):
     """
     Function Description:
@@ -589,6 +596,7 @@ def api_info_preprocess(api_name, api_info_dict):
         api_info_dict = cross_entropy_process(api_info_dict)
     return convert_type, api_info_dict
 
+
 def cross_entropy_process(api_info_dict):
     """
     Function Description:
@@ -602,6 +610,7 @@ def cross_entropy_process(api_info_dict):
         if api_info_dict['args'][1]['Min'] <= 0:
             api_info_dict['args'][1]['Min'] = 0 #The second argument in cross_entropy should be -100 or not less than 0.
     return api_info_dict
+
 
 def initialize_save_path(save_path, dir_name):
     data_path = os.path.join(save_path, dir_name)
