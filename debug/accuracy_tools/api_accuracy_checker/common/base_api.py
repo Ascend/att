@@ -56,7 +56,7 @@ class BaseAPIInfo:
             api_args = self.api_name + '.' + str(self.args_num)
             rank = self.get_tensor_rank(arg)
             if rank is not None:
-                rank = "rank"+str(rank)
+                rank = "rank" + str(rank)
             if self.is_forward:
                 forward_real_data_path = os.path.join(self.save_path, self.forward_path, rank) if rank else os.path.join(self.save_path, self.forward_path)
                 if not os.path.exists(forward_real_data_path):
