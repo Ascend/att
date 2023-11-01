@@ -140,8 +140,8 @@ def save_summery(run_param, npu_data, cpu_data, prefix, summery_list, compute_fl
         data_dict[CompareConst.COSINE], data_dict[CompareConst.MAX_ABS_ERR], data_dict[CompareConst.MAX_RELATIVE_ERR], \
             data_dict[CompareConst.ERROR_MESSAGE] = get_compare_result(npu_data, cpu_data)
 
-        data_dict[CompareConst.ACCURACY] = check_accuracy(data_dict[CompareConst.COSINE],
-                                                          data_dict[CompareConst.MAX_ABS_ERR])
+        data_dict[CompareConst.ACCURACY] = check_accuracy(data_dict.get(CompareConst.COSINE),
+                                                          data_dict.get(CompareConst.MAX_ABS_ERR))
     else:
         data_dict[CompareConst.COSINE] = 1
         data_dict[CompareConst.MAX_ABS_ERR] = 0

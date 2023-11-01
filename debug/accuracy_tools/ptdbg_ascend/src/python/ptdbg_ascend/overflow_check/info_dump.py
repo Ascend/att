@@ -42,28 +42,29 @@ class APIInfo:
             out = []
             for item in element:
                 out.append(self.analyze_element(item))
+            return out
         elif isinstance(element, dict):
-            out = {}
+            out_dict = {}
             for key, value in element.items():
                 if key in self.torch_object_key.keys():
                     fun = self.torch_object_key[key]
-                    out[key] = fun(value)
+                    out_dict[key] = fun(value)
                 elif key in special_torch_object:
                     continue
                 else:
-                    out[key] = self.analyze_element(value)
-
+                    out_dict[key] = self.analyze_element(value)
+            return out_dict
         elif isinstance(element, torch.Tensor):
-            out = self.analyze_tensor(element, self.save_real_data)
-
+            out_tensor = self.analyze_tensor(element, self.save_real_data)
+            return out_tensor
         elif self.is_builtin_class(element):
-            out = self.analyze_builtin(element)
+            out_builtin = self.analyze_builtin(element)
+            return out_builtin
         else:
             msg = f"Type {type(element)} is unsupported at analyze_element"
             print_error_log(msg)
 
             raise NotImplementedError(msg)
-        return out
 
     def analyze_tensor(self, arg, save_real_data):
         single_arg = {}
