@@ -49,7 +49,7 @@ class BaseAPIInfo:
             single_arg.update({'dtype' : str(arg.dtype)})
             single_arg.update({'shape' : arg.shape})
             single_arg.update({'Max' : self.transfer_types(self.get_tensor_extremum(arg, 'max'), str(arg.dtype))})
-            single_arg.update({'Min' : self.transfer_types(self.get_tensor_extremum(arg,  'min'), str(arg.dtype))})
+            single_arg.update({'Min' : self.transfer_types(self.get_tensor_extremum(arg, 'min'), str(arg.dtype))})
             single_arg.update({'requires_grad': arg.requires_grad})
 
         else:
