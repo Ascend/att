@@ -29,10 +29,10 @@ def get_msg_and_handle_value(b_value, n_value):
     msg = ""
     if not isinstance(b_value, np.ndarray) or not isinstance(n_value, np.ndarray):
         msg = f"Max rel err only support numpy array! The actual type is {type(b_value)}, {type(n_value)}."
-        return CompareConst.NAN, False, msg
+        return CompareConst.NA, False, msg
     if b_value.shape != n_value.shape:
         msg = f"Shape of bench and npu outputs don't match. bench: {b_value.shape}, npu: {n_value.shape}."
-        return CompareConst.NAN, False, msg
+        return CompareConst.NA, False, msg
 
     if n_value.dtype in Const.FLOAT_TYPE:
         zero_mask = (n_value == 0)
@@ -106,10 +106,10 @@ def cosine_sim(cpu_output, npu_output):
         return cos, True, msg 
     elif n_value_max <= np.finfo(float).eps:
         msg = "All the data is zero in npu dump data."
-        return CompareConst.NAN, False, msg 
+        return CompareConst.NA, False, msg 
     elif b_value_max <= np.finfo(float).eps:
         msg = "All the data is zero in bench dump data."
-        return CompareConst.NAN, False, msg 
+        return CompareConst.NA, False, msg 
     else:
         n_value = n_value_max.astype(float) / n_value_max 
         b_value = b_value_max.astype(float) / b_value_max
@@ -128,7 +128,7 @@ def compare_builtin_type(bench_out, npu_out):
     if not isinstance(bench_out, (bool, int, float, str)):
         return CompareConst.NA, True, ""
     if bench_out != npu_out:
-        return CompareConst.NAN, False, ""
+        return CompareConst.NA, False, ""
     return True, True, ""
 
 def flatten_compare_result(result):
