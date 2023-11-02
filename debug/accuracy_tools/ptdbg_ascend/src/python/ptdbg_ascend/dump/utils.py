@@ -19,12 +19,11 @@ range_begin_flag, range_end_flag = False, False
 
 def check_list_or_acl_mode(name_prefix):
     global dump_count
-    result = False
     for item in DumpUtil.dump_switch_scope:
         if name_prefix.startswith(item):
             dump_count = dump_count + 1
-            result = True
-    return result
+            return True
+    return False
 
 
 def check_range_mode(name_prefix):
