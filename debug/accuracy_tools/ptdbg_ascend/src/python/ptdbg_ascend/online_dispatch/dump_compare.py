@@ -44,11 +44,11 @@ class TimeStatistics:
 
     def __enter__(self):
         if self.debug:
-            self.time = datetime.now().astimezone()
+            self.time = datetime.now()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.debug:
-            cost_time = datetime.now().astimezone() - self.time
+            cost_time = datetime.now() - self.time
             time_cost = f'Time[{self.tag}]: Dev[{self.device}], Pid[{os.getpid()}], Fun[{self.fun}], ' \
                         f'Id[{self.index}], time[{cost_time}]'
             hot_time_cost = "Hotspot " + time_cost
