@@ -170,7 +170,7 @@ def compare_core(bench_out, npu_out, alg):
             copy_bench_out = copy_bench_out.to(torch.float32)
             copy_npu_out = copy_npu_out.to(torch.float32)
         compare_result, test_success, msg = compare_torch_tensor(copy_bench_out.numpy(), copy_npu_out.cpu().numpy(), alg)
-        if copy_bench_out.dtype in [torch.bool, torch.uint8, torch.int8, torch.int16, torch.uint16, torch.uint32, torch.int32, torch.int64, torch.uint64] and alg == cosine_sim:
+        if copy_bench_out.dtype in [torch.bool, torch.uint8, torch.int8, torch.int16, torch.int32, torch.int64] and alg == cosine_sim:
             compare_result = np.nan
     elif isinstance(bench_out, (bool, int, float, str)):
         compare_result, test_success, msg = compare_builtin_type(bench_out, npu_out)
