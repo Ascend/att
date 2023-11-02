@@ -181,8 +181,8 @@ class Comparator:
                 detailed_result_total = detailed_result
         test_success_total = test_success_total or max_abs_error_success
         # dtype加到所有指标的前面, 是否pass放到所有指标的后面
-        for i, detailed_result in enumerate(detailed_result_total):
-            detailed_result = list(detailed_result)
+        for i, detailed_tuple in enumerate(detailed_result_total):
+            detailed_result = list(detailed_tuple)
             detailed_result.insert(0, bench_dtype_total[i])
             detailed_result.insert(1, npu_dtype_total[i])
             detailed_result.insert(2, shape_total[i])
