@@ -606,7 +606,7 @@ def cross_entropy_process(api_info_dict):
 def initialize_save_path(save_path, dir_name):
     data_path = os.path.join(save_path, dir_name)
     if os.path.exists(data_path):
-        raise ValueError(f"file {data_path} already exists, please remove it first")
+        print_warn_log(f"{data_path} already exists, it will be overwritten")
     else:
         os.mkdir(data_path, mode=FileCheckConst.DATA_DIR_AUTHORITY)
     data_path_checker = FileChecker(data_path, FileCheckConst.DIR)

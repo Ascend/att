@@ -55,12 +55,12 @@ class BaseAPIInfo:
         else:
             api_args = self.api_name + '.' + str(self.args_num)
             if self.is_forward:
-                forward_real_data_path = os.path.join(self.save_path, self.forward_path, self.rank)
+                forward_real_data_path = os.path.join(self.save_path, self.forward_path, "rank"+str(self.rank))
                 if not os.path.exists(forward_real_data_path):
                     os.makedirs(forward_real_data_path)
                 file_path = os.path.join(forward_real_data_path, f'{api_args}.pt')
             else:
-                backward_real_data_path = os.path.join(self.save_path, self.backward_path, self.rank)
+                backward_real_data_path = os.path.join(self.save_path, self.backward_path, "rank"+str(self.rank))
                 if not os.path.exists(backward_real_data_path):
                     os.makedirs(backward_real_data_path)
                 file_path = os.path.join(backward_real_data_path, f'{api_args}.pt')
