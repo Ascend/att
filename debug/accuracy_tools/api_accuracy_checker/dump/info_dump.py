@@ -11,6 +11,7 @@ from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 
 lock = threading.Lock()
 
+
 def write_api_info_json(api_info):
     dump_path = msCheckerConfig.dump_path
     rank = api_info.rank
@@ -26,8 +27,9 @@ def write_api_info_json(api_info):
     else:
         raise ValueError(f"Invalid api_info type {type(api_info)}")
 
+
 def write_json(file_path, data, indent=None):
-    check_file_or_directory_path(os.path.dirname(file_path),True)
+    check_file_or_directory_path(os.path.dirname(file_path), True)
     if not os.path.exists(file_path):
         with FileOpen(file_path, 'w') as f:
             f.write("{\n}")

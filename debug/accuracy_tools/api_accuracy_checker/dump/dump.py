@@ -31,6 +31,7 @@ def set_dump_switch(switch):
         initialize_output_json()
     DumpUtil.set_dump_switch(switch)
 
+
 class DumpUtil(object):
     dump_switch = None
     call_num = 0
@@ -73,6 +74,7 @@ def pretest_info_dump(name, out_feat, module, phase):
         raise NotImplementedError(msg)
 
     write_api_info_json(api_info)
+
 
 def pretest_hook(name, phase):
     def pretest_info_dump_hook(module, in_feat, out_feat):

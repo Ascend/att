@@ -1,5 +1,4 @@
 # 定义比对算法及比对标准
-
 import torch
 import numpy as np
 from api_accuracy_checker.compare.compare_utils import CompareConst, check_dtype_comparable
@@ -16,6 +15,7 @@ def compare_torch_tensor(cpu_output, npu_output, compare_alg):
         return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output, npu_output)
 
+
 def compare_bool_tensor(cpu_output, npu_output):
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
@@ -24,6 +24,7 @@ def compare_bool_tensor(cpu_output, npu_output):
     error_nums = (cpu_output != npu_output).sum()
     error_rate = float(error_nums / cpu_output.size)
     return error_rate, error_rate == 0, ""
+
 
 def get_msg_and_handle_value(b_value, n_value):
     msg = ""
@@ -48,6 +49,7 @@ def get_msg_and_handle_value(b_value, n_value):
         b_value[zero_mask] += np.finfo(float).eps 
     return b_value, n_value, msg
 
+
 def get_max_rel_err(b_value, n_value):
     b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
     rel_err = np.abs((n_value - b_value) / b_value).max()
@@ -57,14 +59,17 @@ def get_max_rel_err(b_value, n_value):
         bool_result = rel_err < 0.001
     return rel_err, bool_result, msg
 
+
 def get_max_abs_err(b_value, n_value):
     b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
     abs_err = np.abs(b_value - n_value).max()
     bool_result = abs_err < 0.001
     return abs_err, bool_result, msg
 
+
 def get_rel_err_ratio_thousandth(b_value, n_value):
     return get_rel_err_ratio(b_value, n_value, 0.001)
+
 
 def get_rel_err_ratio_ten_thousandth(b_value, n_value):
     ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.0001)
@@ -73,6 +78,7 @@ def get_rel_err_ratio_ten_thousandth(b_value, n_value):
         return ratio, True, msg
     return ratio, bool_result, msg
 
+
 def get_rel_err_ratio(b_value, n_value, thresholding):
     b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
     rel_errs = np.abs((n_value - b_value) / b_value)
@@ -80,13 +86,16 @@ def get_rel_err_ratio(b_value, n_value, thresholding):
     bool_result = ratio > (1 - thresholding)
     return ratio, bool_result, msg
 
+
 def max_rel_err_standard(max_rel_errs):
     bool_result = np.array(max_rel_errs) < 0.001 
     return np.all(bool_result), bool_result
 
+
 def cosine_standard(compare_result):
     bool_result = np.array(compare_result) > 0.99
     return np.all(bool_result), bool_result
+
 
 def cosine_sim(cpu_output, npu_output):
     msg = ""
@@ -118,11 +127,13 @@ def cosine_sim(cpu_output, npu_output):
             msg = "Dump data has NaN when comparing with Cosine Similarity."
         return cos, cos > 0.99, msg
 
+
 def compare_uint8_data(b_value, n_value):
     if (b_value == n_value).all():
         return 1, True
     else:
         return 0, False
+
 
 def compare_builtin_type(bench_out, npu_out):
     if not isinstance(bench_out, (bool, int, float, str)):
@@ -130,6 +141,7 @@ def compare_builtin_type(bench_out, npu_out):
     if bench_out != npu_out:
         return CompareConst.NA, False, ""
     return True, True, ""
+
 
 def flatten_compare_result(result):
     flatten_result = []
@@ -139,6 +151,7 @@ def flatten_compare_result(result):
         else:
             flatten_result.append(result_i)
     return flatten_result
+
 
 # 本函数用alg比对bench_out 和npu_out，返回详细比对结果compare_result和标志比对是否通过的布尔变量test_success
 def compare_core(bench_out, npu_out, alg):

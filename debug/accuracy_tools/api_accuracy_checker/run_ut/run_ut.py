@@ -67,8 +67,10 @@ def generate_npu_params(input_args, input_kwargs, need_backward):
     npu_kwargs = {key: recursive_arg_to_npu(value) for key, value in input_kwargs.items()}
     return npu_args, npu_kwargs
 
+
 def generate_cpu_params(input_args, input_kwargs, need_backward):
     first_dtype = None
+
     def recursive_arg_to_cpu(arg_in):
         nonlocal first_dtype
         if isinstance(arg_in, (list, tuple)):
@@ -98,6 +100,7 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
     cpu_args = recursive_arg_to_cpu(input_args)
     cpu_kwargs = {key: recursive_arg_to_cpu(value) for key, value in input_kwargs.items()}
     return cpu_args, cpu_kwargs
+
 
 def run_ut(forward_file, backward_file, out_path, save_error_data):
     print_info_log("start UT test")
@@ -138,7 +141,6 @@ def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in)
         UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out)
         UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out)
-
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):

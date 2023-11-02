@@ -8,6 +8,7 @@ from api_accuracy_checker.common.utils import get_json_contents, print_info_log,
 from api_accuracy_checker.compare.compare_utils import CompareConst 
 from api_accuracy_checker.common.config import msCheckerConfig
 
+
 class Comparator:
     TEST_FILE_NAME = "accuracy_checking_result.csv"
     DETAIL_TEST_FILE_NAME = "accuracy_checking_details.csv"
@@ -174,14 +175,14 @@ class Comparator:
             if name == "Max Absolute Error":
                 max_abs_error_success = test_success
             if detailed_result_total:
-                for i in range(len(detailed_result_total)):
-                    detailed_result_total[i] += detailed_result[i]
+                for i, detailed_result_item in enumerate(detailed_result):
+                    detailed_result_total[i] += detailed_result_item
             else:
                 detailed_result_total = detailed_result
         test_success_total = test_success_total or max_abs_error_success
         # dtype加到所有指标的前面, 是否pass放到所有指标的后面
-        for i in range(len(detailed_result_total)):
-            detailed_result = list(detailed_result_total[i])
+        for i, detailed_tuple in enumerate(detailed_result_total):
+            detailed_result = list(detailed_tuple)
             detailed_result.insert(0, bench_dtype_total[i])
             detailed_result.insert(1, npu_dtype_total[i])
             detailed_result.insert(2, shape_total[i])

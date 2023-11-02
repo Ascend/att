@@ -4,6 +4,7 @@ from torch.utils.data.dataloader import _BaseDataLoaderIter
 from api_accuracy_checker.dump.dump import DumpUtil 
 from api_accuracy_checker.common.config import msCheckerConfig
 
+
 def iter_tracer(func):
     def func_wrapper(*args, **kwargs):
         DumpUtil.dump_switch = "OFF"
