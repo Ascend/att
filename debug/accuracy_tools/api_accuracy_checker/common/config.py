@@ -17,7 +17,6 @@ class Config:
             'real_data': bool,
             'dump_step': int,
             'error_data_path': str,
-            'enable_dataloader': bool,
             'target_iter': int,
             'precision': int
         }
@@ -35,11 +34,10 @@ class Config:
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
-    def update_config(self, dump_path, real_data=False, enable_dataloader=False, target_iter=1):
+    def update_config(self, dump_path, real_data=False, target_iter=1):
         args = {
             "dump_path": dump_path,
             "real_data": real_data,
-            "enable_dataloader": enable_dataloader,
             "target_iter": target_iter
         }
         for key, value in args.items():
