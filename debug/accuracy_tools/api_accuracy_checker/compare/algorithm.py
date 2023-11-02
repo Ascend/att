@@ -8,9 +8,11 @@ from api_accuracy_checker.common.utils import Const
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if not check_dtype_comparable(cpu_output, npu_output):
-        return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but\
+        return CompareConst.NA, False, f"Bench out dtype is {cpu_output.dtype} but\
                  npu output dtype is {npu_output.dtype}, cannot compare."
     if cpu_output.dtype in [bool, np.uint8, np.int8, np.int16, np.uint16, np.uint32, np.int32, np.int64, np.uint64]:
+        if compare_alg == cosine_sim:
+            return CompareConst.NA, False, f"Compare algorithm {compare_alg.__name__} is not supported for {cpu_output.dtype} data."
         return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output, npu_output)
 
@@ -18,7 +20,7 @@ def compare_bool_tensor(cpu_output, npu_output):
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
     if cpu_shape != npu_shape:
-        return CompareConst.NAN, False, ""
+        return CompareConst.NA, False, ""
     error_nums = (cpu_output != npu_output).sum()
     error_rate = float(error_nums / cpu_output.size)
     return error_rate, error_rate == 0, ""
@@ -170,8 +172,6 @@ def compare_core(bench_out, npu_out, alg):
             copy_bench_out = copy_bench_out.to(torch.float32)
             copy_npu_out = copy_npu_out.to(torch.float32)
         compare_result, test_success, msg = compare_torch_tensor(copy_bench_out.numpy(), copy_npu_out.cpu().numpy(), alg)
-        if copy_bench_out.dtype in [torch.bool, torch.uint8, torch.int8, torch.int16, torch.int32, torch.int64] and alg == cosine_sim:
-            compare_result = np.nan
     elif isinstance(bench_out, (bool, int, float, str)):
         compare_result, test_success, msg = compare_builtin_type(bench_out, npu_out)
         bench_dtype = str(type(bench_out))
