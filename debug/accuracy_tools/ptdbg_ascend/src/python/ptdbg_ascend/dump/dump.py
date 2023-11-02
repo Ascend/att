@@ -18,11 +18,11 @@
 import inspect
 import json
 import os
+import threading
+from pathlib import Path
+
 import numpy as np
 import torch
-import threading
-
-from pathlib import Path
 
 try:
     import torch_npu
@@ -46,6 +46,7 @@ thread_lock = threading.Lock()
 pkl_name = ""
 rank = os.getpid()
 multi_output_apis = ["_sort_", "npu_flash_attention"]
+
 
 class DataInfo(object):
     def __init__(self, data, save_data, summary_data, dtype, shape):
@@ -183,6 +184,7 @@ def dump_api_tensor(dump_step, in_feat, name_template, out_feat, dump_file):
         if 'output' in DumpUtil.dump_mode:
             dump_tensor(out_feat, name_template.format("output"), dump_step, dump_file)
 
+
 def rename_():
     global rank
     global pkl_name
@@ -197,6 +199,7 @@ def rename_():
             _, file_name = os.path.split(pkl_name)
             os.rename(dir_name, new_name)
             pkl_name = os.path.join(new_name, file_name)
+
 
 def dump_acc_cmp(name, in_feat, out_feat, dump_step, module):
     dump_file = DumpUtil.get_dump_path()
@@ -355,6 +358,7 @@ def write_to_disk():
                 raise Exception("write to disk failed")
         change_mode(pkl_name, FileCheckConst.DATA_FILE_AUTHORITY)
         api_list = []
+
 
 def get_pkl_file_path():
     return pkl_name

@@ -48,6 +48,7 @@ class NpuOPTemplate(HOOKModule):
         else:
             return getattr(torch_npu._C._VariableFunctionsClass, str(self.op_name_))(*args, **kwargs)
 
+
 def wrap_npu_op(op_name, hook):
 
     def npu_op_template(*args, **kwargs):

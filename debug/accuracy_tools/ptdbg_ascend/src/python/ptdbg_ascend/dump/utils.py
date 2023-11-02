@@ -23,6 +23,7 @@ def check_list_or_acl_mode(name_prefix):
         if name_prefix.startswith(item):
             dump_count = dump_count + 1
             return True
+    return False
 
 
 def check_range_mode(name_prefix):

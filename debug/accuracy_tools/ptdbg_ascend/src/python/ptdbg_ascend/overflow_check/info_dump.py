@@ -1,11 +1,11 @@
 import inspect
 import fcntl
-import json
 import os
-import torch
 import threading
 
+import json
 import numpy as np
+import torch
 
 from ..common.utils import print_error_log, get_time
 from ..common.file_check_util import FileOpen
@@ -171,7 +171,8 @@ class ForwardAPIInfo(APIInfo):
     def analyze_api_call_stack(self):
         stack_str = []
         for (_, path, line, func, code, _) in inspect.stack()[3:]:
-            if not code: continue
+            if not code: 
+                continue
             stack_line = " ".join([
                 "File", ", ".join([path, " ".join(["line", str(line)]), " ".join(["in", func]),
                                    " ".join(["\n", code[0].strip()])])])
