@@ -213,7 +213,7 @@ def initialize_save_error_data():
     error_data_path_checker = FileChecker(msCheckerConfig.error_data_path, FileCheckConst.DIR,
                                           ability=FileCheckConst.WRITE_ABLE)
     error_data_path = error_data_path_checker.common_check()
-    initialize_save_path(error_data_path, 'ut_error_data'+str(os.getpid()))
+    initialize_save_path(error_data_path, 'ut_error_data' + str(os.getpid()))
 
 
 def _run_ut_parser(parser):
