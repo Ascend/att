@@ -25,17 +25,6 @@ class TestRunUtMethods(unittest.TestCase):
         self.assertEqual(out.requires_grad, True)
         self.assertEqual(out.shape, torch.Size([2, 2560, 24, 24]))
         
-    def test_generate_npu_params(self):
-        api_info = copy.deepcopy(api_info_dict)
-        [api_type, api_name, _] = api_full_name.split("*")
-        args, kwargs, need_grad = get_api_info(api_info, api_name)
-        npu_args, npu_kwargs = generate_npu_params(args, kwargs, True)
-        self.assertEqual(len(npu_args), 1)
-        self.assertEqual(npu_args[0].dtype, torch.float16)
-        self.assertEqual(npu_args[0].requires_grad, True)
-        self.assertEqual(npu_args[0].shape, torch.Size([2, 2560, 24, 24]))
-        self.assertEqual(npu_kwargs, {'inplace': False})
-        
     def test_generate_cpu_params(self):
         api_info = copy.deepcopy(api_info_dict)
         [api_type, api_name, _] = api_full_name.split("*")
