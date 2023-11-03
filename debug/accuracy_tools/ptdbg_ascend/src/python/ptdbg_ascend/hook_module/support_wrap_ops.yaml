@@ -988,7 +988,6 @@ torch:
   - unique_consecutive
   - xlogy
   - unbind
-  - unique_dim
   - unsafe_chunk
   - unsafe_split
   - vander
@@ -1047,9 +1046,7 @@ torch_npu:
   - npu_bert_apply_adam
   - npu_giou
   - npu_ciou
-  - npu_ciou_backward
   - npu_diou
-  - npu_diou_backward
   - npu_sign_bits_pack
   - npu_sign_bits_unpack
   - npu_flash_attention
