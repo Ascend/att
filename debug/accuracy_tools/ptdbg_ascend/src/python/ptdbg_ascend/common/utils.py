@@ -29,6 +29,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from .file_check_util import FileOpen, FileChecker, FileCheckConst
+
 try:
     import torch_npu
 except ImportError:
@@ -80,6 +82,8 @@ class Const:
     API_LIST = "api_list"
     API_STACK = "api_stack"
     DUMP_MODE = [ALL, LIST, RANGE, STACK, ACL, API_LIST, API_STACK]
+    AUTO = "auto"
+    ONLINE_DUMP_MODE = [ALL, LIST, AUTO, OFF]
 
     API_PATTERN = r"^[A-Za-z0-9]+[_]+([A-Za-z0-9]+[_]*[A-Za-z0-9]+)[_]+[0-9]+[_]+[A-Za-z0-9]+"
     WRITE_FLAGS = os.O_WRONLY | os.O_CREAT
@@ -92,6 +96,12 @@ class Const:
     FILE_PATTERN = r'^[a-zA-Z0-9_./-]+$'
     FILE_NAME_LENGTH = 255
     DIRECTORY_LENGTH = 4096
+
+    # env dump path
+    ASCEND_WORK_PATH = "ASCEND_WORK_PATH"
+    DUMP_DIR = "dump_data"
+
+    MAX_SEED_VALUE = 2**32 - 1
 
 
 class CompareConst:
@@ -194,30 +204,33 @@ class DumpException(CompareException):
 
 
 def make_dump_path_if_not_exists(dump_path):
-    # 之前应该已经验证过dump_path的上层文件夹存在
-    dump_root, dump_dir = os.path.split(dump_path)
     if not os.path.exists(dump_path):
-        Path(dump_path).mkdir(mode=0o750, exist_ok=True)
+        try:
+            Path(dump_path).mkdir(mode=0o750, exist_ok=True, parents=True)
+        except OSError as ex:
+            print_error_log(
+                'Failed to create {}.Please check the path permission or disk space .{}'.format(dump_path, str(ex)))
+            raise CompareException(CompareException.INVALID_PATH_ERROR) from ex
     else:
         if not os.path.isdir(dump_path):
-            print_error_log((f"{dump_path} already exists and is not a directory."))
+            print_error_log('{} already exists and is not a directory.'.format(dump_path))
 
 
-def _print_log(level, msg):
+def _print_log(level, msg, end='\n'):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
     pid = os.getgid()
-    print(current_time + "(" + str(pid) + ")-[" + level + "]" + msg)
+    print(current_time + "(" + str(pid) + ")-[" + level + "]" + msg, end=end)
     sys.stdout.flush()
 
 
-def print_info_log(info_msg):
+def print_info_log(info_msg, end='\n'):
     """
     Function Description:
         print info log.
     Parameter:
         info_msg: the info message.
     """
-    _print_log("INFO", info_msg)
+    _print_log("INFO", info_msg, end=end)
 
 
 def print_error_log(error_msg):
@@ -240,14 +253,22 @@ def print_warn_log(warn_msg):
     _print_log("WARNING", warn_msg)
 
 
-def check_mode_valid(mode, scope=[], api_list=[]):
+def check_mode_valid(mode, scope=None, api_list=None):
+    if scope is None:
+        scope = []
+    if api_list is None:
+        api_list = []
+    if not isinstance(scope, list):
+        raise ValueError("scope param set invalid, it's must be a list.")
+    if not isinstance(api_list, list):
+        raise ValueError("api_list param set invalid, it's must be a list.")
     mode_check = {
         Const.ALL: lambda: None,
         Const.RANGE: lambda:  ValueError("set_dump_switch, scope param set invalid, it's must be [start, end].") if len(scope) != 2 else None,
         Const.LIST: lambda:  ValueError("set_dump_switch, scope param set invalid, it's should not be an empty list.") if len(scope) == 0 else None,
         Const.STACK: lambda:  ValueError("set_dump_switch, scope param set invalid, it's must be [start, end] or [].") if len(scope) > 2 else None,
         Const.ACL: lambda:  ValueError("set_dump_switch, scope param set invalid, only one api name is supported in acl mode.") if len(scope) != 1 else None,
-        Const.API_LIST: lambda:  ValueError("Current dump mode is 'api_list', but the content of api_list parameter is empty or valid.") if not isinstance(api_list, list) or len(api_list) < 1 else None,
+        Const.API_LIST: lambda:  ValueError("Current dump mode is 'api_list', but the content of api_list parameter is empty or valid.") if len(api_list) < 1 else None,
         Const.API_STACK: lambda: None,
     }
     if mode not in Const.DUMP_MODE:
@@ -255,12 +276,15 @@ def check_mode_valid(mode, scope=[], api_list=[]):
               (mode, Const.DUMP_MODE)
         raise CompareException(CompareException.INVALID_DUMP_MODE, msg)
 
-    if mode_check[mode]() is not None:
-        raise mode_check[mode]()
+    if mode_check.get(mode)() is not None:
+        raise mode_check.get(mode)()
+
 
 def check_switch_valid(switch):
     if switch not in ["ON", "OFF"]:
-        raise ValueError("Please set switch with 'ON' or 'OFF'.")
+        print_error_log("Please set switch with 'ON' or 'OFF'.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
+
 
 def check_dump_mode_valid(dump_mode):
     if not isinstance(dump_mode, list):
@@ -273,14 +297,16 @@ def check_dump_mode_valid(dump_mode):
     if 'forward' not in dump_mode and 'backward' not in dump_mode:
         dump_mode.extend(['forward', 'backward'])
     if 'all' in dump_mode or set(["forward", "backward", "input", "output"]).issubset(set(dump_mode)):
-        return ['all']
+        return ["forward", "backward", "input", "output"]
     return dump_mode
+
 
 def check_summary_only_valid(summary_only):
     if not isinstance(summary_only, bool):
-        print_error_log("Params auto_analyze only support True or False.")
+        print_error_log("Params summary_only only support True or False.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
     return summary_only
+
 
 def check_compare_param(input_parma, output_path, stack_mode=False, auto_analyze=True,
                         fuzzy_match=False):  # 添加默认值来让不传参时能通过参数检查
@@ -315,29 +341,10 @@ def check_file_or_directory_path(path, isdir=False):
         when invalid data throw exception
     """
     if isdir:
-        if not os.path.exists(path):
-            print_error_log('The path {} is not exist.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-        if not os.path.isdir(path):
-            print_error_log('The path {} is not a directory.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-        if not os.access(path, os.W_OK):
-            print_error_log(
-                'The path {} does not have permission to write. Please check the path permission'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
+        path_checker = FileChecker(path, FileCheckConst.DIR, FileCheckConst.WRITE_ABLE)
     else:
-        if not os.path.isfile(path):
-            print_error_log('{} is an invalid file or non-exist.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-    check_file_valid(path)
-
-    if not os.access(path, os.R_OK):
-        print_error_log(
-            'The path {} does not have permission to read. Please check the path permission'.format(path))
-        raise CompareException(CompareException.INVALID_PATH_ERROR)
+        path_checker = FileChecker(path, FileCheckConst.FILE, FileCheckConst.READ_ABLE)
+    path_checker.common_check()
 
 
 def _check_pkl(pkl_file_handle, file_name):
@@ -348,8 +355,8 @@ def _check_pkl(pkl_file_handle, file_name):
     pkl_file_handle.seek(0, 0)
 
 
-def is_starts_with(string, prefixes):
-    return any(string.startswith(prefix) for prefix in prefixes)
+def is_starts_with(string, prefix_list):
+    return any(string.startswith(prefix) for prefix in prefix_list)
 
 
 def check_file_mode(npu_pkl, bench_pkl, stack_mode):
@@ -394,9 +401,9 @@ def remove_path(path):
             os.remove(path)
         else:
             shutil.rmtree(path)
-    except PermissionError:
+    except PermissionError as err:
         print_error_log("Failed to delete {}. Please check the permission.".format(path))
-        raise CompareException(CompareException.INVALID_PATH_ERROR)
+        raise CompareException(CompareException.INVALID_PATH_ERROR) from err
 
 
 def get_dump_data_path(dump_dir):
@@ -483,16 +490,6 @@ def save_numpy_data(file_path, data):
     np.save(file_path, data)
 
 
-def parse_arg_value(values):
-    """
-    parse dynamic arg value of atc cmdline
-    """
-    value_list = []
-    for item in values.split(Const.SEMICOLON):
-        value_list.append(parse_value_by_comma(item))
-    return value_list
-
-
 def parse_value_by_comma(value):
     """
     parse value by comma, like '1,2,4,8'
@@ -528,7 +525,7 @@ def get_time():
 
 
 def format_value(value):
-    return '{:.6f}'.format(value)
+    return '{:.12f}'.format(value)
 
 
 def torch_device_guard(func):
@@ -543,6 +540,7 @@ def torch_device_guard(func):
 
 
 def seed_all(seed=1234, mode=False):
+    check_seed_all(seed, mode)
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
@@ -557,6 +555,19 @@ def seed_all(seed=1234, mode=False):
     else:
         torch_npu.npu.manual_seed_all(seed)
         torch_npu.npu.manual_seed(seed)
+
+
+def check_seed_all(seed, mode):
+    if isinstance(seed, int):
+        if seed < 0 or seed > Const.MAX_SEED_VALUE:
+            print_error_log(f"Seed must be between 0 and {Const.MAX_SEED_VALUE}.")
+            raise CompareException(CompareException.INVALID_PARAM_ERROR)
+    else:
+        print_error_log(f"Seed must be integer.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
+    if not isinstance(mode, bool):
+        print_error_log(f"seed_all mode must be bool.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
 
 
 def get_process_rank(model):
@@ -611,7 +622,7 @@ def generate_compare_script(dump_path, pkl_file_path, dump_switch_mode):
     is_api_stack = "True" if dump_switch_mode == Const.API_STACK else "False"
 
     try:
-        with open(template_path, 'r') as ftemp, \
+        with FileOpen(template_path, 'r') as ftemp, \
            os.fdopen(os.open(compare_script_path, Const.WRITE_FLAGS, Const.WRITE_MODES), 'w+') as fout:
             code_temp = ftemp.read()
             fout.write(code_temp % (pkl_file_path, dump_path, is_api_stack))
@@ -647,3 +658,14 @@ def check_file_valid(file_path):
         if file_path.endswith(Const.NUMPY_SUFFIX) and file_size > Const.TEN_GB:
             print_error_log('The file {} size is greater than 10GB.'.format(file_path))
             raise CompareException(CompareException.INVALID_PATH_ERROR)
+
+
+def check_path_before_create(path):
+    if len(os.path.realpath(path)) > Const.DIRECTORY_LENGTH or len(os.path.basename(path)) > \
+            Const.FILE_NAME_LENGTH:
+        print_error_log('The file path length exceeds limit.')
+        raise CompareException(CompareException.INVALID_PATH_ERROR)
+
+    if not re.match(Const.FILE_PATTERN, os.path.realpath(path)):
+        print_error_log('The file path {} contains special characters.'.format(path))
+        raise CompareException(CompareException.INVALID_PATH_ERROR)

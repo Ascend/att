@@ -40,8 +40,16 @@ class AdvisorConst:
     FORWARD_OUTPUT_SUGGEST = "This is a forward API computation error. Check the computation implementation."
     BACKWARD_INPUT_SUGGEST = "Check whether the forward computation result is affected."
     BACKWARD_OUTPUT_SUGGEST = "This is a backward API computation error. Check the computation implementation."
+    BATCH_NORM_SUGGEST = "Torch API batch_norm input not fixed, the following suggestions may fix it:\n" \
+                         "1. If use torch.nn.functional.batch_norm, you can set parameter training=False.\n" \
+                         "2. If use torch.nn.BatchNormXXX, you can set parameter affine=False.\n" \
+                         "3. Use seed_all(mode=True) to enable deterministic computing."
+    DETERMINISTIC_SUGGEST = "This torch api may be uncertainty in the calculation, " \
+                            "can seed_all(mode=True) to enable deterministic computing."
 
-    # cannot be fixed api
+    FUNC_BATCH_NORM = "Functional_batch_norm"
+    FORWARD_INPUT_1 = "forward_input.1"
+    NEED_DETERMINISTIC_API = ["conv2d", "conv3d", "matmul", "nll_loss", "layer_norm", "lstm"]
     BATCH_NORM = "batch_norm"
 
     # name keyword

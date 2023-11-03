@@ -18,10 +18,11 @@
 import inspect
 import json
 import os
-import stat
+import threading
+from pathlib import Path
+
 import numpy as np
 import torch
-import threading
 
 try:
     import torch_npu
@@ -30,9 +31,10 @@ except ImportError:
 else:
     is_gpu = False
 
-from .utils import DumpUtil, _set_dump_switch4api_list, make_dump_data_dir, get_tensor_rank, create_dirs_if_not_exist
+from .utils import DumpUtil, check_if_in_api_list, make_dump_data_dir, get_tensor_rank, create_dirs_if_not_exist
 from ..common.utils import print_warn_log, Const, print_info_log, modify_dump_path
 from ..dump.utils import check_writable
+from ..common.file_check_util import FileOpen, change_mode, FileCheckConst, check_path_pattern_vaild, check_path_length
 
 forward_init_status = False
 backward_init_status = False
@@ -42,7 +44,9 @@ backward_threading_id = 0
 api_list = []
 thread_lock = threading.Lock()
 pkl_name = ""
+rank = os.getpid()
 multi_output_apis = ["_sort_", "npu_flash_attention"]
+
 
 class DataInfo(object):
     def __init__(self, data, save_data, summary_data, dtype, shape):
@@ -132,9 +136,13 @@ def dump_data(dump_file_name, dump_step, prefix, data_info):
     try:
         if json_dump_condition(prefix):
             output_path = os.path.join(DumpUtil.dump_data_dir, f'{prefix}.npy')
+            check_path_length(output_path)
+            check_path_pattern_vaild(output_path)
             if not DumpUtil.summary_only:
                 np.save(output_path, data_info.save_data)
+                change_mode(output_path, FileCheckConst.DATA_FILE_AUTHORITY)
             api_list.append([prefix, dump_step, [], data_info.dtype, data_info.shape, data_info.summary_data])
+            print_info_log(f"ptdbg is dumping rank{rank} api: {prefix}" + " " * 10, end='\r')
     except Exception as e:
         print_warn_log("Dump data failed, error: {}".format(e))
     finally:
@@ -143,55 +151,89 @@ def dump_data(dump_file_name, dump_step, prefix, data_info):
 
 def dump_stack_info(name_template, dump_file):
     stack_str = []
-    for (_, path, line, func, code, _) in inspect.stack()[3:]:
-        if code:
-            stack_line = [path, str(line), func, code[0].strip() if code else code]
-        else:
-            stack_line = [path, str(line), func, code]
-        stack_str.append(stack_line)
+    try:
+        for (_, path, line, func, code, _) in inspect.stack()[4:]:
+            if code:
+                stack_line = [path, str(line), func, code[0].strip() if code else code]
+            else:
+                stack_line = [path, str(line), func, code]
+            stack_str.append(stack_line)
+    except Exception as e:
+        print_warn_log("Dump stack info failed, error: {}".format(e))
+        stack_str.append('')
 
     prefix = name_template.format("stack_info")
     if DumpUtil.dump_switch_mode in Const.DUMP_MODE:
         if json_dump_condition(prefix):
-            if Const.ALL in DumpUtil.dump_mode:
+            complement_set = set(['forward', 'backward', 'input', 'output']) - set(DumpUtil.dump_mode)
+            if not any(mode in prefix for mode in complement_set):
                 api_list.append([prefix, stack_str])
-            else:
-                for mode in DumpUtil.dump_mode:
-                    if mode in prefix:
-                        api_list.append([prefix, stack_str])
     else:
         api_list.append([prefix, stack_str])
 
 
 def dump_api_tensor(dump_step, in_feat, name_template, out_feat, dump_file):
-    if Const.BACKWARD in name_template and Const.FORWARD not in DumpUtil.dump_mode:
+    if Const.BACKWARD in name_template and Const.BACKWARD in DumpUtil.dump_mode:
         if 'input' in DumpUtil.dump_mode:
             dump_tensor(out_feat, name_template.format("input"), dump_step, dump_file)
         if 'output' in DumpUtil.dump_mode:
             dump_tensor(in_feat, name_template.format("output"), dump_step, dump_file)
-        if Const.ALL in DumpUtil.dump_mode:
-            dump_tensor(out_feat, name_template.format("input"), dump_step, dump_file)
-            dump_tensor(in_feat, name_template.format("output"), dump_step, dump_file)
-    elif Const.BACKWARD not in name_template and Const.BACKWARD not in DumpUtil.dump_mode:
+    elif Const.BACKWARD not in name_template and Const.FORWARD in DumpUtil.dump_mode:
         if 'input' in DumpUtil.dump_mode:
             dump_tensor(in_feat, name_template.format("input"), dump_step, dump_file)
         if 'output' in DumpUtil.dump_mode:
             dump_tensor(out_feat, name_template.format("output"), dump_step, dump_file)
-        if Const.ALL in DumpUtil.dump_mode:
-            dump_tensor(in_feat, name_template.format("input"), dump_step, dump_file)
-            dump_tensor(out_feat, name_template.format("output"), dump_step, dump_file)
+
+
+def rename_():
+    global rank
+    global pkl_name
+    if rank is not None and pkl_name is not None:
+        if DumpUtil.target_iter:
+            dir_name = os.path.join(DumpUtil.dump_root, "step{}".format(DumpUtil.iter_num), "rank{}".format(os.getpid()))
+            new_name = os.path.join(DumpUtil.dump_root, "step{}".format(DumpUtil.iter_num), "rank{}".format(rank))
+        else:
+            dir_name = os.path.join(DumpUtil.dump_root, "rank{}".format(os.getpid()))
+            new_name = os.path.join(DumpUtil.dump_root, "rank{}".format(rank))
+        if not os.path.exists(new_name) and os.path.exists(dir_name):
+            _, file_name = os.path.split(pkl_name)
+            os.rename(dir_name, new_name)
+            pkl_name = os.path.join(new_name, file_name)
 
 
 def dump_acc_cmp(name, in_feat, out_feat, dump_step, module):
     dump_file = DumpUtil.get_dump_path()
     dump_file = modify_dump_path(dump_file, DumpUtil.dump_switch_mode)
-    _set_dump_switch4api_list(name)
+    if DumpUtil.dump_switch_mode == Const.API_LIST and not check_if_in_api_list(name):
+        return
     if DumpUtil.get_dump_switch():
-        rank = get_tensor_rank(in_feat, out_feat)
+        global rank
+        dump_dir, dump_filename = os.path.split(dump_file)
+        if DumpUtil.target_iter:
+            dump_dir = os.path.join(dump_dir, "step{}".format(DumpUtil.iter_num))
+            if not os.path.exists(dump_dir):
+                Path(dump_dir).mkdir(mode=FileCheckConst.DATA_DIR_AUTHORITY, exist_ok=True)
+            dump_file = os.path.join(dump_dir, dump_filename)
+        rank_this = get_tensor_rank(in_feat, out_feat)
+        DumpUtil.dump_root = os.path.dirname(DumpUtil.dump_path)
+        if rank_this is not None and rank != rank_this:
+            rank = rank_this
+            rename_()
+            if not DumpUtil.dump_init_enable:
+                if '.pkl' in dump_filename:
+                    npy_dir = dump_filename[:-4]
+                else:
+                    npy_dir = dump_filename
+                if DumpUtil.target_iter:
+                    DumpUtil.dump_data_dir = os.path.join(DumpUtil.dump_root, "step{}".format(DumpUtil.iter_num), "rank{}".format(rank), npy_dir)
+                else:
+                    DumpUtil.dump_data_dir = os.path.join(DumpUtil.dump_root, "rank{}".format(rank), npy_dir)
         if DumpUtil.target_rank is not None:
             if rank != DumpUtil.target_rank:
                 return
         dump_file = create_dirs_if_not_exist(rank, dump_file)
+        check_path_pattern_vaild(dump_file)
+        check_path_length(dump_file)
         global pkl_name
         pkl_name = dump_file
         if DumpUtil.dump_init_enable:
@@ -306,13 +348,16 @@ def acc_cmp_dump(name, **kwargs):
 
 
 def write_to_disk():
+    global api_list
     if api_list:
-        with open(pkl_name, 'a') as f:
+        with FileOpen(pkl_name, 'a') as f:
             try:
                 f.write('\n'.join(json.dumps(item) for item in api_list))
                 f.write('\n')
             except:
                 raise Exception("write to disk failed")
+        change_mode(pkl_name, FileCheckConst.DATA_FILE_AUTHORITY)
+        api_list = []
 
 
 def get_pkl_file_path():

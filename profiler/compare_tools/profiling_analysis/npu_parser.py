@@ -14,10 +14,32 @@
 # limitations under the License.
 
 import sys
-import pandas as pd
 from collections import defaultdict
+import pandas as pd
 import profiling_analysis.parser_helper as parser_helper
 from utils.file_reader import FileReader
+from common_func.path_manager import PathManager
+from common_func.file_manager import FileManager
+
+
+class NpuInfoWrapper:
+    def __init__(
+        self,
+        compute_time: int,
+        communication_time: int,
+        is_cluster: bool,
+        event_wait_sqe: dict,
+        ai_core_dict: dict,
+        event_wait_sqe_res: dict,
+        ai_core_res: dict,
+    ):
+        self.compute_time = compute_time
+        self.communication_time = communication_time
+        self.is_cluster = is_cluster
+        self.event_wait_sqe = event_wait_sqe
+        self.ai_core_dict = ai_core_dict
+        self.event_wait_sqe_res = event_wait_sqe_res
+        self.ai_core_res = ai_core_res
 
 
 class NpuProfilingParser:
@@ -65,7 +87,19 @@ class NpuProfilingParser:
                 communication_time += dur
                 min_ts = ts if ts < min_ts else min_ts
                 max_ts = (ts + dur) if (ts + dur) > max_ts else max_ts
+        npu_info_wrapper = NpuInfoWrapper(
+            compute_time, communication_time, is_cluster,
+            event_wait_sqe, ai_core_dict, event_wait_sqe_res, ai_core_res)
+        self.update_npu_info(max_ts - min_ts, npu_info_wrapper)
 
+    def update_npu_info(self, ts_dur, npu_info_wrapper):
+        compute_time = npu_info_wrapper.compute_time
+        communication_time = npu_info_wrapper.communication_time
+        is_cluster = npu_info_wrapper.is_cluster
+        event_wait_sqe = npu_info_wrapper.event_wait_sqe
+        ai_core_dict = npu_info_wrapper.ai_core_dict
+        event_wait_sqe_res = npu_info_wrapper.event_wait_sqe_res
+        ai_core_res = npu_info_wrapper.ai_core_res
         # AI_CORE和EVENT_WAIT_SQE共存为计算流
         compute_stream = []
         parallel_stream = []
@@ -87,7 +121,7 @@ class NpuProfilingParser:
                 self.parallel_time = self.interval_intersection(cs_event_wait_sqe_list, cs_ai_core_list)
         self.profiling_info.compute_time = compute_time / 10 ** 6 if is_cluster else \
             ai_core_res[compute_stream[0]] / 10 ** 6
-        self.profiling_info.e2e_time = (max_ts - min_ts) / 10 ** 6 if is_cluster else \
+        self.profiling_info.e2e_time = ts_dur / 10 ** 6 if is_cluster else \
             (self.max_stream_ts - self.min_stream_ts) / 10 ** 6
         self.profiling_info.communication_not_overlapped = communication_time / 10 ** 6 \
             if is_cluster else (event_wait_sqe_res[compute_stream[0]] - self.parallel_time) / 10 ** 6
@@ -116,10 +150,13 @@ class NpuProfilingParser:
         if not self.npu_summary_file:
             print('[WARNING] Npu kernel details csv file is not available.')
             return
+        PathManager.check_path_readable(self.npu_summary_file)
+        FileManager.check_file_size(self.npu_summary_file)
         info = pd.read_csv(self.npu_summary_file, index_col=None)
         cube_time = 0.0
         vec_time = 0.0
-        fa_time = 0.0
+        fa_time_fwd = 0.0
+        fa_time_bwd = 0.0
         cube_num = 0
         vec_num = 0
         if info.get('aic_mac_time(us)') is None or info.get('aiv_vec_time(us)') is None:
@@ -132,7 +169,10 @@ class NpuProfilingParser:
                 continue
             task_durations = info.loc[i, 'Duration(us)']
             if self.FLASH_ATTENTION in op_type.lower():
-                fa_time += task_durations
+                if 'bwd' in op_type.lower() or 'grad' in op_type.lower():
+                    fa_time_bwd += task_durations
+                else:
+                    fa_time_fwd += task_durations
             elif aiv_vec_time > 0:
                 vec_time += task_durations
                 vec_num += 1
@@ -141,7 +181,8 @@ class NpuProfilingParser:
                 cube_num += 1
         self.profiling_info.cube_time = cube_time / 10 ** 6
         self.profiling_info.vec_time = vec_time / 10 ** 6
-        self.profiling_info.flash_attention_time = fa_time / 10 ** 6
+        self.profiling_info.flash_attention_time_bwd = fa_time_bwd / 10 ** 6
+        self.profiling_info.flash_attention_time_fwd = fa_time_fwd / 10 ** 6
         self.profiling_info.cube_num = cube_num
         self.profiling_info.vec_num = vec_num
 
@@ -150,6 +191,8 @@ class NpuProfilingParser:
             print('[INFO] Npu op memory csv file is not available.')
             return
         try:
+            PathManager.check_path_readable(self.npu_mem_file)
+            FileManager.check_file_size(self.npu_mem_file)
             info = pd.read_csv(self.npu_mem_file, usecols=['Total Reserved(MB)'], index_col=None)
         except ValueError:
             print('[ERROR] Load memory info failed.')

@@ -481,6 +481,9 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
                           onChange={onSearchEventOperatorChanged}
                           type="search"
                           label="Search by Name"
+                          inputProps={{
+                            maxLength: 200
+                          }}
                         />
                       </Grid>
                     </Grid>
@@ -560,6 +563,9 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
                       onChange={onSearchOperatorChanged}
                       type="search"
                       label="Search by Name"
+                      inputProps={{
+                        maxLength: 200
+                      }}
                     />
                   </Grid>
                 </Grid>

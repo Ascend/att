@@ -20,6 +20,7 @@ import time
 from .advisor_const import AdvisorConst
 from ..common.utils import Const
 from ..common.utils import print_info_log, print_error_log
+from ..common.file_check_util import change_mode, FileCheckConst
 
 
 class AdvisorResult:
@@ -41,6 +42,7 @@ class AdvisorResult:
                 output_file.truncate(0)
                 message_list = [message + AdvisorConst.NEW_LINE for message in message_list]
                 output_file.writelines(message_list)
+            change_mode(result_file, FileCheckConst.DATA_FILE_AUTHORITY)
         except IOError as io_error:
             print_error_log("Failed to save %s, the reason is %s." % (result_file, io_error))
         else:

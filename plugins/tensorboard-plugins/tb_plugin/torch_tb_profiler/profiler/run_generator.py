@@ -144,7 +144,7 @@ class RunGenerator(object):
             return overlap_by_steps
         title = [x.lower() for x in data[0]]
         title_name = RunGenerator._check_overlap_data(title)
-        if title_name is None:
+        if not title_name:
             logger.error("Incomplete content of CSV file.")
             return overlap_by_steps
 
@@ -165,7 +165,7 @@ class RunGenerator(object):
         # csv: step / compute time / communication_not_overlap / overlap / communication / free time
         length = len(title)
         if length < 5:
-            return
+            return []
         key = ["computing", "overlapped", "communication(not overlapped)", "free"]
         get_key = list()
         for j in key:
@@ -173,7 +173,7 @@ class RunGenerator(object):
                 if j == title[i]:
                     get_key.append(i)
         if len(get_key) < 4:
-            return None
+            return []
         return get_key
 
     def _npu_get_wait_table(self):
@@ -514,8 +514,9 @@ class RunGenerator(object):
                     {'name': f'APP Reserved ({cano.memory_metric})', 'type': 'number',
                      'tooltip': 'APP reserved memory by allocator, both used and unused.'}]
             if len(component_curve_result['columns'][device]) > 0:
-                component_curve_result['columns'][device].insert(0, {'name': f'Time ({cano.time_metric})', 'type': 'number',
-                                                            'tooltip': 'Time since profiler starts.'})
+                component_curve_result['columns'][device].insert(0, {'name': f'Time ({cano.time_metric})',
+                                                                     'type': 'number',
+                                                                     'tooltip': 'Time since profiler starts.'})
         device_types = list(set(process_devices_type + pta_ge_devices_type))
         return {
             'devices': device_types,
@@ -604,15 +605,24 @@ class RunGenerator(object):
                                        round(float(ls[reserved_idx]), 3)]
                     pta_or_ge_data.setdefault(device_type, {}).setdefault(ls[tag_type_idx], []).append(line_chart_data)
                 else:
-                    self._handle_peak_memory_rows(device_type_idx, ls, peak_memory_rows, reserved_idx, tag_type_idx,
-                                                  time_idx)
+                    memory_curve_id_dict = {
+                        'device_type_idx': device_type_idx,
+                        'reserved_idx': reserved_idx,
+                        'tag_type_idx': tag_type_idx,
+                        'time_idx': time_idx
+                    }
+                    self._handle_peak_memory_rows(memory_curve_id_dict, ls, peak_memory_rows)
 
         peak_memory_events['rows'] = peak_memory_rows
         return process_data, pta_or_ge_data, peak_memory_events
 
-    def _handle_peak_memory_rows(self, device_type_idx, ls, peak_memory_rows, reserved_idx, tag_type_idx, time_idx):
+    def _handle_peak_memory_rows(self, memory_curve_id_dict, ls, peak_memory_rows):
         # Record the peak memory usage of other components.
         has_flag = False
+        device_type_idx = memory_curve_id_dict.get('device_type_idx')
+        reserved_idx = memory_curve_id_dict.get('reserved_idx')
+        tag_type_idx = memory_curve_id_dict.get('tag_type_idx')
+        time_idx = memory_curve_id_dict.get('time_idx')
         time_column = round((float(ls[time_idx]) - self.profile_data.start_ts) / 1000, 2)
         for item in peak_memory_rows[ls[device_type_idx]]:
             if item[0] == ls[tag_type_idx]:
@@ -1016,7 +1026,7 @@ class RunGenerator(object):
     @staticmethod
     def _get_csv_data(path: str):
         if path is None:
-            return
+            return []
         datas = []
         with open(path, encoding='utf-8-sig') as f:
             for row in csv.reader(f, skipinitialspace=True):
@@ -1146,7 +1156,7 @@ class DistributedRunGenerator(object):
             steps_to_overlap['all'][data.worker] = [0, 0, 0, 0]
             step_number = len(data.steps_names)
             if step_number <= 0:
-                return
+                return None
             if self.device_target != 'Ascend':
                 DistributedRunGenerator._get_gpu_overlap_data(data, steps_to_overlap)
             else:
@@ -1269,12 +1279,12 @@ class DistributedRunGenerator(object):
             row = [
                 op,
                 stats[0],
-                stats[1],
-                round(stats[1] * 1024 * 1024 / stats[0]),  # 1MB = 1024 * 1024 bytes
-                stats[2],
-                round(stats[2] * 1000 / stats[0]),  # 1ms = 1000us
-                stats[3],
-                round(stats[3] * 1000 / stats[0])  # 1ms = 1000us
+                stats[1] * 1024 * 1024,
+                round(stats[1] * 1024 * 1024 / stats[0] if stats != 0 else 0),  # 1MB = 1024 * 1024 bytes
+                stats[2] * 1000,
+                round(stats[2] * 1000 / stats[0] if stats != 0 else 0),  # 1ms = 1000us
+                stats[3] * 1000,
+                round(stats[3] * 1000 / stats[0] if stats != 0 else 0)  # 1ms = 1000us
             ]
             table['rows'].append(row)
 
@@ -1298,10 +1308,10 @@ class DistributedRunGenerator(object):
                 op,
                 stats[0],
                 stats[1],
-                round(stats[1] / stats[0]),
+                round(stats[1] / stats[0] if stats != 0 else 0),
                 stats[2],
-                round(stats[2] / stats[0]),
+                round(stats[2] / stats[0] if stats != 0 else 0),
                 stats[3],
-                round(stats[3] / stats[0])
+                round(stats[3] / stats[0] if stats != 0 else 0)
             ]
             table['rows'].append(row)

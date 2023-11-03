@@ -6,6 +6,7 @@ from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cos
     compare_builtin_type, get_rel_err_ratio_hundredth, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
 from api_accuracy_checker.common.utils import get_json_contents, print_info_log, write_csv
 from api_accuracy_checker.compare.compare_utils import CompareConst 
+from api_accuracy_checker.common.config import msCheckerConfig
 
 
 class Comparator:
@@ -75,7 +76,7 @@ class Comparator:
         console.print(table_detail)
 
     def write_csv_title(self):
-        summary_test_rows = [[self.COLUMN_API_NAME, self.COLUMN_FORWARD_SUCCESS, self.COLUMN_BACKWARD_SUCCESS]]
+        summary_test_rows = [[self.COLUMN_API_NAME, self.COLUMN_FORWARD_SUCCESS, self.COLUMN_BACKWARD_SUCCESS, "Message"]]
         write_csv(summary_test_rows, self.save_path)
 
         detail_test_rows = [[
@@ -98,6 +99,8 @@ class Comparator:
 
         name = test_result[0]
         df_row = list(test_result[:3])
+        if test_result[1] == "SKIP" or test_result[2] == "SKIP":
+            df_row.append(test_result[3])
         if self.stack_info:
             stack_info = "\n".join(self.stack_info[name])
             df_row.append(stack_info)
@@ -113,10 +116,12 @@ class Comparator:
         if isinstance(fwd_result, list):
             for i, test_subject in enumerate(fwd_result):
                 subject = subject_prefix + ".forward.output." + str(i)
+                test_subject = ["{:.{}f}".format(item, msCheckerConfig.precision) if isinstance(item, float) else item for item in test_subject]
                 test_rows.append([subject] + list(test_subject))
         if isinstance(bwd_result, list):
             for i, test_subject in enumerate(bwd_result):
                 subject = subject_prefix + ".backward.output." + str(i)
+                test_subject = ["{:.{}f}".format(item, msCheckerConfig.precision) if isinstance(item, float) else item for item in test_subject]
                 test_rows.append([subject] + list(test_subject))
 
         write_csv(test_rows, self.detail_save_path)
@@ -175,8 +180,8 @@ class Comparator:
             if name == "Max Relative Error":
                 max_abs_error_success.append(test_success)
             if detailed_result_total:
-                for i in range(len(detailed_result_total)):
-                    detailed_result_total[i] += detailed_result[i]
+                for i, detailed_result_item in enumerate(detailed_result):
+                    detailed_result_total[i] += detailed_result_item
             else:
                 detailed_result_total = detailed_result
         test_all_result = [CompareConst.PASS for _ in range(len(detailed_result_total))]
@@ -192,8 +197,8 @@ class Comparator:
                 elif CompareConst.WARNING in test_success_column:
                     test_all_result[i] = CompareConst.WARNING
         # dtype加到所有指标的前面, 是否pass放到所有指标的后面
-        for i in range(len(detailed_result_total)):
-            detailed_result = list(detailed_result_total[i])
+        for i, detailed_tuple in enumerate(detailed_result_total):
+            detailed_result = list(detailed_tuple)
             detailed_result.insert(0, bench_dtype_total[i])
             detailed_result.insert(1, npu_dtype_total[i])
             detailed_result.insert(2, shape_total[i])

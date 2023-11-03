@@ -9,8 +9,8 @@ from api_accuracy_checker.run_ut.run_ut import exec_api, generate_npu_params, ru
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
     print_error_log
 
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, check_file_suffix
 
-NO_GRAD_APIS = ["hardtanh"]
 
 init_environment()
 
@@ -77,10 +77,10 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     api_type = api_full_name.split("_")[0]
     api_name = api_full_name.split("_", 1)[1].rsplit("_", 2)[0]
     args, kwargs, need_grad = get_api_info(api_info_dict, api_name)
-    need_backward = api_full_name.replace("forward", "backward") in backward_content and api_name[-1] != "_"
+    need_backward = api_full_name.replace("forward", "backward") in backward_content
     need_backward = need_backward and need_grad
     if not need_grad:
-        print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
+        print_warn_log("%s function with out=... arguments don't support automatic differentiation, skip backward." % api_full_name)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     if kwargs.get("device"):
         del kwargs["device"]
@@ -121,7 +121,7 @@ def _run_ut_parser(parser):
                         help="<Required> The api param tool backward result file: generate from api param tool, "
                              "a json file.",
                         required=False)
-    parser.add_argument("-c", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
+    parser.add_argument("-j", "--jit_compile", dest="jit_compile", help="<optional> whether to turn on jit compile",
                         default=False, required=False)
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
                         default=0, required=False)
@@ -137,10 +137,8 @@ def _run_overflow_check():
     backward_file = ""
     if args.backward_input_file:
         backward_file = os.path.realpath(args.backward_input_file)
-        if not backward_file.endswith(".json"):
-            raise ValueError("The backward_input_file should be a json file!")
-    if not forward_file.endswith(".json"):
-        raise ValueError("The forward_input_file should be a json file!")
+        check_file_suffix(backward_file, FileCheckConst.JSON_SUFFIX)
+    check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)
     try:
         torch.npu.set_device(npu_device)
     except Exception:

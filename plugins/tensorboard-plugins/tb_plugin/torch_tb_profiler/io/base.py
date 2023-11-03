@@ -86,8 +86,10 @@ class LocalPath(BasePath):
 
 class RemotePath(BasePath):
     def split(self, path):
-        """Split a pathname.  Returns tuple '(head, tail)' where 'tail' is
-        everything after the final slash.  Either part may be empty."""
+        """
+        Split a pathname.  Returns tuple '(head, tail)' where 'tail' is
+        everything after the final slash.  Either part may be empty.
+        """
         sep = '/'
         i = path.rfind(sep) + 1
         head, tail = path[:i], path[i:]

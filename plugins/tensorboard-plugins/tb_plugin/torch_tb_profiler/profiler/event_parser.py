@@ -206,8 +206,6 @@ class NodeParserMixin:
 class StepParser:
     def __init__(self):
         # we could not use [[]] * len here since they all point to same memory
-        # https://stackoverflow.com/questions/12791501/python-initializing-a-list-of-lists
-        # https://stackoverflow.com/questions/240178/list-of-lists-changes-reflected-across-sublists-unexpectedly
         self.role_ranges: List[List[Tuple[int, int]]] = [[] for _ in range(ProfileRole.Total - 1)]
         self.steps: List[Tuple[int, int]] = []
         self.steps_names: List[str] = []
@@ -389,7 +387,7 @@ class StepParser:
                 self.steps[i_step] = (step_start_time, step_end_time)  # Update step time considering device side.
                 prev_step_end_time = step_end_time
 
-        is_remove_tail_steps = True  # TODO: Use tensorboard argument instead.
+        is_remove_tail_steps = True
         if is_use_gpu and len(self.steps) > 1 and is_remove_tail_steps:
             i_step = len(self.steps) - 1
             while i_step >= 0:

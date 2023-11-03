@@ -2,23 +2,6 @@
 
 set -ex
 
-# install cuda
-#if [ "$CUDA_VERSION" = "cu101" ]; then
-#    wget https://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda_10.1.243_418.87.00_linux.run
-#    sudo sh cuda_10.1.243_418.87.00_linux.run
-#elif [ "$CUDA_VERSION" = "cu102" ]; then
-#    wget https://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda_10.2.89_440.33.01_linux.run
-#    sudo sh cuda_10.2.89_440.33.01_linux.run
-#elif [ "$CUDA_VERSION" = "cu111" ]; then
-#    wget https://developer.download.nvidia.com/compute/cuda/11.1.0/local_installers/cuda_11.1.0_455.23.05_linux.run
-#    sudo sh cuda_11.1.0_455.23.05_linux.run
-#elif [ "$CUDA_VERSION" = "cu112" ]; then
-#    wget https://developer.download.nvidia.com/compute/cuda/11.2.0/local_installers/cuda_11.2.0_460.27.04_linux.run
-#    sudo sh cuda_11.2.0_460.27.04_linux.run
-#fi
-
-
-
 # install pytorch
 pip install numpy tensorboard typing-extensions pillow pytest
 if [ "$PYTORCH_VERSION" = "nightly" ]; then

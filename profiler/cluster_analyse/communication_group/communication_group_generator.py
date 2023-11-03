@@ -15,9 +15,9 @@
 
 import os
 from copy import deepcopy
+from collections import defaultdict
 from common_func.constant import Constant
 from common_func.file_manager import FileManager
-from collections import defaultdict
 
 
 class CommunicationGroupGenerator:
@@ -119,14 +119,20 @@ class CommunicationGroupGenerator:
             return
         p2p_ops = ops.get(Constant.P2P, {})
         for op_name, link_dict in p2p_ops.items():
-            for link in link_dict:
-                src_rank = int(link.split('-')[0])
-                dst_rank = int(link.split('-')[1])
-                if src_rank != dst_rank:
-                    rank_set = set([src_rank, dst_rank])
-                    if rank_set in self.p2p_link:
-                        continue
-                    self.p2p_link.append(rank_set)
+            self.append_p2p_link(op_name, link_dict)
+
+    def append_p2p_link(self, op_name, link_dict):
+        for link in link_dict:
+            if '-' not in link:
+                print(f"{op_name} has an invalid link key {link}!")
+                break
+            src_rank = int(link.split('-')[0])
+            dst_rank = int(link.split('-')[1])
+            if src_rank != dst_rank:
+                rank_set = set([src_rank, dst_rank])
+                if rank_set in self.p2p_link:
+                    continue
+                self.p2p_link.append(rank_set)
 
     def get_collective_ops_name(self, rank_id: int, comm_op_dict: dict):
         for comm_op in comm_op_dict:
@@ -165,4 +171,4 @@ class UnionFind(object):
         if p & q:
             return True
         else:
-            False
+            return False

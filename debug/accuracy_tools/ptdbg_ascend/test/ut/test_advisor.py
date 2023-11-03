@@ -5,7 +5,7 @@ import os
 import shutil
 import unittest
 from ptdbg_ascend.advisor.advisor import Advisor
-from ptdbg_ascend.common.utils import CompareException
+from ptdbg_ascend.common.file_check_util import FileCheckException
 
 
 class TestAdvisor(unittest.TestCase):
@@ -18,18 +18,14 @@ class TestAdvisor(unittest.TestCase):
 
     def test_analysis_when_csv_path_is_not_exist(self):
         advisor = Advisor("resources/compare/test.pkl", self.output_path)
-        self.assertRaises(CompareException, advisor.analysis)
+        self.assertRaises(FileCheckException, advisor.analysis)
 
     def test_analysis_when_csv_path_is_invalid(self):
         advisor = Advisor("resources/compare/npu_test_1.pkl", self.output_path)
-        self.assertRaises(CompareException, advisor.analysis)
+        self.assertRaises(FileCheckException, advisor.analysis)
 
     def test_analysis_when_csv_is_valid(self):
         advisor = Advisor("resources/compare/compare_result_20230703104808.csv", self.output_path)
         advisor.analysis()
         filenames = os.listdir(self.output_path)
         self.assertEqual(len(filenames), 1)
-
-    def test_analysis_when_accuracy_and_npu_name_not_in_csv(self):
-        advisor = Advisor("resources/compare/compare_result_without_accuracy.csv", self.output_path)
-        self.assertRaises(AttributeError, advisor.analysis)

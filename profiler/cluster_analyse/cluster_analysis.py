@@ -14,30 +14,37 @@
 # limitations under the License.
 
 import argparse
+
 from cluster_data_preprocess.pytorch_data_preprocessor import PytorchDataPreprocessor
 from communication_group.communication_group_generator import CommunicationGroupGenerator
 from common_func.constant import Constant
 from common_func.file_manager import FileManager
+from common_func.path_manager import PathManager
 from analysis.analysis_facade import AnalysisFacade
 
 
 class Interface:
     def __init__(self, args: argparse.Namespace):
-        self.collection_path = args.collection_path
+        self.collection_path = PathManager.get_realpath(args.collection_path)
         self.data_map = {}
         self.communication_group = {}
 
     def run(self):
+        PathManager.check_input_directory_path(self.collection_path)
+        PathManager.check_path_owner_consistent(self.collection_path)
         FileManager.create_output_dir(self.collection_path)
         data_map = PytorchDataPreprocessor(self.collection_path).get_data_map()
         if not data_map:
             print("Can not get rank info or profiling data.")
             return
-        communication_group, collective_group_dict, communication_ops = \
-            CommunicationGroupGenerator(self.collection_path, data_map).generate()
-        if not collective_group_dict:
+        try:
+            communication_group, collective_group_dict, communication_ops = \
+                CommunicationGroupGenerator(self.collection_path, data_map).generate()
+        except RuntimeError:
             print("Can not get communication info from ranks")
-            return
+            communication_group = {}
+            communication_ops = []
+            collective_group_dict = {}
         params = {
             Constant.COLLECTION_PATH: self.collection_path,
             Constant.DATA_MAP: data_map,
@@ -51,6 +58,5 @@ class Interface:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="cluster analysis module")
     parser.add_argument('-d', '--collection_path', type=str, required=True, help="profiling data path")
-    parser.add_argument('-o', '--output_path', type=str, help="analysis result output path")
-    args = parser.parse_args()
-    Interface(args).run()
+    args_parsed = parser.parse_args()
+    Interface(args_parsed).run()
