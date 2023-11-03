@@ -1,6 +1,7 @@
 import os
 import torch
-from api_accuracy_checker.common.utils import print_error_log, write_pt, check_path_before_create, create_directory
+from api_accuracy_checker.common.utils import print_error_log, write_pt, create_directory
+from ptdbg_ascend.src.python.ptdbg_ascend.common.utils import check_path_before_create
 
 
 class BaseAPIInfo:

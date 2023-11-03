@@ -623,14 +623,3 @@ def write_pt(file_path, tensor):
     full_path = os.path.realpath(file_path)
     file_check_util.change_mode(full_path, FileCheckConst.DATA_FILE_AUTHORITY)
     return full_path
-
-
-def check_path_before_create(path):
-    if len(os.path.realpath(path)) > Const.DIRECTORY_LENGTH or len(os.path.basename(path)) > \
-            Const.FILE_NAME_LENGTH:
-        print_error_log('The file path length exceeds limit.')
-        raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-    if not re.match(Const.FILE_PATTERN, os.path.realpath(path)):
-        print_error_log('The file path {} contains special characters.'.format(path))
-        raise CompareException(CompareException.INVALID_PATH_ERROR)
