@@ -67,6 +67,7 @@ def get_max_abs_err(b_value, n_value):
     bool_result = abs_err < 0.001
     return abs_err, bool_result, msg
 
+
 def get_rel_err_ratio_hundredth(b_value, n_value):
     ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.01)
     if n_value.dtype != np.float16:
@@ -75,6 +76,7 @@ def get_rel_err_ratio_hundredth(b_value, n_value):
     if bool_result:
         return ratio, CompareConst.PASS, msg
     return ratio, CompareConst.ERROR, msg
+
 
 def get_rel_err_ratio_thousandth(b_value, n_value):
     ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.001)
