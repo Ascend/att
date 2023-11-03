@@ -17,11 +17,12 @@ class PrecisionDebugger:
     hook_func = None
     config = None
 
-    def __init__(self, dump_path=None, hook_name=None, rank=None, step=[], enable_dataloader=False):
+    def __init__(self, dump_path=None, hook_name=None, rank=None, step=None, enable_dataloader=False):
         if hook_name is None:
             err_msg = "You must provide hook_name argument to PrecisionDebugger\
                             when config is not provided."
             raise Exception(err_msg)
+        step = step or []
         self.config = DebuggerConfig(dump_path, hook_name, rank, step)
         self.configure_hook = self.get_configure_hook(self.config.hook_name)
         self.configure_hook()
@@ -40,14 +41,15 @@ class PrecisionDebugger:
         hook_dict = {"dump": self.configure_full_dump, "overflow_check": self.configure_overflow_dump}
         return hook_dict.get(hook_name, lambda: ValueError("hook name {} is not in ['dump', 'overflow_check']".format(hook_name)))
 
-    def configure_full_dump(self, mode='api_stack', scope=[], api_list=[], filter_switch=Const.ON,
-            input_output_mode=[Const.ALL], acl_config=None, backward_input=[], summary_only=False):
+    def configure_full_dump(self, mode='api_stack', scope=None, api_list=None, filter_switch=Const.ON,
+            input_output_mode=[Const.ALL], acl_config=None, backward_input=None, summary_only=False):
+        scope = scope or [] 
+        api_list = api_list or []
+        backward_input = backward_input or []
         set_dump_switch_config(mode=mode, scope=scope, api_list=api_list,
                                filter_switch=filter_switch, dump_mode=input_output_mode, summary_only=summary_only)
         if mode == 'acl':
-            if not acl_config:
-                raise ValueError("acl_config must be configured when mode is 'acl'")
-            DumpUtil.dump_config = acl_config
+            DumpUtil.set_acl_config(acl_config)
             if not scope or not isinstance(scope, list) or len(scope) != 1:
                 raise ValueError("scope must be congfigured as a list with one api name")
             if isinstance(scope[0], str) and 'backward' in scope[0] and not backward_input:
@@ -55,15 +57,18 @@ class PrecisionDebugger:
             elif 'backward' in scope[0]:
                 set_backward_input(backward_input)
 
-    def configure_overflow_dump(self, mode="api", acl_config=None, overflow_nums=1, filter_switch = Const.OFF):
+    def configure_overflow_dump(self, mode="api", acl_config=None, overflow_nums=1, filter_switch=Const.OFF, need_replicate=False):
         if mode == "acl":
             DumpUtil.dump_switch_mode = mode
-            DumpUtil.dump_config = acl_config
-            if acl_config is None:
-                raise ValueError("acl_config must be configured when mode is 'acl'")
+            DumpUtil.set_acl_config(acl_config)
         init_overflow_nums(overflow_nums)
         check_switch_valid(filter_switch)
         OverFlowUtil.overflow_filter_switch = filter_switch
+        if not isinstance(need_replicate, bool):
+            print_error_log("Params autojudge only support True or False.")
+            raise CompareException(CompareException.INVALID_PARAM_ERROR)
+        if need_replicate:
+            DumpUtil.need_replicate = True
 
     @classmethod
     def start(cls):
@@ -102,6 +107,7 @@ class PrecisionDebugger:
     def incr_iter_num_maybe_exit():
         PrecisionDebugger.step()
         PrecisionDebugger.start()
+
 
 def iter_tracer(func):
     def func_wrapper(*args, **kwargs):

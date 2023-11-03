@@ -68,7 +68,7 @@ class CommunicationNode(BaseNode):
 class HostNode(BaseNode):
     def __init__(self, device_duration: int = 0, **kwargs):
         super().__init__(**kwargs)
-        self.device_duration = device_duration  # Total time of Kernel, GPU Memcpy, GPU Memset. TODO: parallel multi-stream? # noqa: E501
+        self.device_duration = device_duration  # Total time of Kernel, GPU Memcpy, GPU Memset.
 
 
 class OperatorNode(HostNode):
@@ -90,7 +90,6 @@ class OperatorNode(HostNode):
         self.tc_total_duration = 0  # Time of TC kernels launched by this op including its children operators.
 
     def fill_stats(self):
-        # TODO: Replace recursive by using a stack, in case of too deep callstack.
         self.children.sort(key=lambda x: (x.start_time, -x.end_time))
         self.runtimes.sort(key=lambda x: (x.start_time, -x.end_time)
                            if x.start_time and x.end_time else (sys.maxsize, -sys.maxsize - 1))

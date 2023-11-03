@@ -13,13 +13,12 @@ from api_accuracy_checker.compare.compare import Comparator
 from api_accuracy_checker.hook_module.wrap_tensor import TensorOPTemplate
 from api_accuracy_checker.hook_module.wrap_functional import FunctionalOPTemplate
 from api_accuracy_checker.hook_module.wrap_torch import TorchOPTemplate
-from ut_api_info import UtAPIInfo
+from api_accuracy_checker.run_ut.ut_api_info import UtAPIInfo
 from api_accuracy_checker.common.config import msCheckerConfig
 
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker, \
     change_mode, check_file_suffix
 
-NO_GRAD_APIS = ["hardtanh"]
 
 
 def init_environment():
@@ -68,8 +67,10 @@ def generate_npu_params(input_args, input_kwargs, need_backward):
     npu_kwargs = {key: recursive_arg_to_npu(value) for key, value in input_kwargs.items()}
     return npu_args, npu_kwargs
 
+
 def generate_cpu_params(input_args, input_kwargs, need_backward):
     first_dtype = None
+
     def recursive_arg_to_cpu(arg_in):
         nonlocal first_dtype
         if isinstance(arg_in, (list, tuple)):
@@ -99,6 +100,7 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
     cpu_args = recursive_arg_to_cpu(input_args)
     cpu_kwargs = {key: recursive_arg_to_cpu(value) for key, value in input_kwargs.items()}
     return cpu_args, cpu_kwargs
+
 
 def run_ut(forward_file, backward_file, out_path, save_error_data):
     print_info_log("start UT test")
@@ -141,7 +143,6 @@ def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out)
 
 
-
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
     in_fwd_data_list = []
     [api_type, api_name, _] = api_full_name.split("*")
@@ -151,7 +152,7 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     need_backward = api_full_name in backward_content
     need_backward = need_backward and need_grad
     if not need_grad:
-        print_warn_log("%s involves in-place operations, skip backward" % api_full_name)
+        print_warn_log("%s function with out=... arguments don't support automatic differentiation, skip backward." % api_full_name)
     cpu_args, cpu_kwargs = generate_cpu_params(args, kwargs, need_backward)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     grad_out, npu_grad_out = None, None
@@ -177,8 +178,6 @@ def get_api_info(api_info_dict, api_name):
     convert_type, api_info_dict = api_info_preprocess(api_name, api_info_dict)
     need_grad = True
     if api_info_dict.get("kwargs") and "out" in api_info_dict.get("kwargs"):
-        need_grad = False
-    if api_name in NO_GRAD_APIS:
         need_grad = False
     args, kwargs = gen_api_params(api_info_dict, need_grad, convert_type)
     return args, kwargs, need_grad

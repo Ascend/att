@@ -32,7 +32,7 @@ class Visualization:
         except UnicodeError as e:
             self.util.log.error("%s %s" % ("UnicodeError", str(e)))
             self.util.log.warning("Please check the npy file")
-            raise ParseException(ParseException.PARSE_UNICODE_ERROR)
+            raise ParseException(ParseException.PARSE_UNICODE_ERROR) from e
         table = self.util.create_table('', ['Index', 'Data'])
         flatten_data = np_data.flatten()
         for i in range(min(16, int(np.ceil(flatten_data.size / 8)))):
@@ -66,7 +66,7 @@ class Visualization:
                 except json.JSONDecodeError as e:
                     self.util.log.error("%s %s in line %s" % ("JSONDecodeError", str(e), pkl_line))
                     self.util.log.warning("Please check the pkl file")
-                    raise ParseException(ParseException.PARSE_JSONDECODE_ERROR)
+                    raise ParseException(ParseException.PARSE_JSONDECODE_ERROR) from e
                 info_prefix = msg[0]
                 if not info_prefix.startswith(api_name):
                     continue

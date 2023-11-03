@@ -29,6 +29,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from .file_check_util import FileOpen, FileChecker, FileCheckConst
+
 try:
     import torch_npu
 except ImportError:
@@ -208,7 +210,7 @@ def make_dump_path_if_not_exists(dump_path):
         except OSError as ex:
             print_error_log(
                 'Failed to create {}.Please check the path permission or disk space .{}'.format(dump_path, str(ex)))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
+            raise CompareException(CompareException.INVALID_PATH_ERROR) from ex
     else:
         if not os.path.isdir(dump_path):
             print_error_log('{} already exists and is not a directory.'.format(dump_path))
@@ -251,7 +253,11 @@ def print_warn_log(warn_msg):
     _print_log("WARNING", warn_msg)
 
 
-def check_mode_valid(mode, scope=[], api_list=[]):
+def check_mode_valid(mode, scope=None, api_list=None):
+    if scope is None:
+        scope = []
+    if api_list is None:
+        api_list = []
     if not isinstance(scope, list):
         raise ValueError("scope param set invalid, it's must be a list.")
     if not isinstance(api_list, list):
@@ -270,14 +276,15 @@ def check_mode_valid(mode, scope=[], api_list=[]):
               (mode, Const.DUMP_MODE)
         raise CompareException(CompareException.INVALID_DUMP_MODE, msg)
 
-    if mode_check[mode]() is not None:
-        raise mode_check[mode]()
+    if mode_check.get(mode)() is not None:
+        raise mode_check.get(mode)()
 
 
 def check_switch_valid(switch):
     if switch not in ["ON", "OFF"]:
         print_error_log("Please set switch with 'ON' or 'OFF'.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
+
 
 def check_dump_mode_valid(dump_mode):
     if not isinstance(dump_mode, list):
@@ -293,11 +300,13 @@ def check_dump_mode_valid(dump_mode):
         return ["forward", "backward", "input", "output"]
     return dump_mode
 
+
 def check_summary_only_valid(summary_only):
     if not isinstance(summary_only, bool):
         print_error_log("Params summary_only only support True or False.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
     return summary_only
+
 
 def check_compare_param(input_parma, output_path, stack_mode=False, auto_analyze=True,
                         fuzzy_match=False):  # 添加默认值来让不传参时能通过参数检查
@@ -332,29 +341,10 @@ def check_file_or_directory_path(path, isdir=False):
         when invalid data throw exception
     """
     if isdir:
-        if not os.path.exists(path):
-            print_error_log('The path {} is not exist.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-        if not os.path.isdir(path):
-            print_error_log('The path {} is not a directory.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-        if not os.access(path, os.W_OK):
-            print_error_log(
-                'The path {} does not have permission to write. Please check the path permission'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
+        path_checker = FileChecker(path, FileCheckConst.DIR, FileCheckConst.WRITE_ABLE)
     else:
-        if not os.path.isfile(path):
-            print_error_log('{} is an invalid file or non-exist.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-    check_file_valid(path)
-
-    if not os.access(path, os.R_OK):
-        print_error_log(
-            'The path {} does not have permission to read. Please check the path permission'.format(path))
-        raise CompareException(CompareException.INVALID_PATH_ERROR)
+        path_checker = FileChecker(path, FileCheckConst.FILE, FileCheckConst.READ_ABLE)
+    path_checker.common_check()
 
 
 def _check_pkl(pkl_file_handle, file_name):
@@ -365,8 +355,8 @@ def _check_pkl(pkl_file_handle, file_name):
     pkl_file_handle.seek(0, 0)
 
 
-def is_starts_with(string, prefixes):
-    return any(string.startswith(prefix) for prefix in prefixes)
+def is_starts_with(string, prefix_list):
+    return any(string.startswith(prefix) for prefix in prefix_list)
 
 
 def check_file_mode(npu_pkl, bench_pkl, stack_mode):
@@ -411,9 +401,9 @@ def remove_path(path):
             os.remove(path)
         else:
             shutil.rmtree(path)
-    except PermissionError:
+    except PermissionError as err:
         print_error_log("Failed to delete {}. Please check the permission.".format(path))
-        raise CompareException(CompareException.INVALID_PATH_ERROR)
+        raise CompareException(CompareException.INVALID_PATH_ERROR) from err
 
 
 def get_dump_data_path(dump_dir):
@@ -632,7 +622,7 @@ def generate_compare_script(dump_path, pkl_file_path, dump_switch_mode):
     is_api_stack = "True" if dump_switch_mode == Const.API_STACK else "False"
 
     try:
-        with open(template_path, 'r') as ftemp, \
+        with FileOpen(template_path, 'r') as ftemp, \
            os.fdopen(os.open(compare_script_path, Const.WRITE_FLAGS, Const.WRITE_MODES), 'w+') as fout:
             code_temp = ftemp.read()
             fout.write(code_temp % (pkl_file_path, dump_path, is_api_stack))

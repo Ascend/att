@@ -303,7 +303,7 @@ class GPUMetricsParser(object):
             process_gpu(gpu_ids[idx])
 
         tooltip_summary = 'The GPU usage metrics:\n'
-        tooltip = '{}\n{}'.format(tooltip_summary,  consts.TOOLTIP_GPU_UTIL)
+        tooltip = '{}\n{}'.format(tooltip_summary, consts.TOOLTIP_GPU_UTIL)
         if has_sm_efficiency:
             tooltip += '\n' + consts.TOOLTIP_SM_EFFICIENCY
         if has_occupancy:

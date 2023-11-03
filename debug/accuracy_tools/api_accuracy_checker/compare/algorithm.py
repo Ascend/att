@@ -1,5 +1,4 @@
 # 定义比对算法及比对标准
-
 import torch
 import numpy as np
 from api_accuracy_checker.compare.compare_utils import CompareConst, check_dtype_comparable
@@ -8,31 +7,35 @@ from api_accuracy_checker.common.utils import Const
 
 def compare_torch_tensor(cpu_output, npu_output, compare_alg):
     if not check_dtype_comparable(cpu_output, npu_output):
-        return CompareConst.NAN, False, f"Bench out dtype is {cpu_output.dtype} but\
+        return CompareConst.NA, False, f"Bench out dtype is {cpu_output.dtype} but\
                  npu output dtype is {npu_output.dtype}, cannot compare."
     if cpu_output.dtype in [bool, np.uint8, np.int8, np.int16, np.uint16, np.uint32, np.int32, np.int64, np.uint64]:
+        if compare_alg == cosine_sim:
+            return CompareConst.NA, False, f"Compare algorithm {compare_alg.__name__} is not supported for {cpu_output.dtype} data."
         return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output, npu_output)
+
 
 def compare_bool_tensor(cpu_output, npu_output):
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
     if cpu_shape != npu_shape:
-        return CompareConst.NAN, False, ""
+        return CompareConst.NA, False, ""
     error_nums = (cpu_output != npu_output).sum()
     if cpu_output.size == 0:
         return CompareConst.NAN, False, "There is not cpu calculation result."
     error_rate = float(error_nums / cpu_output.size)
     return error_rate, error_rate == 0, ""
 
+
 def get_msg_and_handle_value(b_value, n_value):
     msg = ""
     if not isinstance(b_value, np.ndarray) or not isinstance(n_value, np.ndarray):
         msg = f"Max rel err only support numpy array! The actual type is {type(b_value)}, {type(n_value)}."
-        return CompareConst.NAN, False, msg
+        return CompareConst.NA, False, msg
     if b_value.shape != n_value.shape:
         msg = f"Shape of bench and npu outputs don't match. bench: {b_value.shape}, npu: {n_value.shape}."
-        return CompareConst.NAN, False, msg
+        return CompareConst.NA, False, msg
 
     if n_value.dtype in Const.FLOAT_TYPE:
         zero_mask = (n_value == 0)
@@ -48,6 +51,7 @@ def get_msg_and_handle_value(b_value, n_value):
         b_value[zero_mask] += np.finfo(float).eps 
     return b_value, n_value, msg
 
+
 def get_max_rel_err(b_value, n_value):
     b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
     rel_err = np.abs((n_value - b_value) / b_value).max()
@@ -57,14 +61,17 @@ def get_max_rel_err(b_value, n_value):
         bool_result = rel_err < 0.001
     return rel_err, bool_result, msg
 
+
 def get_max_abs_err(b_value, n_value):
     b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
     abs_err = np.abs(b_value - n_value).max()
     bool_result = abs_err < 0.001
     return abs_err, bool_result, msg
 
+
 def get_rel_err_ratio_thousandth(b_value, n_value):
     return get_rel_err_ratio(b_value, n_value, 0.001)
+
 
 def get_rel_err_ratio_ten_thousandth(b_value, n_value):
     ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.0001)
@@ -73,6 +80,7 @@ def get_rel_err_ratio_ten_thousandth(b_value, n_value):
         return ratio, True, msg
     return ratio, bool_result, msg
 
+
 def get_rel_err_ratio(b_value, n_value, thresholding):
     b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
     rel_errs = np.abs((n_value - b_value) / b_value)
@@ -80,13 +88,16 @@ def get_rel_err_ratio(b_value, n_value, thresholding):
     bool_result = ratio > (1 - thresholding)
     return ratio, bool_result, msg
 
+
 def max_rel_err_standard(max_rel_errs):
     bool_result = np.array(max_rel_errs) < 0.001 
     return np.all(bool_result), bool_result
 
+
 def cosine_standard(compare_result):
     bool_result = np.array(compare_result) > 0.99
     return np.all(bool_result), bool_result
+
 
 def cosine_sim(cpu_output, npu_output):
     msg = ""
@@ -106,10 +117,10 @@ def cosine_sim(cpu_output, npu_output):
         return cos, True, msg 
     elif n_value_max <= np.finfo(float).eps:
         msg = "All the data is zero in npu dump data."
-        return CompareConst.NAN, False, msg 
+        return CompareConst.NA, False, msg 
     elif b_value_max <= np.finfo(float).eps:
         msg = "All the data is zero in bench dump data."
-        return CompareConst.NAN, False, msg 
+        return CompareConst.NA, False, msg 
     else:
         n_value = n_value_max.astype(float) / n_value_max 
         b_value = b_value_max.astype(float) / b_value_max
@@ -118,18 +129,21 @@ def cosine_sim(cpu_output, npu_output):
             msg = "Dump data has NaN when comparing with Cosine Similarity."
         return cos, cos > 0.99, msg
 
+
 def compare_uint8_data(b_value, n_value):
     if (b_value == n_value).all():
         return 1, True
     else:
         return 0, False
 
+
 def compare_builtin_type(bench_out, npu_out):
     if not isinstance(bench_out, (bool, int, float, str)):
         return CompareConst.NA, True, ""
     if bench_out != npu_out:
-        return CompareConst.NAN, False, ""
+        return CompareConst.NA, False, ""
     return True, True, ""
+
 
 def flatten_compare_result(result):
     flatten_result = []
@@ -139,6 +153,7 @@ def flatten_compare_result(result):
         else:
             flatten_result.append(result_i)
     return flatten_result
+
 
 # 本函数用alg比对bench_out 和npu_out，返回详细比对结果compare_result和标志比对是否通过的布尔变量test_success
 def compare_core(bench_out, npu_out, alg):

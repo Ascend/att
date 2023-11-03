@@ -31,6 +31,7 @@ def set_dump_switch(switch):
         initialize_output_json()
     DumpUtil.set_dump_switch(switch)
 
+
 class DumpUtil(object):
     dump_switch = None
     call_num = 0
@@ -45,9 +46,9 @@ class DumpUtil(object):
 
     @staticmethod
     def incr_iter_num_maybe_exit():
-        if DumpUtil.call_num == msCheckerConfig.target_iter or not msCheckerConfig.enable_dataloader:
+        if DumpUtil.call_num == msCheckerConfig.target_iter:
             set_dump_switch("ON")
-        elif DumpUtil.call_num > msCheckerConfig.target_iter and msCheckerConfig.enable_dataloader:
+        elif DumpUtil.call_num > msCheckerConfig.target_iter:
             raise Exception("Model pretest: exit after iteration {}".format(msCheckerConfig.target_iter))
         else:
             set_dump_switch("OFF")
@@ -73,6 +74,7 @@ def pretest_info_dump(name, out_feat, module, phase):
         raise NotImplementedError(msg)
 
     write_api_info_json(api_info)
+
 
 def pretest_hook(name, phase):
     def pretest_info_dump_hook(module, in_feat, out_feat):

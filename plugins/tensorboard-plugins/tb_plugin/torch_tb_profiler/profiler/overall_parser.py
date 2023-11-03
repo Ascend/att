@@ -43,12 +43,12 @@ class OverallParser(object):
             slots: List[Tuple[int, int]] = []
             for role in role_ranges:
                 if slots:
-                    range = intersection_ranges_lists(slots, role)
+                    inter_range = intersection_ranges_lists(slots, role)
                 else:
-                    range = role
+                    inter_range = role
                     slots = merge_ranges(list(steps))
-                cost_ranges.append(range)
-                slots = subtract_ranges_lists(slots, range)
+                cost_ranges.append(inter_range)
+                slots = subtract_ranges_lists(slots, inter_range)
             # The last one is ProfileRole.Other
             cost_ranges.append(slots)
 

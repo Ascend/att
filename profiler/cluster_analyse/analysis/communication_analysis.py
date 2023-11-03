@@ -15,9 +15,9 @@
 
 import os
 from abc import abstractmethod
+from collections import defaultdict
 
 from common_func.constant import Constant
-from collections import defaultdict
 from common_func.file_manager import FileManager
 
 
@@ -31,7 +31,7 @@ class BaseCommAnalysis:
 
     @staticmethod
     def compute_ratio(dividend: float, divisor: float):
-        if abs(divisor) < 1e-15:
+        if abs(divisor) < Constant.EPS:
             return 0
         else:
             return round(dividend / divisor, 4)

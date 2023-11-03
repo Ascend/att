@@ -1,4 +1,5 @@
 from queue import Queue
+from typing import Optional, Dict, List
 
 from utils.constant import Constant
 from utils.torch_op_node import TorchOpNode
@@ -21,7 +22,25 @@ class TreeBuilder:
         return root_node
 
     @classmethod
-    def update_tree_node(cls, root_node: TorchOpNode, flow_kernel_dict: dict = {}, memory_allocated_list: list = []):
+    def update_tree_node(
+        cls,
+        root_node: TorchOpNode,
+        flow_kernel_dict: Optional[Dict] = None,
+        memory_allocated_list: Optional[List] = None,
+    ):
+        def set_kernel_helper(node_queue, ts, kernel_num, kernel_list):
+            while not node_queue.empty():
+                tree_node = node_queue.get()
+                tree_node.add_kernel_num(kernel_num)
+                matched_child_node = tree_node.match_child_node(ts)
+                if matched_child_node:
+                    node_queue.put(matched_child_node)
+                else:
+                    tree_node.set_kernel_list(kernel_list)
+
+        flow_kernel_dict = flow_kernel_dict if flow_kernel_dict else {}
+        memory_allocated_list = memory_allocated_list if memory_allocated_list else []
+
         if flow_kernel_dict:
             for ts, kernel_list in flow_kernel_dict.items():
                 matched_child_node = root_node.match_child_node(ts)
@@ -30,14 +49,8 @@ class TreeBuilder:
                 kernel_num = len(kernel_list)
                 node_queue = Queue()
                 node_queue.put(matched_child_node)
-                while not node_queue.empty():
-                    tree_node = node_queue.get()
-                    tree_node.add_kernel_num(kernel_num)
-                    matched_child_node = tree_node.match_child_node(ts)
-                    if matched_child_node:
-                        node_queue.put(matched_child_node)
-                    else:
-                        tree_node.set_kernel_list(kernel_list)
+                set_kernel_helper(node_queue, ts, kernel_num, kernel_list)
+
         for memory_allocated in memory_allocated_list:
             ts = memory_allocated.get(Constant.TS)
             matched_child_node = root_node.match_child_node(ts)

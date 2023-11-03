@@ -20,9 +20,8 @@ class DiffNode:
         self.children: List[DiffNode] = []
 
     def build_tree(self):
-        '''build the children from the left_node and right_node'''
+        """build the children from the left_node and right_node"""
         if not isinstance(self.left, Operators) or not isinstance(self.right, Operators):
-            # TODO: do we need calculate the stats or not?
             return
 
         if isinstance(self.left.op_nodes, OperatorNode) and isinstance(self.right.op_nodes, OperatorNode):
@@ -39,7 +38,6 @@ class DiffNode:
         else:
             # one single item and one list
             pass
-            # TODO: do we need statistic the stats for both operator and kernel here?
 
     @staticmethod
     def create_node(
@@ -84,16 +82,15 @@ class DiffNode:
         l_iter = 0
         r_iter = 0
 
-        for (l, r) in matched_paris:
-            left_child = left_nodes[l_iter:l]
+        for (left, r) in matched_paris:
+            left_child = left_nodes[l_iter:left]
             right_child = right_nodes[r_iter:r]
             if left_child or right_child:
                 yield DiffNode.create_node(left_child, right_child)
 
-            yield DiffNode.create_node(left_nodes[l], right_nodes[r])
-            l_iter = l + 1
+            yield DiffNode.create_node(left_nodes[left], right_nodes[r])
+            l_iter = left + 1
             r_iter = r + 1
-            # TODO: fill unknown nodes in case of the start_time of next node and current
             # end time is bigger than threshold.
             # Or do we need move the logic into frondend for visualization?
 

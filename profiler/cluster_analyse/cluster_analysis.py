@@ -42,7 +42,6 @@ class Interface:
                 CommunicationGroupGenerator(self.collection_path, data_map).generate()
         except RuntimeError:
             print("Can not get communication info from ranks")
-        finally:
             communication_group = {}
             communication_ops = []
             collective_group_dict = {}
@@ -59,5 +58,5 @@ class Interface:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="cluster analysis module")
     parser.add_argument('-d', '--collection_path', type=str, required=True, help="profiling data path")
-    args = parser.parse_args()
-    Interface(args).run()
+    args_parsed = parser.parse_args()
+    Interface(args_parsed).run()

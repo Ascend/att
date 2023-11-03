@@ -123,7 +123,7 @@ class RunProfileData(object):
         # npu memory data
         self.memory_operator_path: str = None
         self.memory_component_path: str = None
-        self.start_ts: float = 0
+        self.start_ts: float = 0.0
 
         # npu operator data
         self.operator_path: str = None
@@ -356,7 +356,7 @@ class RunProfileData(object):
                         continue
                     total_mem = self.device_props[dev_id].get('totalGlobalMem')
                     if total_mem is not None and peak_mem > total_mem * 0.9:
-                        percentage = peak_mem / total_mem * 100
+                        percentage = peak_mem / total_mem * 100 if total_mem > 0 else 0
                         total_mem_gb = total_mem / 1024 / 1024 / 1024
                         ckp_url = 'https://pytorch.org/docs/stable/checkpoint.html'
                         amp_url = 'https://pytorch.org/docs/stable/amp.html'

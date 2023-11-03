@@ -27,7 +27,8 @@ import pandas as pd
 from ..advisor.advisor import Advisor
 from ..common.utils import check_compare_param, add_time_as_suffix, \
     print_warn_log, print_error_log, CompareException, Const,\
-    CompareConst, format_value, check_file_not_exists, check_file_valid
+    CompareConst, format_value, check_file_not_exists
+from ..common.file_check_util import FileChecker, FileCheckConst, change_mode
 
 
 def correct_data(result):
@@ -66,15 +67,33 @@ def cosine_similarity(n_value, b_value):
 
 
 def get_rmse(n_value, b_value):
-    rmse = np.linalg.norm(n_value - b_value) / np.sqrt(len(n_value))
+    if len(n_value) == 0 and len(b_value) == 0:
+        rmse = '0'
+    elif len(n_value) == 0:
+        rmse = CompareConst.NAN
+    elif len(b_value) == 0:
+        rmse = CompareConst.NAN
+    else:
+        rmse = np.linalg.norm(n_value - b_value) / np.sqrt(len(n_value))
     if np.isnan(rmse):
         rmse = CompareConst.NAN
     return rmse, ""
 
 
 def get_mape(n_value, b_value):
-    mape_val = np.sum(np.abs((n_value - b_value) / b_value)) / len(b_value) * 100
-    mape = CompareConst.NAN if np.isnan(mape_val) else str(round(mape_val, 4)) + '%'
+    if len(n_value) == 0 and len(b_value) == 0:
+        mape = '0'
+    elif len(n_value) == 0:
+        mape = CompareConst.NAN
+    elif len(b_value) == 0:
+        mape = CompareConst.NAN
+    elif not np.all(n_value) and not np.all(b_value):
+        mape = '0'
+    elif not np.all(b_value):
+        mape = CompareConst.NAN
+    else:
+        mape_val = np.sum(np.abs((n_value - b_value) / b_value)) / len(b_value) * 100
+        mape = CompareConst.NAN if np.isnan(mape_val) else str(round(mape_val, 4)) + '%'
     return mape, ""
 
 
@@ -88,13 +107,13 @@ def get_max_relative_err(n_value, b_value):
     np.seterr(divide='ignore', invalid='ignore')
     if b_value.dtype in CompareConst.FLOAT_TYPE:
         zero_mask = (b_value == 0)
-        b_value[zero_mask] += np.finfo(b_value.dtype).eps 
-        n_value[zero_mask] += np.finfo(b_value.dtype).eps 
+        b_value[zero_mask] += np.finfo(b_value.dtype).eps
+        n_value[zero_mask] += np.finfo(b_value.dtype).eps
     else:
         n_value, b_value = n_value.astype(float), b_value.astype(float)
         zero_mask = (b_value == 0)
-        b_value[zero_mask] += np.finfo(float).eps 
-        n_value[zero_mask] += np.finfo(float).eps 
+        b_value[zero_mask] += np.finfo(float).eps
+        n_value[zero_mask] += np.finfo(float).eps
     relative_err = np.divide((n_value - b_value), b_value)
     max_relative_err = np.max(np.abs(relative_err))
     if np.isnan(max_relative_err):
@@ -115,8 +134,7 @@ def check_op(npu_dict, bench_dict, fuzzy_match):
     except Exception as err:
         print_warn_log("%s and %s can not fuzzy match." % (a_op_name, b_op_name))
         is_match = False
-    finally:
-        return is_match and struct_match
+    return is_match and struct_match
 
 
 def check_struct_match(npu_dict, bench_dict):
@@ -144,7 +162,7 @@ def check_type_shape_match(npu_struct, bench_struct):
         shape_match = npu_shape == bench_shape
         type_match = npu_type == bench_type
         if not type_match:
-            if [npu_type, bench_type] in [["torch.float16", "torch.float32"], ["torch.float32", "torch.float16"], 
+            if [npu_type, bench_type] in [["torch.float16", "torch.float32"], ["torch.float32", "torch.float16"],
                                           ["torch.float16", "torch.bfloat16"], ["torch.bfloat16", "torch.float16"]]:
                 type_match = True
             else:
@@ -304,12 +322,12 @@ def read_dump_path(result_path):
             bench_dump_name = bench_dump_name_list[index]
             op_name_mapping_dict[npu_dump_name] = [npu_dump_name, bench_dump_name]
         return op_name_mapping_dict
-    except FileNotFoundError as error:
-        print(error)
-        raise FileNotFoundError(error)
-    except IOError as error:
-        print(error)
-        raise IOError(error)
+    except FileNotFoundError as e:
+        print_error_log('{} file is not found.'.format(result_path))
+        raise CompareException(CompareException.OPEN_FILE_ERROR) from e
+    except IOError as e:
+        print_error_log('{} read csv failed.'.format(result_path))
+        raise CompareException(CompareException.READ_FILE_ERROR) from e
 
 
 def _handle_multi_process(func, input_parma, result_path, lock):
@@ -325,13 +343,13 @@ def _handle_multi_process(func, input_parma, result_path, lock):
     pool = multiprocessing.Pool(process_num)
 
     def err_call(args):
+        print_error_log('multiprocess compare failed! season:{}'.format(args))
         try:
             pool.terminate()
             if os.path.exists(result_path):
                 os.remove(result_path)
-            sys.exit(args)
-        except SystemExit as error:
-            print('multiprocess compare failed! season:{}'.format(args))
+        except OSError as e:
+            print_error_log("pool terminate failed")
 
     for process_idx, fusion_op_names in enumerate(op_names):
         idx = [process_num, process_idx]
@@ -376,12 +394,12 @@ def _save_cmp_result(idx, cos_result, max_err_result, max_relative_err_result, e
             csv_pd.loc[process_index, CompareConst.ERROR_MESSAGE] = err_msg[i]
             csv_pd.loc[process_index, CompareConst.ACCURACY] = check_accuracy(cos_result[i], max_err_result[i])
         csv_pd.to_csv(result_path, index=False)
-    except FileNotFoundError as error:
-        print(error)
-        raise FileNotFoundError(error)
-    except IOError as error:
-        print(error)
-        raise IOError(error)
+    except FileNotFoundError as e:
+        print_error_log('{} file is not found.'.format(result_path))
+        raise CompareException(CompareException.OPEN_FILE_ERROR) from e
+    except IOError as e:
+        print_error_log('{} read csv failed.'.format(result_path))
+        raise CompareException(CompareException.READ_FILE_ERROR) from e
     finally:
         lock.release()
 
@@ -412,8 +430,12 @@ def compare_by_op(op_name, op_name_mapping_dict, input_parma):
     try:
         n_path = os.path.join(input_parma.get("npu_dump_data_dir"), npu_bench_name_list[0] + ".npy")
         b_path = os.path.join(input_parma.get("bench_dump_data_dir"), npu_bench_name_list[1] + ".npy")
-        check_file_valid(n_path)
-        check_file_valid(b_path)
+        n_path_checker = FileChecker(n_path, FileCheckConst.FILE, FileCheckConst.READ_ABLE,
+                                     FileCheckConst.NUMPY_SUFFIX)
+        b_path_checker = FileChecker(b_path, FileCheckConst.FILE, FileCheckConst.READ_ABLE,
+                                     FileCheckConst.NUMPY_SUFFIX)
+        n_path = n_path_checker.common_check()
+        b_path = b_path_checker.common_check()
         n_value = np.load(n_path)
         b_value = np.load(b_path)
     except IOError as error:
@@ -434,11 +456,10 @@ def compare_by_op(op_name, op_name_mapping_dict, input_parma):
         err_msg = " Dtype of NPU and bench Tensor do not match."
     else:
         err_msg = ""
-    
+
     n_value, b_value = handle_inf_nan(n_value, b_value)
     if n_value is CompareConst.NAN or b_value is CompareConst.NAN:
         return "N/A", "N/A", "N/A",  "The position of inf or nan in NPU and bench Tensor do not match."
-        
 
     n_value = n_value.reshape(-1).astype(float)
     b_value = b_value.reshape(-1).astype(float)
@@ -509,6 +530,7 @@ def compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=False,
         result_df.to_csv(fout, index=False)
 
     _do_multi_process(input_parma, file_path)
+    change_mode(file_path, FileCheckConst.DATA_FILE_AUTHORITY)
     if auto_analyze:
         advisor = Advisor(file_path, output_path)
         advisor.analysis()

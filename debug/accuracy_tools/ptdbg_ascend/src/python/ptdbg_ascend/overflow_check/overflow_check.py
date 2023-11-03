@@ -1,12 +1,7 @@
 import os
-import torch
 from pathlib import Path
-from ..common.utils import print_warn_log, get_time, print_info_log
-from ..dump.dump import forward_init_status, forward_acl_dump
-from .utils import OverFlowUtil, dump_overflow
-from ..dump.utils import DumpUtil, Const, get_tensor_rank, create_dirs_if_not_exist
-from .info_dump import write_api_info_json, ForwardAPIInfo, BackwardAPIInfo
-from ..dump import dump
+
+import torch
 
 try:
     import torch_npu
@@ -15,6 +10,13 @@ except ImportError:
 else:
     is_gpu = False
 
+from ..common.utils import print_warn_log, get_time, print_info_log
+from ..dump.dump import forward_init_status, forward_acl_dump
+from .utils import OverFlowUtil, dump_overflow
+from ..dump.utils import DumpUtil, Const, get_tensor_rank, create_dirs_if_not_exist
+from .info_dump import write_api_info_json, ForwardAPIInfo, BackwardAPIInfo
+from ..dump import dump
+
 backward_init_status = False
 api_overflow = []
 forward_api_info = {}
@@ -22,6 +24,7 @@ backward_api_info = {}
 FORWARD_REAL_DATA_PATH = os.path.join('./', 'forward_real_data')
 BACKWARD_REAL_DATA_PATH = os.path.join('./', 'backward_real_data')
 rank = os.getpid()
+pkl_name = ''
 
 
 def check_overflow_environment(pid):
@@ -75,6 +78,7 @@ def check_data_overflow(x):
 def check_path(apis, path):
     return any(api in path for api in apis)
 
+
 def overflow_check(name, **kwargs):
     overflow_nums = OverFlowUtil.overflow_nums
     pid = kwargs.get('pid')
@@ -125,8 +129,7 @@ def overflow_check(name, **kwargs):
             if hasattr(module, 'input_kwargs'):
                 del module.input_kwargs
         if module.has_overflow and OverFlowUtil.check_overflow_dump_times(overflow_nums):
-            need_replicate = overflow_type_judge(in_feat, out_feat, module_name)
-            if need_replicate:
+            if overflow_type_judge(in_feat, out_feat, module_name) and DumpUtil.need_replicate:
                 if module_name.endswith(Const.FORWARD):
                     forward_api_info.update({name: ForwardAPIInfo(name, True, module.input_args, module.input_kwargs)})
                     api_overflow.append(module_name)
@@ -135,7 +138,7 @@ def overflow_check(name, **kwargs):
                     backward_api_info.update({name: BackwardAPIInfo(name, out_feat)})
             OverFlowUtil.inc_overflow_dump_times()
             dump_file_name = os.path.join(dump_dir,
-                "Overflow_info_{}_{}.pkl".format(get_time(), OverFlowUtil.real_overflow_dump_times))
+                                          "{}_{}.pkl".format(module_name, OverFlowUtil.real_overflow_dump_times))
             dump_overflow(module_name, in_feat, out_feat, dump_file_name)
             dump.pkl_name = dump_file_name
 
@@ -154,7 +157,6 @@ def overflow_check(name, **kwargs):
                     write_api_info_json(backward_api_info[key])
                 raise ValueError("[overflow {} times]: dump file is saved in '{}'."
                                  .format(OverFlowUtil.real_overflow_dump_times, os.path.realpath(dump_file_name)))
-                return
 
     def overflow_type_judge(in_feat, out_feat, module_name):
         if module_name.endswith(Const.BACKWARD):
