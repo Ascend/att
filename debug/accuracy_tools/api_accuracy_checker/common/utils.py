@@ -56,6 +56,9 @@ class Const:
     """
     Class for const
     """
+    DIRECTORY_LENGTH = 4096
+    FILE_NAME_LENGTH = 255
+    FILE_PATTERN = r'^[a-zA-Z0-9_./-]+$'
     MODEL_TYPE = ['.onnx', '.pb', '.om']
     DIM_PATTERN = r"^(-?[0-9]+)(,-?[0-9]+)*"
     SEMICOLON = ";"
