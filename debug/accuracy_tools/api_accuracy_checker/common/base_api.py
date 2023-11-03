@@ -1,6 +1,6 @@
 import os
 import torch
-from api_accuracy_checker.common.utils import print_error_log, write_pt
+from api_accuracy_checker.common.utils import print_error_log, write_pt, check_path_before_create, create_directory
 
 
 class BaseAPIInfo:
@@ -56,13 +56,13 @@ class BaseAPIInfo:
             api_args = self.api_name + '.' + str(self.args_num)
             if self.is_forward:
                 forward_real_data_path = os.path.join(self.save_path, self.forward_path, "rank" + str(self.rank))
-                if not os.path.exists(forward_real_data_path):
-                    os.makedirs(forward_real_data_path)
+                check_path_before_create(forward_real_data_path)
+                create_directory(forward_real_data_path)
                 file_path = os.path.join(forward_real_data_path, f'{api_args}.pt')
             else:
                 backward_real_data_path = os.path.join(self.save_path, self.backward_path, "rank" + str(self.rank))
-                if not os.path.exists(backward_real_data_path):
-                    os.makedirs(backward_real_data_path)
+                check_path_before_create(backward_real_data_path)
+                create_directory(backward_real_data_path)
                 file_path = os.path.join(backward_real_data_path, f'{api_args}.pt')
             self.args_num += 1
             pt_path = write_pt(file_path, arg.contiguous().cpu().detach())
