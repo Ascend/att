@@ -40,7 +40,7 @@ class Comparator:
 
         self.test_result_cnt = {
             "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0,
-            "total_num": 0
+            "total_num": 0, "forward_or_backward_fail_num": 0
         }
         self.result_save_path = result_save_path
         self.write_csv_title()
@@ -57,8 +57,9 @@ class Comparator:
         )
         table_total.add_column("Result")
         table_total.add_column("Statistics")
-        table_total.add_row("[green]Total Pass[/green]", str(self.test_result_cnt.get("success_num")))
-        table_total.add_row("[red]Total Fail[/red]", str(self.test_result_cnt.get("forward_and_backward_fail_num")))
+        table_total.add_row("[green]Pass[/green]", str(self.test_result_cnt.get("success_num")))
+        table_total.add_row("[red]Fail[/red]", str(self.test_result_cnt.get("forward_and_backward_fail_num") +
+                                                   self.test_result_cnt.get("forward_or_backward_fail_num")))
         table_total.add_row("Passing Rate", passing_rate)
 
         table_detail = Table(
@@ -152,8 +153,10 @@ class Comparator:
             self.test_result_cnt['forward_and_backward_fail_num'] += 1
         elif not is_fwd_success:
             self.test_result_cnt['forward_fail_num'] += 1
+            self.test_result_cnt['forward_or_backward_fail_num'] += 1
         else:
             self.test_result_cnt['backward_fail_num'] += 1
+            self.test_result_cnt['forward_or_backward_fail_num'] += 1
         return is_fwd_success, is_bwd_success
 
 
