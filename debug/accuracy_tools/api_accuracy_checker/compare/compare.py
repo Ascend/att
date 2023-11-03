@@ -185,7 +185,7 @@ class Comparator:
             else:
                 detailed_result_total = detailed_result
         test_all_result = [CompareConst.PASS for _ in range(len(detailed_result_total))]
-        for i in range(len(test_all_result)):
+        for i, _ in enumerate(test_all_result):
             if not cosine_success[0][i] or CompareConst.ERROR == cosine_success[0][i]:
                 test_all_result[i] = CompareConst.ERROR
             elif max_abs_error_success[0][i] or CompareConst.PASS == max_abs_error_success[0][i]:
