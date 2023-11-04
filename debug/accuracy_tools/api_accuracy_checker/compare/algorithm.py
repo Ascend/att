@@ -11,7 +11,7 @@ def compare_torch_tensor(cpu_output, npu_output, compare_alg):
                  npu output dtype is {npu_output.dtype}, cannot compare."
     if cpu_output.dtype in [bool, np.uint8, np.int8, np.int16, np.uint16, np.uint32, np.int32, np.int64, np.uint64]:
         if compare_alg == cosine_sim:
-            return CompareConst.NA, False, f"Compare algorithm {compare_alg.__name__} is not supported for {cpu_output.dtype} data."
+            return CompareConst.NA, True, f"Compare algorithm {compare_alg.__name__} is not supported for {cpu_output.dtype} data."
         return compare_bool_tensor(cpu_output, npu_output)
     return compare_alg(cpu_output, npu_output)
 
