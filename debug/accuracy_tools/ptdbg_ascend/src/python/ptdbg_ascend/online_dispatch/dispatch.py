@@ -65,9 +65,12 @@ class PtdbgDispatch(TorchDispatchMode):
         Path(self.root_npu_path).mkdir(mode=0o750, parents=True, exist_ok=True)
 
         self.aten_ops_blacklist = []
-        yaml_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "unsupport_torch_ops.yaml")
+        self.npu_adjust_autogard = []
+        yaml_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "torch_ops_config.yaml")
         with FileOpen(yaml_path, 'r') as f:
-            self.aten_ops_blacklist = yaml.safe_load(f).get('aten')
+            yaml_file = yaml.safe_load(f)
+            self.aten_ops_blacklist = yaml_file.get('aten_ops_blacklist')
+            self.npu_adjust_autogard = yaml_file.get('npu_adjust_autogard')
 
         self.process_num = process_num
         self.lock = None
@@ -158,6 +161,10 @@ class PtdbgDispatch(TorchDispatchMode):
 
         save_csv(self.all_summery, self.call_stack_list, self.csv_path)
 
+    def enable_autogard(self, aten_api):
+        if aten_api in self.npu_adjust_autogard:
+            torch._C._dispatch_tls_set_dispatch_key_excluded(torch._C.DispatchKey.AutogradFunctionality, False)
+
     def __torch_dispatch__(self, func, types, args=(), kwargs=None):
         if not is_npu:
             logger_error("Please confirm you run environment installed torch_npu!")
@@ -171,6 +178,7 @@ class PtdbgDispatch(TorchDispatchMode):
             logger_error(f"Please check the func name {func.__name__}!")
             return func(*args, **kwargs)
 
+        self.enable_autogard(aten_api)
         if aten_api in self.aten_ops_blacklist:
             npu_out = func(*args, **kwargs)
             return npu_out

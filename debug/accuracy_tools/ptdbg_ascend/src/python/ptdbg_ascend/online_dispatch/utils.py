@@ -4,6 +4,14 @@ import logging
 import psutil
 import torch
 import numpy as np
+
+try:
+    import torch_npu
+except ImportError:
+    pta_cpu_device = None
+else:
+    pta_cpu_device = torch.device("cpu")
+
 from ..common.utils import print_error_log, CompareConst
 
 cpu_device = torch._C.device("cpu")
@@ -72,10 +80,10 @@ def data_to_cpu(data, deep, data_cpu):
     global cpu_device
     list_cpu = []
     if isinstance(data, torch.Tensor):
-        if data.device == cpu_device:
+        if data.device == cpu_device or data.device == pta_cpu_device:
             tensor_copy = data.clone().detach()
         else:
-            tensor_copy = data.cpu()
+            tensor_copy = data.cpu().detach()
         if tensor_copy.dtype in [torch.float16, torch.half]:
             tensor_copy = tensor_copy.float()
         
