@@ -49,15 +49,12 @@ for version in torch_without_guard_version_list:
 if not IS_GPU and not torch_without_guard_version:
     from torch_npu.utils.device_guard import torch_device_guard as torch_npu_device_guard
 
-device = collections.namedtuple('device', ['type', 'index'])
-
 
 class Const:
     """
     Class for const
     """
     MODEL_TYPE = ['.onnx', '.pb', '.om']
-    DIM_PATTERN = r"^(-?[0-9]+)(,-?[0-9]+)*"
     SEMICOLON = ";"
     COLON = ":"
     EQUAL = "="
@@ -332,7 +329,7 @@ def check_file_size(input_file, max_size):
         file_size = os.path.getsize(input_file)
     except OSError as os_error:
         print_error_log('Failed to open "%s". %s' % (input_file, str(os_error)))
-        raise CompareException(CompareException.INVALID_FILE_ERROR)
+        raise CompareException(CompareException.INVALID_FILE_ERROR) from os_error
     if file_size > max_size:
         print_error_log('The size (%d) of %s exceeds (%d) bytes, tools not support.'
                         % (file_size, input_file, max_size))
@@ -390,7 +387,7 @@ def create_directory(dir_path):
         except OSError as ex:
             print_error_log(
                 'Failed to create {}.Please check the path permission or disk space .{}'.format(dir_path, str(ex)))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
+            raise CompareException(CompareException.INVALID_PATH_ERROR) from ex
 
 
 def execute_command(cmd):
@@ -561,10 +558,10 @@ def check_input_file_valid(input_path, max_file_size=MAX_JSON_FILE_SIZE):
     if not os.access(input_path, os.R_OK):
         raise PermissionError('Input file %s is not readable!' % input_path)
 
-    check_path_pattern_valid(input_path)
-
     if not check_path_length_valid(input_path):
         raise ValueError("The real path or file_name of input is too long.")
+
+    check_path_pattern_valid(input_path)
 
     if os.path.getsize(input_path) > max_file_size:
         raise ValueError(f'The file is too large, exceeds {max_file_size // 1024 ** 2}MB')
