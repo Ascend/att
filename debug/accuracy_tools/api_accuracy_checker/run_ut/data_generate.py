@@ -121,18 +121,19 @@ def gen_common_tensor(low, high, shape, data_dtype, convert_type):
         if ori_dtype == data_dtype:
             data_dtype = Const.CONVERT.get(convert_type)[1]
     if data_dtype in FLOAT_TYPE:
+        if high in [float('inf'), float('-inf')] or low in [float('inf'), float('-inf')]:
+            raise ValueError('Parameter contains inf, skip comparison.')
         scale = high - low
         rand01 = torch.rand(shape, dtype=eval(data_dtype))
         tensor = rand01 * scale + low
-        tmp_tensor = tensor.reshape(-1)
-        tmp_tensor[0] = low
-        tmp_tensor[-1] = high
     elif 'int' in data_dtype or 'long' in data_dtype:
         low, high = int(low), int(high)
         tensor = torch.randint(low, high + 1, shape, dtype=eval(data_dtype))
     else:
         print_error_log('Dtype is not supported: ' + data_dtype)
         raise NotImplementedError()
+    if tensor.nelement() == 0:
+        return tensor
     tmp_tensor = tensor.reshape(-1)
     tmp_tensor[0] = low
     tmp_tensor[-1] = high
