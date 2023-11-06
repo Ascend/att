@@ -154,11 +154,11 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     need_backward = need_backward and need_grad
     if not need_grad:
         print_warn_log("%s function with out=... arguments don't support automatic differentiation, skip backward." % api_full_name)
+    if kwargs.get("device"):
+        del kwargs["device"]
     cpu_args, cpu_kwargs = generate_cpu_params(args, kwargs, need_backward)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     grad_out, npu_grad_out = None, None
-    if kwargs.get("device"):
-        del kwargs["device"]
     out = exec_api(api_type, api_name, cpu_args, cpu_kwargs)
     npu_out = exec_api(api_type, api_name, npu_args, npu_kwargs)
     grad_input_index = api_setting_dict.get(api_name)
