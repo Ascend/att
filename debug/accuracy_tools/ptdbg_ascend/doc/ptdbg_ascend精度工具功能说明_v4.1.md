@@ -1209,14 +1209,10 @@ dump结果目录结构示例如下：
 
 **溢出检测dump场景**
 
-register_hook设置了overflow_check时，检测API溢出，dump结果的文件名形式为{api_type}_{api_name}_{api调用次数}_{正反向}_{当前溢出次数}，dump结果如下：
+register_hook设置了overflow_check时，检测API溢出，dump结果的文件名固定为Overflow_info_{timestamp}，dump结果如下：
 
-* {api_type}_{api_name}_{api调用次数}_{正反向}_{当前溢出次数}.pkl
-* {api_type}_{api_name}_{api调用次数}_{正反向}_{当前溢出次数}目录
-
-例如：
-* Tensor___add___1_forward_1.pkl
-* Tensor___add___1_forward_1目录
+- Overflow_info_{timestamp}.pkl
+- Overflow_info_{timestamp}目录
 
 ## CPU或GPU与NPU精度数据比对
 
