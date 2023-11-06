@@ -6,7 +6,6 @@ from rich.console import Console
 from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, get_max_abs_err, \
     compare_builtin_type, get_rel_err_ratio_hundredth, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
 from api_accuracy_checker.common.utils import get_json_contents, print_info_log, print_error_log, write_csv, CompareException
-
 from api_accuracy_checker.compare.compare_utils import CompareConst 
 from api_accuracy_checker.common.config import msCheckerConfig
 
