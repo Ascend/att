@@ -180,9 +180,9 @@ class Comparator:
             if name not in ["Cosine Similarity", "Max Relative Error", "Max Absolute Error"]:
                 test_success_total.append(test_success)
             if name == "Cosine Similarity":
-                cosine_success.append(test_success)
+                cosine_success = test_success
             if name == "Max Relative Error":
-                max_abs_error_success.append(test_success)
+                max_abs_error_success = test_success
             if detailed_result_total:
                 for i, detailed_result_item in enumerate(detailed_result):
                     detailed_result_total[i] += detailed_result_item
@@ -190,9 +190,9 @@ class Comparator:
                 detailed_result_total = detailed_result
         test_all_result = [CompareConst.PASS for _ in range(len(detailed_result_total))]
         for i, _ in enumerate(test_all_result):
-            if not cosine_success[0][i] or CompareConst.ERROR == cosine_success[0][i]:
+            if not cosine_success[i] or CompareConst.ERROR == cosine_success[i]:
                 test_all_result[i] = CompareConst.ERROR
-            elif max_abs_error_success[0][i] or CompareConst.PASS == max_abs_error_success[0][i]:
+            elif max_abs_error_success[i] or CompareConst.PASS == max_abs_error_success[i]:
                 test_all_result[i] = CompareConst.PASS
             else:
                 test_success_column = [test_success_single[i] for test_success_single in test_success_total]
