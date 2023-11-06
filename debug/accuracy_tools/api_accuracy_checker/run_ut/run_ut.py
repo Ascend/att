@@ -2,6 +2,7 @@ import argparse
 import os
 import copy
 import sys
+import time
 import torch_npu
 import yaml
 import torch
@@ -215,7 +216,7 @@ def initialize_save_error_data():
     error_data_path_checker = FileChecker(msCheckerConfig.error_data_path, FileCheckConst.DIR,
                                           ability=FileCheckConst.WRITE_ABLE)
     error_data_path = error_data_path_checker.common_check()
-    initialize_save_path(error_data_path, 'ut_error_data')
+    initialize_save_path(error_data_path, 'ut_error_data' + time.strftime("%Y%m%d%H%M%S"))
 
 
 def _run_ut_parser(parser):
@@ -246,9 +247,9 @@ def _run_ut():
     npu_device = "npu:" + str(args.device_id)
     try:
         torch.npu.set_device(npu_device)
-    except Exception:
+    except Exception as error:
         print_error_log(f"Set NPU device id failed. device id is: {args.device_id}")
-        raise NotImplementedError
+        raise NotImplementedError from error
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
     check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)

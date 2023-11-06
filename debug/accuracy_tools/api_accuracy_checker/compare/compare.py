@@ -1,17 +1,19 @@
 # 进行比对及结果展示
 import os
+import time
 from rich.table import Table
 from rich.console import Console
 from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, get_max_abs_err, \
     compare_builtin_type, get_rel_err_ratio_hundredth, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
-from api_accuracy_checker.common.utils import get_json_contents, print_info_log, write_csv
+from api_accuracy_checker.common.utils import get_json_contents, print_info_log, print_error_log, write_csv, CompareException
+
 from api_accuracy_checker.compare.compare_utils import CompareConst 
 from api_accuracy_checker.common.config import msCheckerConfig
 
 
 class Comparator:
-    TEST_FILE_NAME = "accuracy_checking_result.csv"
-    DETAIL_TEST_FILE_NAME = "accuracy_checking_details.csv"
+    TEST_FILE_NAME = "accuracy_checking_result_" + time.strftime("%Y%m%d%H%M%S") + ".csv"
+    DETAIL_TEST_FILE_NAME = "accuracy_checking_details_" + time.strftime("%Y%m%d%H%M%S") + ".csv"
 
     # consts for result csv 
     COLUMN_API_NAME = "API name"
@@ -41,7 +43,7 @@ class Comparator:
 
         self.test_result_cnt = {
             "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0,
-            "total_num": 0
+            "total_num": 0, "forward_or_backward_fail_num": 0
         }
         self.result_save_path = result_save_path
         self.write_csv_title()
@@ -58,8 +60,9 @@ class Comparator:
         )
         table_total.add_column("Result")
         table_total.add_column("Statistics")
-        table_total.add_row("[green]Total Pass[/green]", str(self.test_result_cnt.get("success_num")))
-        table_total.add_row("[red]Total Fail[/red]", str(self.test_result_cnt.get("forward_and_backward_fail_num")))
+        table_total.add_row("[green]Pass[/green]", str(self.test_result_cnt.get("success_num")))
+        table_total.add_row("[red]Fail[/red]", str(self.test_result_cnt.get("forward_and_backward_fail_num") +
+                                                   self.test_result_cnt.get("forward_or_backward_fail_num")))
         table_total.add_row("Passing Rate", passing_rate)
 
         table_detail = Table(
@@ -146,7 +149,7 @@ class Comparator:
             else:
                 is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
-            is_bwd_success, bwd_compare_alg_results = CompareConst.NA, None
+            is_bwd_success, bwd_compare_alg_results = False, None
         self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
         if is_fwd_success and is_bwd_success:
             self.test_result_cnt['success_num'] += 1
@@ -154,8 +157,10 @@ class Comparator:
             self.test_result_cnt['forward_and_backward_fail_num'] += 1
         elif not is_fwd_success:
             self.test_result_cnt['forward_fail_num'] += 1
+            self.test_result_cnt['forward_or_backward_fail_num'] += 1
         else:
             self.test_result_cnt['backward_fail_num'] += 1
+            self.test_result_cnt['forward_or_backward_fail_num'] += 1
         return is_fwd_success, is_bwd_success
 
 
@@ -197,13 +202,17 @@ class Comparator:
                 elif CompareConst.WARNING in test_success_column:
                     test_all_result[i] = CompareConst.WARNING
         # dtype加到所有指标的前面, 是否pass放到所有指标的后面
-        for i, detailed_tuple in enumerate(detailed_result_total):
-            detailed_result = list(detailed_tuple)
-            detailed_result.insert(0, bench_dtype_total[i])
-            detailed_result.insert(1, npu_dtype_total[i])
-            detailed_result.insert(2, shape_total[i])
-            detailed_result.append(test_all_result[i])
-            detailed_result_total[i] = tuple(detailed_result)
+        try:
+            for i, detailed_tuple in enumerate(detailed_result_total):
+                detailed_result = list(detailed_tuple)
+                detailed_result.insert(0, bench_dtype_total[i])
+                detailed_result.insert(1, npu_dtype_total[i])
+                detailed_result.insert(2, shape_total[i])
+                detailed_result.append(test_all_result[i])
+                detailed_result_total[i] = tuple(detailed_result)
+        except IndexError as error:
+            print_error_log(f"There is index error.\n{str(error)}")
+            raise CompareException(CompareException.INVALID_DATA_ERROR) from error
         test_final_success = False if CompareConst.ERROR in test_all_result or CompareConst.WARNING in test_all_result else True
         return test_final_success, detailed_result_total
     
