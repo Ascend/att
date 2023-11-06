@@ -146,7 +146,7 @@ class Comparator:
             else:
                 is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
-            is_bwd_success, bwd_compare_alg_results = False, None
+            is_bwd_success, bwd_compare_alg_results = True, None
         self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
         if is_fwd_success and is_bwd_success:
             self.test_result_cnt['success_num'] += 1
