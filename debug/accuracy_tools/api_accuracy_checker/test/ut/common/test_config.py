@@ -17,5 +17,5 @@ class TestConfig(unittest.TestCase):
 
 
     def test_update_config(self):
-        self.config.update_config(dump_path='/new/path/to/dump', enable_dataloader=False)
+        self.config.update_config(dump_path='/new/path/to/dump')
         self.assertEqual(self.config.dump_path, '/new/path/to/dump')

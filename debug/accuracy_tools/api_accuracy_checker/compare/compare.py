@@ -1,5 +1,6 @@
 # 进行比对及结果展示
 import os
+import time
 from rich.table import Table
 from rich.console import Console
 from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, get_max_abs_err, \
@@ -10,8 +11,8 @@ from api_accuracy_checker.common.config import msCheckerConfig
 
 
 class Comparator:
-    TEST_FILE_NAME = "accuracy_checking_result.csv"
-    DETAIL_TEST_FILE_NAME = "accuracy_checking_details.csv"
+    TEST_FILE_NAME = "accuracy_checking_result_" + time.strftime("%Y%m%d%H%M%S") + ".csv"
+    DETAIL_TEST_FILE_NAME = "accuracy_checking_details_" + time.strftime("%Y%m%d%H%M%S") + ".csv"
 
     # consts for result csv 
     COLUMN_API_NAME = "API name"
