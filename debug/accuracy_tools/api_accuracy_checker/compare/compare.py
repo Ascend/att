@@ -181,7 +181,7 @@ class Comparator:
                 test_success_total.append(test_success)
             if name == "Cosine Similarity":
                 cosine_success = test_success
-            if name == "Max Relative Error":
+            if name == "Max Absolute Error":
                 max_abs_error_success = test_success
             if detailed_result_total:
                 for i, detailed_result_item in enumerate(detailed_result):
