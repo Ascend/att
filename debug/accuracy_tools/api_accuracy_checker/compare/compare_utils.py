@@ -5,6 +5,9 @@ import numpy as np
 class CompareConst:
     NAN = np.nan
     NA = "N/A"
+    PASS = 'pass'
+    WARNING = 'warning'
+    ERROR = 'error'
 
 
 def check_dtype_comparable(x, y):
