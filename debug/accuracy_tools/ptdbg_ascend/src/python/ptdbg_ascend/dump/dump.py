@@ -32,7 +32,7 @@ else:
     is_gpu = False
 
 from .utils import DumpUtil, check_if_in_api_list, make_dump_data_dir, get_tensor_rank, create_dirs_if_not_exist
-from ..common.utils import print_warn_log, Const, print_info_log, modify_dump_path
+from ..common.utils import print_warn_log, Const, print_info_log, modify_dump_path, check_inplace_op
 from ..dump.utils import check_writable
 from ..common.file_check_util import FileOpen, change_mode, FileCheckConst, check_path_pattern_vaild, check_path_length
 
@@ -131,6 +131,12 @@ def dump_tensor(x, prefix, dump_step, dump_file_name):
 
 
 def dump_data(dump_file_name, dump_step, prefix, data_info):
+    if check_inplace_op(prefix):
+        if Const.PRE_FORWARD in prefix:
+            prefix = prefix.replace(Const.PRE_FORWARD, Const.FORWARD)
+        else:
+            prefix = prefix.replace("input", "output")
+
     global api_list
     thread_lock.acquire()
     try:
@@ -150,6 +156,9 @@ def dump_data(dump_file_name, dump_step, prefix, data_info):
 
 
 def dump_stack_info(name_template, dump_file):
+    if check_inplace_op(name_template) and Const.PRE_FORWARD in name_template:
+        return
+
     stack_str = []
     try:
         for (_, path, line, func, code, _) in inspect.stack()[4:]:
@@ -336,7 +345,7 @@ def acc_cmp_dump(name, **kwargs):
     if not pid:
         return RuntimeError("Not get the specified process pid.")
 
-    def acc_cmp_hook(module, in_feat, out_feat):
+    def acc_cmp_hook(module, in_feat, out_feat=None):
         if pid == os.getpid():
             dump_acc_cmp(name, in_feat, out_feat, dump_step, module)
         if hasattr(module, "input_args"):
