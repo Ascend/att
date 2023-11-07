@@ -35,7 +35,7 @@ class TestRunUtMethods(unittest.TestCase):
     def test_generate_npu_params(self, mock_retain_grad, mock_type_as, mock_requires_grad, mock_detach, mock_clone, mock_to):
         mock_tensor = MagicMock()
         mock_tensor.requires_grad = True
-        mock_tensor.dtype = torch.float32
+        mock_tensor.dtype = torch.float16
         mock_tensor.shape = torch.Size([2, 2560, 24, 24])
         mock_clone.return_value = mock_tensor
         mock_detach.return_value = mock_tensor
@@ -45,7 +45,7 @@ class TestRunUtMethods(unittest.TestCase):
         mock_to.return_value = mock_tensor
         npu_args, npu_kwargs = generate_npu_params([mock_tensor], {'inplace': False}, True)
         self.assertEqual(len(npu_args), 1)
-        self.assertEqual(npu_args[0].dtype, torch.float32)
+        self.assertEqual(npu_args[0].dtype, torch.float16)
         self.assertEqual(npu_args[0].requires_grad, True)
         self.assertEqual(npu_args[0].shape, torch.Size([2, 2560, 24, 24]))
         self.assertEqual(npu_kwargs, {'inplace': False})
