@@ -459,13 +459,13 @@ PrecisionDebugger(dump_path=None, hook_name=None, rank=None, step=[], enable_dat
 dump：
 
 ```python
-debugger.configure_hook(mode="api_stack", scope=[], api_list=[], filter_switch="ON", acl_config=None, backward_input=[], input_output_mode=["all"], summary_only=False)
+debugger.configure_hook(mode="api_stack", scope=[], api_list=[], filter_switch="OFF", acl_config=None, backward_input=[], input_output_mode=["all"], summary_only=False)
 ```
 
 溢出检测：
 
 ```python
-debugger.configure_hook(mode=None, acl_config=None, overflow_nums=1)
+debugger.configure_hook(mode=None, acl_config=None, overflow_nums=1, need_replicate=False)
 ```
 
 **参数说明**
@@ -474,12 +474,13 @@ debugger.configure_hook(mode=None, acl_config=None, overflow_nums=1)
 | ----------------- | ------------------------------------------------------------ | -------- |
 | mode              | dump模式。可取值"all"、"list"、"range"、"stack"、"acl"、"api_list"、"api_stack"，各参数含义请参见本节的“**函数示例**”。参数示例：mode="list"。默认为api_stack。该参数配置值将作为dump数据文件名的前缀，详情请参见“**dump数据存盘说明**”。 | 否       |
 | scope或api_list   | dump范围。根据model配置的模式选择dump的API范围，mode="api_list"时，需要配置api_list=[]，其他模式有需要时配置scope=[]。参数示例：scope=["Tensor_permute_1_forward", "Tensor_transpose_2_forward"]、api_list=["relu"]。默认为空。 | 否       |
-| filter_switch     | dump bool和整型的tensor以及浮点、bool和整型的标量的过滤开关。可取值"ON"（表示开启过滤，即不dump）或"OFF"（表示关闭过滤）。参数示例：filter_switch="OFF"。PrecisionDebugger模块hook_name=dump时，默认不配置，即filter_switch="ON"，表示过滤上述数据；PrecisionDebugger模块hook_name=overflow_check时，默认不配置，即filter_switch="OFF"，表示dump上述数据。 | 否       |
+| filter_switch     | dump bool和整型的tensor以及浮点、bool和整型的标量的过滤开关。可取值"ON"（表示开启过滤，即不dump）或"OFF"（表示关闭过滤）。参数示例：filter_switch="ON"。默认不配置，即filter_switch="OFF"，表示dump上述数据。 | 否       |
 | acl_config        | acl dump的配置文件。mode="acl"时，该参数必选；mode为其他值时，该参数不选。参数示例：acl_config='./dump.json'。dump.json配置文件详细介绍请参见“**dump.json配置文件说明**”。 | 否       |
 | backward_input    | 该输入文件为首次运行训练dump得到反向API输入的.npy文件。例如若需要dump Functional_conv2d_1 API的反向过程的输入输出，则需要在dump目录下查找命名包含Functional_conv2d_1、backward和input字段的.npy文件。 | 否       |
 | input_output_mode | dump数据过滤。可取值"all"、"forward"、"backward"、"input"和"output"，表示仅保存dump的数据中文件名包含"forward"、"backward"、"input"和"output"的前向、反向、输入或输出的.npy文件。参数示例input_output_mode=["backward"]或input_output_mode=["forward", "backward"]。默认为all，即保存所有dump的数据。除了all参数只能单独配置外，其他参数可以自由组合。 | 否       |
 | summary_only      | dump npy文件过滤，可取值True或False，配置为True后仅dump保存API统计信息的pkl文件，参数示例：summary_only=False，默认为False。 | 否       |
 | overflow_nums     | 控制溢出次数，表示第N次溢出时，停止训练，过程中检测到溢出API对应ACL数据均dump。参数示例：overflow_nums=3。配置overflow_check时可配置，默认不配置，即检测到1次溢出，训练停止。 | 否       |
+| need_replicate    | 过程dump数据生成开关，执行溢出检测时，dump目录下会生成forward_real_data和backward_real_data的过程dump数据目录，可取值True（生成）或False（不生成），默认不生成。 | 否       |
 
 **函数示例**
 
@@ -878,7 +879,7 @@ dump操作必选。
 **函数原型**
 
 ```python
-def set_dump_switch(switch, mode="all", scope=[], api_list=[], filter_switch="ON", dump_mode=["all"], summary_only=False):
+def set_dump_switch(switch, mode="all", scope=[], api_list=[], filter_switch="OFF", dump_mode=["all"], summary_only=False):
 ```
 
 **参数说明**
@@ -888,7 +889,7 @@ def set_dump_switch(switch, mode="all", scope=[], api_list=[], filter_switch="ON
 | switch          | dump开关。可取值"ON"或"OFF"。须在选定dump开始的位置配置set_dump_switch("ON")；dump结束的位置设置set_dump_switch("OFF")。 | 是       |
 | mode            | dump模式。可取值"all"、"list"、"range"、"stack"、"acl"、"api_list"、"api_stack"，各参数含义请参见本节的“**函数示例**”。参数示例：mode="list"。默认为all。该参数配置值将作为dump数据文件名的前缀，详情请参见“**dump数据存盘说明**”。 | 否       |
 | scope或api_list | dump范围。根据model配置的模式选择dump的API范围。参数示例：scope=["Tensor_permute_1_forward", "Tensor_transpose_2_forward"]、api_list=["relu"]。默认为空。 | 否       |
-| filter_switch   | dump bool和整型的tensor以及浮点、bool和整型的标量的过滤开关。可取值"ON"或"OFF"。参数示例：filter_switch="OFF"。默认不配置，即filter_switch="ON"，表示过滤上述数据。 | 否       |
+| filter_switch   | dump bool和整型的tensor以及浮点、bool和整型的标量的过滤开关。可取值"ON"或"OFF"。参数示例：filter_switch="ON"。默认不配置，即filter_switch="OFF"，表示dump上述数据。 | 否       |
 | dump_mode       | dump数据过滤。可取值"all"、"forward"、"backward"、"input"和"output"，表示仅保存dump的数据中文件名包含"forward"、"backward"、"input"和"output"的前向、反向、输入或输出的.npy文件。参数示例dump_mode=["backward"]或dump_mode=["forward", "backward"]。默认为all，即保存所有dump的数据。除了all参数只能单独配置外，其他参数可以自由组合。 | 否       |
 | summary_only    | dump npy文件过滤，可取值True或False，配置为True后仅dump保存API统计信息的pkl文件，参数示例：summary_only=False，默认为False。 | 否       |
 
@@ -1208,14 +1209,10 @@ dump结果目录结构示例如下：
 
 **溢出检测dump场景**
 
-register_hook设置了overflow_check时，检测API溢出，dump结果的文件名形式为{api_type}_{api_name}_{api调用次数}_{正反向}_{当前溢出次数}，dump结果如下：
+register_hook设置了overflow_check时，检测API溢出，dump结果的文件名格式为：`{api_type}___{api_name}___{API调用次数}_{前向反向}_{当前溢出次数}`，dump结果示例如下：
 
-* {api_type}_{api_name}_{api调用次数}_{正反向}_{当前溢出次数}.pkl
-* {api_type}_{api_name}_{api调用次数}_{正反向}_{当前溢出次数}目录
-
-例如：
-* Tensor___add___1_forward_1.pkl
-* Tensor___add___1_forward_1目录
+* `Tensor___add___1_forward_1.pkl`
+* `Tensor___add___1_forward_1`目录
 
 ## CPU或GPU与NPU精度数据比对
 
