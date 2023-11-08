@@ -142,7 +142,7 @@ def dump_data(dump_file_name, dump_step, prefix, data_info):
                 np.save(output_path, data_info.save_data)
                 change_mode(output_path, FileCheckConst.DATA_FILE_AUTHORITY)
             api_list.append([prefix, dump_step, [], data_info.dtype, data_info.shape, data_info.summary_data])
-            print_info_log(f"ptdbg is dumping rank{rank} api: {prefix}" + " " * 10, end='\r')
+            print_info_log(f"ptdbg is analyzing rank{rank} api: {prefix}" + " " * 10, end='\r')
     except Exception as e:
         print_warn_log("Dump data failed, error: {}".format(e))
     finally:
