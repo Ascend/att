@@ -28,7 +28,7 @@ from .wrap_functional import remove_dropout
 from ..common.utils import check_file_or_directory_path, print_error_log, CompareException, Const, \
     print_info_log, print_warn_log, get_process_rank, torch_without_guard_version
 from ..dump.utils import make_dump_dirs, DumpUtil
-from ..overflow_check.utils import OverFlowUtil
+from ..overflow_check.utils import OverFlowUtil, clear_overflow_npu
 
 torch_version_above_2 = torch.__version__.split('+')[0] > '2.0'
 
@@ -97,7 +97,7 @@ def add_clear_overflow(func, pid):
             return func(*args, **kwargs)
         nonlocal first_module
         if first_module:
-            torch_npu._C._clear_overflow_npu()
+            clear_overflow_npu()
             first_module = False
         return func(*args, **kwargs)
 

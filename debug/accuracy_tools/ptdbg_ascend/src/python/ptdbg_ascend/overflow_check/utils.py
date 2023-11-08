@@ -1,6 +1,14 @@
+import os
 import torch
 
-from ..common.utils import Const, check_switch_valid
+try:
+    import torch_npu
+except ImportError:
+    is_gpu = True
+else:
+    is_gpu = False
+
+from ..common.utils import Const, check_switch_valid, OverflowConst
 from ..dump.dump import dump_stack_info, get_scalar_data_info, dump_data, \
     get_not_float_tensor_info, get_float_tensor_info
 from ..dump.utils import DumpUtil, make_dump_data_dir
@@ -71,3 +79,28 @@ def _dump_tensor_completely(x, prefix, dump_file_name):
         if isinstance(x, bool) or isinstance(x, int) or isinstance(x, float):
             data_info = get_scalar_data_info(x)
             dump_data(dump_file_name, dump_flag, prefix, data_info)
+
+
+def overflow_debug_mode_enalbe():
+    overflow_mode = os.getenv(OverflowConst.OVERFLOW_DEBUG_MODE_ENABLE, Const.ENV_DISABLE)
+    return overflow_mode == Const.ENV_ENABLE
+
+
+def check_overflow_npu():
+    if overflow_debug_mode_enalbe():
+        float_status = torch.zeros(8).npu()
+        result = torch_npu.npu_get_float_status(float_status, OverflowConst.OVERFLOW_DEBUG_MODE)
+        if (result.cpu()[0] != 0):
+            return True
+        else:
+            return False
+    else:
+        return torch_npu._C._check_overflow_npu()
+
+
+def clear_overflow_npu():
+    if overflow_debug_mode_enalbe():
+        float_status = torch.zeros(8).npu()
+        torch_npu.npu_clear_float_status(float_status, OverflowConst.OVERFLOW_DEBUG_MODE)
+    else:
+        torch_npu._C._clear_overflow_npu()
