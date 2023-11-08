@@ -68,8 +68,8 @@ def gen_real_tensor(data_path, convert_type):
     data_path = os.path.realpath(data_path)
     check_file_or_directory_path(data_path)
     if not data_path.endswith('.pt') and not data_path.endswith('.npy'):
-        print_error_log(f"The file: {data_path} is not a pt or numpy file.")
-        raise CompareException.INVALID_FILE_ERROR
+        error_info = f"The file: {data_path} is not a pt or numpy file."
+        raise CompareException(CompareException.INVALID_FILE_ERROR, error_info)
     if data_path.endswith('.pt'):
         data = torch.load(data_path)
     else:
@@ -96,8 +96,8 @@ def gen_random_tensor(info, convert_type):
     data_dtype = info.get('dtype')
     shape = tuple(info.get('shape'))
     if not isinstance(low, (int, float)) or not isinstance(high, (int, float)):
-        print_error_log(f'Data info Min: {low} , Max: {high}, info type must be int or float')
-        raise CompareException.INVALID_PARAM_ERROR
+        error_info = f'Data info Min: {low} , Max: {high}, info type must be int or float.'
+        raise CompareException(CompareException.INVALID_PARAM_ERROR, error_info)
     if data_dtype == "torch.bool":
         data = gen_bool_tensor(low, high, shape)
     else:
@@ -122,7 +122,8 @@ def gen_common_tensor(low, high, shape, data_dtype, convert_type):
             data_dtype = Const.CONVERT.get(convert_type)[1]
     if data_dtype in FLOAT_TYPE:
         if high in [float('inf'), float('-inf')] or low in [float('inf'), float('-inf')]:
-            raise ValueError('Parameter contains inf, skip comparison.')
+            error_info = 'Parameter contains inf, skip comparison.'
+            raise CompareException(CompareException.INVALID_PARAM_ERROR, error_info)
         scale = high - low
         rand01 = torch.rand(shape, dtype=eval(data_dtype))
         tensor = rand01 * scale + low
@@ -237,8 +238,8 @@ def gen_api_params(api_info, need_grad=True, convert_type=None):
     """
     check_object_type(api_info, dict)
     if convert_type and convert_type not in Const.CONVERT:
-        print_error_log(f"convert_type params not support {convert_type} ")
-        raise CompareException.INVALID_PARAM_ERROR
+        error_info = f"convert_type params not support {convert_type}."
+        raise CompareException(CompareException.INVALID_PARAM_ERROR, error_info)
     kwargs_params = gen_kwargs(api_info, convert_type)
     if api_info.get("args"):
         args_params = gen_args(api_info.get("args"), need_grad, convert_type)
