@@ -104,11 +104,11 @@ def json_dump_condition(prefix):
     return (Const.BACKWARD in prefix and backward_threading_id == cur_threading_id) or 'forward' in prefix
 
 
-def dump_tensor(x, prefix, dump_step, dump_file_name):
+def dump_tensor(x, prefix, dump_step):
     global data_info
     if isinstance(x, (tuple, list)) and x:
         for i, item in enumerate(x):
-            dump_tensor(item, "{}.{}".format(prefix, i), dump_step, dump_file_name)
+            dump_tensor(item, "{}.{}".format(prefix, i), dump_step)
         return
     elif isinstance(x, torch.Tensor):
         if x.is_meta:
@@ -117,20 +117,20 @@ def dump_tensor(x, prefix, dump_step, dump_file_name):
         if x.numel() == 0 or len(x.shape) == 0 or not x.is_floating_point():
             if DumpUtil.dump_filter_switch == Const.OFF:
                 data_info = get_not_float_tensor_info(x)
-                dump_data(dump_file_name, dump_step, prefix, data_info)
+                dump_data(dump_step, prefix, data_info)
             else:
                 return
         else:
             data_info = get_float_tensor_info(x)
-            dump_data(dump_file_name, dump_step, prefix, data_info)
+            dump_data(dump_step, prefix, data_info)
 
     elif DumpUtil.dump_filter_switch == Const.OFF:
         if isinstance(x, bool) or isinstance(x, int) or isinstance(x, float):
             data_info = get_scalar_data_info(x)
-            dump_data(dump_file_name, dump_step, prefix, data_info)
+            dump_data(dump_step, prefix, data_info)
 
 
-def dump_data(dump_file_name, dump_step, prefix, data_info):
+def dump_data(dump_step, prefix, data_info):
     if check_inplace_op(prefix):
         if Const.PRE_FORWARD in prefix:
             prefix = prefix.replace(Const.PRE_FORWARD, Const.FORWARD)
@@ -155,7 +155,7 @@ def dump_data(dump_file_name, dump_step, prefix, data_info):
         thread_lock.release()
 
 
-def dump_stack_info(name_template, dump_file):
+def dump_stack_info(name_template):
     if check_inplace_op(name_template) and Const.PRE_FORWARD in name_template:
         return
 
@@ -181,17 +181,17 @@ def dump_stack_info(name_template, dump_file):
         api_list.append([prefix, stack_str])
 
 
-def dump_api_tensor(dump_step, in_feat, name_template, out_feat, dump_file):
+def dump_api_tensor(dump_step, in_feat, name_template, out_feat):
     if Const.BACKWARD in name_template and Const.BACKWARD in DumpUtil.dump_mode:
         if 'input' in DumpUtil.dump_mode:
-            dump_tensor(out_feat, name_template.format("input"), dump_step, dump_file)
+            dump_tensor(out_feat, name_template.format("input"), dump_step)
         if 'output' in DumpUtil.dump_mode:
-            dump_tensor(in_feat, name_template.format("output"), dump_step, dump_file)
+            dump_tensor(in_feat, name_template.format("output"), dump_step)
     elif Const.BACKWARD not in name_template and Const.FORWARD in DumpUtil.dump_mode:
         if 'input' in DumpUtil.dump_mode:
-            dump_tensor(in_feat, name_template.format("input"), dump_step, dump_file)
+            dump_tensor(in_feat, name_template.format("input"), dump_step)
         if 'output' in DumpUtil.dump_mode:
-            dump_tensor(out_feat, name_template.format("output"), dump_step, dump_file)
+            dump_tensor(out_feat, name_template.format("output"), dump_step)
 
 
 def rename_():
@@ -256,16 +256,16 @@ def dump_acc_cmp(name, in_feat, out_feat, dump_step, module):
         name_prefix = name
         name_template = f"{name_prefix}" + "_{}"
         if DumpUtil.dump_switch_mode in [Const.ALL, Const.API_LIST]:
-            dump_api_tensor(dump_step, in_feat, name_template, out_feat, dump_file)
+            dump_api_tensor(dump_step, in_feat, name_template, out_feat)
         elif DumpUtil.dump_switch_mode == Const.API_STACK:
-            dump_api_tensor(dump_step, in_feat, name_template, out_feat, dump_file)
-            dump_stack_info(name_template, dump_file)
+            dump_api_tensor(dump_step, in_feat, name_template, out_feat)
+            dump_stack_info(name_template)
         elif DumpUtil.check_switch_scope(name_prefix):
             if DumpUtil.dump_switch_mode == Const.ACL:
                 acl_dump(module, name, name_prefix)
             elif DumpUtil.dump_switch_mode != Const.STACK:
-                dump_api_tensor(dump_step, in_feat, name_template, out_feat, dump_file)
-            dump_stack_info(name_template, dump_file)
+                dump_api_tensor(dump_step, in_feat, name_template, out_feat)
+            dump_stack_info(name_template)
 
 
 def acl_dump(module, module_name, name_prefix):
