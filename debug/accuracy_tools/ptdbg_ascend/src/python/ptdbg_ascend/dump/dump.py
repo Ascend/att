@@ -131,12 +131,6 @@ def dump_tensor(x, prefix, dump_step):
 
 
 def dump_data(dump_step, prefix, data_info):
-    if check_inplace_op(prefix):
-        if Const.PRE_FORWARD in prefix:
-            prefix = prefix.replace(Const.PRE_FORWARD, Const.FORWARD)
-        else:
-            prefix = prefix.replace("input", "output")
-
     global api_list
     thread_lock.acquire()
     try:
@@ -182,6 +176,13 @@ def dump_stack_info(name_template):
 
 
 def dump_api_tensor(dump_step, in_feat, name_template, out_feat):
+    if check_inplace_op(name_template):
+        if Const.PRE_FORWARD in name_template:
+            name_template = name_template.replace(Const.PRE_FORWARD, Const.FORWARD)
+        else:
+            dump_tensor(in_feat, name_template.format("output"), dump_step)
+            return
+
     if Const.BACKWARD in name_template and Const.BACKWARD in DumpUtil.dump_mode:
         if 'input' in DumpUtil.dump_mode:
             dump_tensor(out_feat, name_template.format("input"), dump_step)
