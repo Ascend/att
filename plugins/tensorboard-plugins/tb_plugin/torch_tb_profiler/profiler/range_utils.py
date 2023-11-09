@@ -55,28 +55,28 @@ def intersection_ranges_lists_with_value(range_list1, range_list2) -> List[Tuple
         elif r2[1] <= r1[0]:
             r2, i2 = pop_list(range_list2, i2)
         elif r2[0] <= r1[0] and r2[1] < r1[1]:
-            assert (r2[1] > r1[0])
-            range_list_dst.append((r1[0], r2[1], r1[2]))
-            r1 = (r2[1], r1[1], r1[2])
-            r2, i2 = pop_list(range_list2, i2)
+            if r2[1] > r1[0]:
+                range_list_dst.append((r1[0], r2[1], r1[2]))
+                r1 = (r2[1], r1[1], r1[2])
+                r2, i2 = pop_list(range_list2, i2)
         elif r2[0] <= r1[0]:
-            assert (r2[1] >= r1[1])
-            range_list_dst.append(r1)
-            r2 = (r1[1], r2[1])
-            r1, i1 = pop_list(range_list1, i1)
+            if r2[1] >= r1[1]:
+                range_list_dst.append(r1)
+                r2 = (r1[1], r2[1])
+                r1, i1 = pop_list(range_list1, i1)
         elif r2[1] < r1[1]:
-            assert (r2[0] > r1[0])
-            range_list_dst.append((r2[0], r2[1], r1[2]))
-            r1 = (r2[1], r1[1], r1[2])
-            r2, i2 = pop_list(range_list2, i2)
+            if r2[0] > r1[0]:
+                range_list_dst.append((r2[0], r2[1], r1[2]))
+                r1 = (r2[1], r1[1], r1[2])
+                r2, i2 = pop_list(range_list2, i2)
         elif r2[0] < r1[1]:
-            assert (r2[1] >= r1[1])
-            range_list_dst.append((r2[0], r1[1], r1[2]))
-            r2 = (r1[1], r2[1])
-            r1, i1 = pop_list(range_list1, i1)
+            if r2[1] >= r1[1]:
+                range_list_dst.append((r2[0], r1[1], r1[2]))
+                r2 = (r1[1], r2[1])
+                r1, i1 = pop_list(range_list1, i1)
         else:
-            assert (r2[0] >= r1[1])
-            r1, i1 = pop_list(range_list1, i1)
+            if r2[0] >= r1[1]:
+                r1, i1 = pop_list(range_list1, i1)
     return range_list_dst
 
 
@@ -101,17 +101,17 @@ def subtract_ranges_lists(range_list1: List[Tuple[int, int]],
             r1 = (r2[1], r1[1])
             r2, i2 = pop_list(range_list2, i2)
         elif r2[0] <= r1[0]:
-            assert (r2[1] >= r1[1])
-            r2 = (r1[1], r2[1])
-            r1, i1 = pop_list(range_list1, i1)
+            if r2[1] >= r1[1]:
+                r2 = (r1[1], r2[1])
+                r1, i1 = pop_list(range_list1, i1)
         elif r2[0] < r1[1]:
-            assert (r2[0] > r1[0])
-            range_list_dst.append((r1[0], r2[0]))
-            r1 = (r2[0], r1[1])
+            if r2[0] > r1[0]:
+                range_list_dst.append((r1[0], r2[0]))
+                r1 = (r2[0], r1[1])
         else:
-            assert (r2[0] >= r1[1])
-            range_list_dst.append(r1)
-            r1, i1 = pop_list(range_list1, i1)
+            if r2[0] >= r1[1]:
+                range_list_dst.append(r1)
+                r1, i1 = pop_list(range_list1, i1)
     return range_list_dst
 
 
@@ -129,28 +129,28 @@ def intersection_ranges_lists(range_list1: List[Tuple[int, int]],
         elif r2[1] <= r1[0]:
             r2, i2 = pop_list(range_list2, i2)
         elif r2[0] <= r1[0] and r2[1] < r1[1]:
-            assert (r2[1] > r1[0])
-            range_list_dst.append((r1[0], r2[1]))
-            r1 = (r2[1], r1[1])
-            r2, i2 = pop_list(range_list2, i2)
+            if r2[1] > r1[0]:
+                range_list_dst.append((r1[0], r2[1]))
+                r1 = (r2[1], r1[1])
+                r2, i2 = pop_list(range_list2, i2)
         elif r2[0] <= r1[0]:
-            assert (r2[1] >= r1[1])
-            range_list_dst.append(r1)
-            r2 = (r1[1], r2[1])
-            r1, i1 = pop_list(range_list1, i1)
+            if r2[1] >= r1[1]:
+                range_list_dst.append(r1)
+                r2 = (r1[1], r2[1])
+                r1, i1 = pop_list(range_list1, i1)
         elif r2[1] < r1[1]:
-            assert (r2[0] > r1[0])
-            range_list_dst.append(r2)
-            r1 = (r2[1], r1[1])
-            r2, i2 = pop_list(range_list2, i2)
+            if r2[0] > r1[0]:
+                range_list_dst.append(r2)
+                r1 = (r2[1], r1[1])
+                r2, i2 = pop_list(range_list2, i2)
         elif r2[0] < r1[1]:
-            assert (r2[1] >= r1[1])
-            range_list_dst.append((r2[0], r1[1]))
-            r2 = (r1[1], r2[1])
-            r1, i1 = pop_list(range_list1, i1)
+            if r2[1] >= r1[1]:
+                range_list_dst.append((r2[0], r1[1]))
+                r2 = (r1[1], r2[1])
+                r1, i1 = pop_list(range_list1, i1)
         else:
-            assert (r2[0] >= r1[1])
-            r1, i1 = pop_list(range_list1, i1)
+            if r2[0] >= r1[1]:
+                r1, i1 = pop_list(range_list1, i1)
     return range_list_dst
 
 

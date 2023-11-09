@@ -413,8 +413,8 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         try:
             with open(filepath, 'rb') as infile:
                 contents = infile.read()
-        except IOError:
-            raise exceptions.NotFound('404 Not Found')
+        except IOError as e:
+            raise exceptions.NotFound('404 Not Found') from e
         return werkzeug.Response(
             contents, content_type=mimetype, headers=TorchProfilerPlugin.headers
         )
