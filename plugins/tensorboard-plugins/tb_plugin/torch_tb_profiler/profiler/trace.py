@@ -33,17 +33,17 @@ class EventTypes(object):
 
 
 EventTypeMap = {
-    'trace': EventTypes.TRACE,
+    'Trace': EventTypes.TRACE,
     'cpu_op': EventTypes.OPERATOR,
-    'operator': EventTypes.OPERATOR,
-    'runtime': EventTypes.RUNTIME,
-    'kernel': EventTypes.KERNEL,
-    'memcpy': EventTypes.MEMCPY,
+    'Operator': EventTypes.OPERATOR,
+    'Runtime': EventTypes.RUNTIME,
+    'Kernel': EventTypes.KERNEL,
+    'Memcpy': EventTypes.MEMCPY,
     'gpu_memcpy': EventTypes.MEMCPY,
-    'memset': EventTypes.MEMSET,
+    'Memset': EventTypes.MEMSET,
     'gpu_memset': EventTypes.MEMSET,
-    'python': EventTypes.PYTHON,
-    'memory': EventTypes.MEMORY,
+    'Python': EventTypes.PYTHON,
+    'Memory': EventTypes.MEMORY,
     'python_function': EventTypes.PYTHON_FUNCTION
 }
 
@@ -178,7 +178,7 @@ def create_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
 
 def create_trace_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
     category = event.get('cat')
-    event_type = EventTypeMap.get(category.lower()) if category else None
+    event_type = EventTypeMap.get(category)
     if event_type == EventTypes.OPERATOR:
         name = event.get('name')
         if name and name.startswith('ProfilerStep#'):
