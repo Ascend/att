@@ -10,6 +10,7 @@
 
    | ptdbg_ascend版本 | 发布日期   | 支持PyTorch版本      | 下载链接                                                     | 参考指南                                                     | 校验码                                                       |
    | ---------------- | ---------- | -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+   | 4.1              | 2023-11-09 | 1.8.1/1.11.0/2.0/2.1 | [ptdbg_ascend-4.1-py3-none-any.whl](https://ptdbg.obs.myhuaweicloud.com/package/ptdbg_ascend/4.0/ptdbg_ascend-4.1-py3-none-any.whl) | [ptdbg_ascend精度工具功能说明_v4.1](doc/ptdbg_ascend精度工具功能说明_v4.1.md) | c1f09135979d07ed1717340cadde56355f7b63b94d1a6ed6c5db841803febedb |
    | 3.0              | 2023-10-16 | 1.8.1/1.11.0/2.0/2.1 | [ptdbg_ascend-3.0-py3-none-any.whl](https://ptdbg.obs.myhuaweicloud.com/package/ptdbg_ascend/3.0/ptdbg_ascend-3.0-py3-none-any.whl) | [ptdbg_ascend精度工具功能说明_v3.0](doc/ptdbg_ascend精度工具功能说明_v3.0.md) | eb177ec795f8ae8b0c937a3cf543914f535bb64c76ba2e520fc6f0456ff6740b |
    | 2.0              | 2023-7-07  | 1.8.1/1.11.0/2.0     | [ptdbg_ascend-2.0-py3-none-any.whl](https://ptdbg.obs.myhuaweicloud.com/package/ptdbg_ascend/2.0/ptdbg_ascend-2.0-py3-none-any.whl) | [ptdbg_ascend精度工具功能说明_v2.0](doc/ptdbg_ascend精度工具功能说明_v2.0.md) | 85e046f133f0f40ed660337ce8207249b1dac47ac668910625bea49809f31d66 |
    | 1.0              | 2023-3-30  | 1.8.1/1.11.0         | [ptdbg_ascend-1.0-py3-none-any.whl](https://ptdbg.obs.myhuaweicloud.com/package/ptdbg_ascend/1.0/ptdbg_ascend-1.0-py3-none-any.whl) | [ptdbg_ascend精度工具功能说明_v1.0](https://gitee.com/ascend/att/blob/master/debug/accuracy_tools/ptdbg_ascend/doc/ptdbg_ascend%E7%B2%BE%E5%BA%A6%E5%B7%A5%E5%85%B7%E5%8A%9F%E8%83%BD%E8%AF%B4%E6%98%8E_v1.0.md) | 0559e12ba7accf80d182f227698163ee0de88bf86b1e9cd9f33b16fdead14759 |
@@ -29,8 +30,8 @@
       若回显呈现对应版本whl包一致的**校验码**，则表示下载了正确的ptdbg_ascend精度工具whl安装包。示例如下：
 
       ```
-      sha256sum ptdbg_ascend-3.1-py3-none-any.whl
-      ef0dd5f96faf3576466545f082383eece409f25642a9bc4d0efc944969c1445a  ptdbg_ascend-3.1-py3-none-any.whl
+      sha256sum ptdbg_ascend-3.0-py3-none-any.whl
+      eb177ec795f8ae8b0c937a3cf543914f535bb64c76ba2e520fc6f0456ff6740b  ptdbg_ascend-3.0-py3-none-any.whl
       ```
 
 3. whl包安装。
@@ -116,6 +117,7 @@ ptdbg_ascend精度工具的安装方式包括：**下载whl包安装**和**源�
 
    | ptdbg_ascend版本 | 发布日期   | 支持PyTorch版本      | 下载链接                                                     | 参考指南                                                     | 校验码                                                       |
    | ---------------- | ---------- | -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+   | 4.1              | 2023-11-09 | 1.8.1/1.11.0/2.0/2.1 | [ptdbg_ascend-4.1-py3-none-any.whl](https://ptdbg.obs.myhuaweicloud.com/package/ptdbg_ascend/4.0/ptdbg_ascend-4.1-py3-none-any.whl) | [ptdbg_ascend精度工具功能说明_v4.1](doc/ptdbg_ascend精度工具功能说明_v4.1.md) | c1f09135979d07ed1717340cadde56355f7b63b94d1a6ed6c5db841803febedb |
    | 3.0              | 2023-10-16 | 1.8.1/1.11.0/2.0/2.1 | [ptdbg_ascend-3.0-py3-none-any.whl](https://ptdbg.obs.myhuaweicloud.com/package/ptdbg_ascend/3.0/ptdbg_ascend-3.0-py3-none-any.whl) | [ptdbg_ascend精度工具功能说明_v3.0](doc/ptdbg_ascend精度工具功能说明_v3.0.md) | eb177ec795f8ae8b0c937a3cf543914f535bb64c76ba2e520fc6f0456ff6740b |
    | 2.0              | 2023-7-07  | 1.8.1/1.11.0/2.0     | [ptdbg_ascend-2.0-py3-none-any.whl](https://ptdbg.obs.myhuaweicloud.com/package/ptdbg_ascend/2.0/ptdbg_ascend-2.0-py3-none-any.whl) | [ptdbg_ascend精度工具功能说明_v2.0](doc/ptdbg_ascend精度工具功能说明_v2.0.md) | 85e046f133f0f40ed660337ce8207249b1dac47ac668910625bea49809f31d66 |
    | 1.0              | 2023-3-30  | 1.8.1/1.11.0         | [ptdbg_ascend-1.0-py3-none-any.whl](https://ptdbg.obs.myhuaweicloud.com/package/ptdbg_ascend/1.0/ptdbg_ascend-1.0-py3-none-any.whl) | [ptdbg_ascend精度工具功能说明_v1.0](https://gitee.com/ascend/att/blob/master/debug/accuracy_tools/ptdbg_ascend/doc/ptdbg_ascend精度工具功能说明_v1.0.md) | 0559e12ba7accf80d182f227698163ee0de88bf86b1e9cd9f33b16fdead14759 |
@@ -135,8 +137,8 @@ ptdbg_ascend精度工具的安装方式包括：**下载whl包安装**和**源�
       若回显呈现对应版本whl包一致的**校验码**，则表示下载了正确的ptdbg_ascend精度工具whl安装包。示例如下：
 
       ```
-      sha256sum ptdbg_ascend-3.1-py3-none-any.whl
-      ef0dd5f96faf3576466545f082383eece409f25642a9bc4d0efc944969c1445a  ptdbg_ascend-3.1-py3-none-any.whl
+      sha256sum ptdbg_ascend-3.0-py3-none-any.whl
+      eb177ec795f8ae8b0c937a3cf543914f535bb64c76ba2e520fc6f0456ff6740b  ptdbg_ascend-3.0-py3-none-any.whl
       ```
 
 3. whl包安装。
