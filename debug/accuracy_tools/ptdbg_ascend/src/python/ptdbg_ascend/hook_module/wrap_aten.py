@@ -72,7 +72,10 @@ class AtenOPPacketTemplate():
         except AttributeError as e:
             print_error_log(str(e))
             raise AttributeError(f"AtenOPPacketTemplace or OpOverloadPacket do not have attribute '{key}'.")
-        return AtenOPTemplate(attr, self.hook)
+        if isinstance(attr, torch._ops.OpOverload):
+            return AtenOPTemplate(attr, self.hook)
+        else:
+            return attr
 
     def overloads(self):
         return self.opPacket.overloads()
