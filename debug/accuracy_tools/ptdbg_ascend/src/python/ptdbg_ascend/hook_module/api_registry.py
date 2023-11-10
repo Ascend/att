@@ -39,13 +39,6 @@ else:
 
 class ApiRegistry:
     def __init__(self):
-        # self.torch_list = get_torch_ops()
-        # self.functional_list = get_functional_ops()
-        # self.tensor_list = get_tensor_ops()
-        # self.vf_list = get_vf_ops()
-        # self.distributed_list = get_distributed_ops()
-        # self.aten_list = get_aten_ops()
-
         self.tensor_ori_attr = {}
         self.torch_ori_attr = {}
         self.functional_ori_attr = {}
@@ -64,29 +57,15 @@ class ApiRegistry:
         self.aten_hook_attr = {}
         self.torch_npu_hook_attr = {}
 
-
-    def store_ori_attr(self, ori_api_group, api_list, api_ori_attr):
+    @staticmethod
+    def store_ori_attr(ori_api_group, api_list, api_ori_attr):
         for api in api_list:
             api_ori_attr[api] = getattr(ori_api_group, api)
 
-    def set_api_attr(self, api_group, attr_dict):
+    @staticmethod
+    def set_api_attr(api_group, attr_dict):
         for api, api_attr in attr_dict.items():
             setattr(api_group, api, api_attr)
-
-    def api_modularity(self):
-        self.set_api_attr(torch.Tensor, self.tensor_hook_attr)
-        self.set_api_attr(torch, self.torch_hook_attr)
-        self.set_api_attr(torch.nn.functional, self.functional_hook_attr)
-        self.set_api_attr(dist, self.distributed_hook_attr)
-        self.set_api_attr(dist.distributed_c10d, self.distributed_hook_attr)
-        if not is_gpu and not torch_without_guard_version:
-            self.set_api_attr(torch_npu.distributed, self.npu_distributed_hook_attr)
-            self.set_api_attr(torch_npu.distributed.distributed_c10d, self.npu_distributed_hook_attr)
-        if torch_version_above_2:
-            self.set_api_attr(torch.ops.aten, self.aten_hook_attr)
-        self.set_api_attr(torch._VF, self.vf_hook_attr)
-        if not is_gpu:
-            self.set_api_attr(torch_npu, self.torch_npu_hook_attr)
 
     def api_modularity(self):
         self.set_api_attr(torch.Tensor, self.tensor_hook_attr)
@@ -118,8 +97,6 @@ class ApiRegistry:
         if not is_gpu:
             self.set_api_attr(torch_npu, self.torch_npu_ori_attr)
 
-
-
     def initialize_hook(self, hook):
         self.store_ori_attr(torch.Tensor, get_tensor_ops(), self.tensor_ori_attr)
         wrap_tensor.wrap_tensor_ops_and_bind(hook)
@@ -127,36 +104,27 @@ class ApiRegistry:
             if attr_name.startswith("wrap_"):
                 self.tensor_hook_attr[attr_name[5:]] = getattr(wrap_tensor.HOOKTensor, attr_name)
 
-                # setattr(torch.Tensor, attr_name[5:], getattr(wrap_tensor.HOOKTensor, attr_name))
-
         self.store_ori_attr(torch, get_torch_ops(), self.torch_ori_attr)
         wrap_torch.wrap_torch_ops_and_bind(hook)
         for attr_name in dir(wrap_torch.HOOKTorchOP):
             if attr_name.startswith("wrap_"):
                 self.torch_hook_attr[attr_name[5:]] = getattr(wrap_torch.HOOKTorchOP, attr_name)
-                # setattr(torch, attr_name[5:], getattr(wrap_torch.HOOKTorchOP, attr_name))
 
         self.store_ori_attr(torch.nn.functional, get_functional_ops(), self.functional_ori_attr)
         wrap_functional.wrap_functional_ops_and_bind(hook)
         for attr_name in dir(wrap_functional.HOOKFunctionalOP):
             if attr_name.startswith("wrap_"):
                 self.functional_hook_attr[attr_name[5:]] = getattr(wrap_functional.HOOKFunctionalOP, attr_name)
-                # setattr(torch.nn.functional, attr_name[5:], getattr(wrap_functional.HOOKFunctionalOP, attr_name))
 
         self.store_ori_attr(dist, get_distributed_ops(), self.distributed_ori_attr)
         wrap_distributed.wrap_distributed_ops_and_bind(hook)
         for attr_name in dir(wrap_distributed.HOOKDistributedOP):
             if attr_name.startswith("wrap_"):
                 self.distributed_hook_attr[attr_name[5:]] = getattr(wrap_distributed.HOOKDistributedOP, attr_name)
-                # setattr(dist, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
-                # setattr(dist.distributed_c10d, attr_name[5:], getattr(wrap_distributed.HOOKDistributedOP, attr_name))
                 if not is_gpu and not torch_without_guard_version:
                     self.store_ori_attr(torch_npu.distributed, get_distributed_ops(), self.npu_distributed_ori_attr)
-                    self.npu_distributed_hook_attr[attr_name[5:]] = getattr(wrap_distributed.HOOKDistributedOP, attr_name)
-                    # setattr(torch_npu.distributed, attr_name[5:],
-                    #         getattr(wrap_distributed.HOOKDistributedOP, attr_name))
-                    # setattr(torch_npu.distributed.distributed_c10d, attr_name[5:],
-                    #         getattr(wrap_distributed.HOOKDistributedOP, attr_name))
+                    self.npu_distributed_hook_attr[attr_name[5:]] = getattr(wrap_distributed.HOOKDistributedOP,
+                                                                            attr_name)
 
         if torch_version_above_2:
             self.store_ori_attr(torch.ops.aten, get_aten_ops(), self.aten_ori_attr)
@@ -164,14 +132,12 @@ class ApiRegistry:
             for attr_name in dir(wrap_aten.HOOKAtenOP):
                 if attr_name.startswith("wrap_"):
                     self.aten_hook_attr[attr_name[5:]] = getattr(wrap_aten.HOOKAtenOP, attr_name)
-                    # setattr(torch.ops.aten, attr_name[5:], getattr(wrap_aten.HOOKAtenOP, attr_name))
 
         self.store_ori_attr(torch._VF, get_vf_ops(), self.vf_ori_attr)
         wrap_vf.wrap_vf_ops_and_bind(hook)
         for attr_name in dir(wrap_vf.HOOKVfOP):
             if attr_name.startswith("wrap_"):
                 self.vf_hook_attr[attr_name[5:]] = getattr(wrap_vf.HOOKVfOP, attr_name)
-                # setattr(torch._VF, attr_name[5:], getattr(wrap_vf.HOOKVfOP, attr_name))
 
         if not is_gpu:
             self.store_ori_attr(torch_npu, WrapNpuOps, self.torch_npu_ori_attr)
@@ -179,7 +145,6 @@ class ApiRegistry:
             for attr_name in dir(wrap_npu_custom.HOOKNpuOP):
                 if attr_name.startswith("wrap_"):
                     self.torch_npu_hook_attr[attr_name[5:]] = getattr(wrap_npu_custom.HOOKNpuOP, attr_name)
-                    # setattr(torch_npu, attr_name[5:], getattr(wrap_npu_custom.HOOKNpuOP, attr_name))
 
 
 def store_ori_attr(ori_api_group, api_list, api_ori_attr):
