@@ -21,7 +21,7 @@ import torch
 import yaml
 
 from .hook_module import HOOKModule
-from ..common.utils import torch_device_guard
+from ..common.utils import torch_device_guard, print_error_log
 from ..common.file_check_util import FileOpen
 
 
@@ -47,24 +47,49 @@ class HOOKAtenOP(object):
 
 
 class AtenOPTemplate(HOOKModule):
-    def __init__(self, op_name, hook):
-        self.op_name_ = op_name
+    def __init__(self, op, hook):
+        if isinstance(op, torch._ops.OpOverloadPacket):
+            op_name_ = op._qualified_op_name.split("::")[-1]
+        else:
+            op_name_ = op.name().split("::")[-1]
+        self.op = op
         self.prefix_op_name_ = "Aten_" + str(op_name) + "_"
         super().__init__(hook)
 
     @torch_device_guard
     def forward(self, *args, **kwargs):
-        return aten_func.get(self.op_name_)(*args, **kwargs)
+        return self.op(*args, **kwargs)
 
 
-def wrap_aten_op(op_name, hook):
-    def aten_op_template(*args, **kwargs):
-        return AtenOPTemplate(op_name, hook)(*args, **kwargs)
+class AtenOPPacketTemplate():
+    def __init__(self, opPacket, hook):
+        self.opPacket = opPacket
+        self.hook = hook
 
-    return aten_op_template
+    def __getattr__(self, key):
+        try:
+            attr = getattr(self.opPacket, key)
+        except AttributeError as e:
+            print_error_log(str(e))
+            raise AttributeError(f"AtenOPPacketTemplace or OpOverloadPacket do not have attribute '{key}'.")
+        return AtenOPTemplate(attr, self.hook)
+
+    def overloads(self):
+        return self.opPacket.overloads()
+
+    @torch_device_guard
+    def __call__(self, *args, **kwargs):
+        return AtenOPTemplate(self.opPacket, self.hook)(*args, **kwargs)
+
+
+def wrap_aten_op(op, hook):
+    return AtenOPPacketTemplate(op, hook)
 
 
 def wrap_aten_ops_and_bind(hook):
     _aten_ops = get_aten_ops()
+    global aten_func
     for op_name in _aten_ops:
-        setattr(HOOKAtenOP, "wrap_" + str(op_name), wrap_aten_op(op_name, hook))
+        if not isinstance(aten_func[op_name], torch._ops.OpOverloadPacket):
+            continue
+        setattr(HOOKAtenOP, "wrap_" + str(op_name), wrap_aten_op(aten_func[op_name], hook))
