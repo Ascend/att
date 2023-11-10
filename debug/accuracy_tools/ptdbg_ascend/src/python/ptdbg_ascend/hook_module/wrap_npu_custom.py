@@ -30,6 +30,15 @@ with FileOpen(yaml_path, 'r') as f:
     WrapNpuOps = yaml.safe_load(f).get('torch_npu')
 
 
+def get_npu_ops():
+    global WrapNpuOps
+    if torch_without_guard_version:
+        _npu_ops = dir(torch.ops.npu)
+    else:
+        _npu_ops = dir(torch_npu._C._VariableFunctionsClass)
+    return set(WrapNpuOps) & set(_npu_ops)
+
+
 class HOOKNpuOP(object):
     pass
 
@@ -58,6 +67,6 @@ def wrap_npu_op(op_name, hook):
 
 
 def wrap_npu_ops_and_bind(hook):
-    _npu_ops = WrapNpuOps
+    _npu_ops = get_npu_ops()
     for op_name in _npu_ops:
         setattr(HOOKNpuOP, "wrap_" + str(op_name), wrap_npu_op(op_name, hook))
