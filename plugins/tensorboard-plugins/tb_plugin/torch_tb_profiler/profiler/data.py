@@ -340,14 +340,13 @@ class RunProfileData(object):
             # https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#features-and-technical-specifications
             major = self.device_props[0].get('computeMajor')
             # If it's a pure CPU run, then self.tc_used_ratio is None, this rule will not be triggered.
-            if (major is not None and major >= 7 and
-                    self.tc_used_ratio == 0.0 and
-                    self.tc_eligible_ops_kernel_ratio > 0.0):
-                url = 'https://pytorch.org/docs/stable/amp.html'
-                self.recommendations.append(
-                    f'Kernels with {round(self.tc_eligible_ops_kernel_ratio * 100)}%'
-                    ' time are launched by Tensor Cores eligible operators. '
-                    f"You could enable {href('Automatic Mixed Precision', url)} to speedup by using FP16.")
+            if major is not None and major >= 7:
+                if math.isclose(self.tc_used_ratio, 0.0) and self.tc_eligible_ops_kernel_ratio > 0.0:
+                    url = 'https://pytorch.org/docs/stable/amp.html'
+                    self.recommendations.append(
+                        f'Kernels with {round(self.tc_eligible_ops_kernel_ratio * 100)}%'
+                        ' time are launched by Tensor Cores eligible operators. '
+                        f"You could enable {href('Automatic Mixed Precision', url)} to speedup by using FP16.")
 
             # Memory related
             if self.memory_snapshot:

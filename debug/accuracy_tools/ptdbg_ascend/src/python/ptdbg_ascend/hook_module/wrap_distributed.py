@@ -21,7 +21,7 @@ import torch.distributed as dist
 import yaml
 
 from .hook_module import HOOKModule
-from ..common.utils import torch_device_guard
+from ..common.utils import torch_device_guard, Const
 from ..common.file_check_util import FileOpen
 
 
@@ -51,6 +51,8 @@ class DistributedOPTemplate(HOOKModule):
         self.op_name_ = op_name
         self.prefix_op_name_ = "Distributed_" + str(op_name) + "_"
         super().__init__(hook)
+        if self.op_name_ in Const.INPLACE_LIST:
+            self.register_forward_pre_hook(hook(self.prefix + Const.PRE_FORWARD))
 
     @torch_device_guard
     def forward(self, *args, **kwargs):

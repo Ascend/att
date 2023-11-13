@@ -91,9 +91,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    | -j或--jit_compile                | 开启jit编译。                                                | 否       |
    | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。           | 否       |
 
-   run_ut执行结果包括accuracy_checking_result.csv和accuracy_checking_details.csv两个文件。accuracy_checking_result.csv是API粒度的，标明每个API是否通过测试。建议用户先查看accuracy_checking_result.csv文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在accuracy_checking_details.csv中查询其各个输出的达标情况以及比较指标。
-
-   注意：目前API通过测试的标准是每个输出与标杆比对的余弦相似度大于0.99，并且float16和bfloat16数据要通过双千分之一标准，float32数据要通过双万分之一标准，accuracy_checking_details.csv中的相对误差供用户分析时使用。
+   run_ut执行结果包括accuracy_checking_result.csv和accuracy_checking_details.csv两个文件。accuracy_checking_result.csv是API粒度的，标明每个API是否通过测试。建议用户先查看accuracy_checking_result.csv文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在accuracy_checking_details.csv中查询其各个输出的达标情况以及比较指标。API达标情况介绍请参考“**API预检指标**”。
 
 4. 如果需要保存比对不达标的输入和输出数据，可以在run_ut执行命令结尾添加-save_error_data，例如：
 
@@ -102,7 +100,21 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    ```
    数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path
 
-# 溢出API解析工具
+## API预检指标
+
+API预检通过测试，则在accuracy_checking_details.csv文件中的“pass”列标记“pass”，否则标记“error”或“warning”，详细规则如下：
+
+1. 余弦相似度 > 0.99：≤ 0.99为不达标，标记“error”，> 0.9达标，进行下一步；
+2. 最大绝对误差 ＜ 0.001：＜ 0.001达标，标记“pass”，≥ 0.001为不达标，进行下一步；
+3. 双百、双千、双万精度指标：
+   - 对于float16和bfloat16数据：双百指标不通过，标记“error”；双百指标通过，双千指标不通过，标记“warning”；双百、双千指标均通过，标记“pass”。
+   - 对于float32和float64数据：双千指标不通过，标记“error”；双千指标通过，双万指标不通过，标记“warning”；双千、双万指标均通过，标记“pass”。
+
+4. 在accuracy_checking_result.csv中以“Forward Test Success”和“Backward Test Success”字段统计该算子前向反向输出的测试结果，对于标记“pass”的算子，则在accuracy_checking_result.csv中标记“TRUE”表示测试通过，对于标记“error”或“warning”的算子，则在accuracy_checking_result.csv中标记“FALSE”表示测试不通过。由于一个算子可能有多个前向或反向的输入或输出，那么该类算子的输入或输出中必须全为“pass”，才能在accuracy_checking_result.csv中标记“TRUE”，只要有一个输入或输出标记“error”或“warning”，那么在accuracy_checking_result.csv中标记“FALSE”。
+
+双百、双千、双万精度指标是指NPU的Tensor中的元素逐个与对应的标杆数据对比，相对误差小于百分之一、千分之一、万分之一的比例占总元素个数的比例小于百分之一、千分之一、万分之一。
+
+# 解析工具
 
 针对训练过程中的溢出检测场景，对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，前向过程溢出的API可通过该工具对`forward_info_{pid}.json`进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
 

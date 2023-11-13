@@ -72,6 +72,7 @@ class Const:
     OFF = 'OFF'
     BACKWARD = 'backward'
     FORWARD = 'forward'
+    PRE_FORWARD = "pre_forward"
 
     # dump mode
     ALL = "all"
@@ -96,7 +97,7 @@ class Const:
     FILE_PATTERN = r'^[a-zA-Z0-9_./-]+$'
     FILE_NAME_LENGTH = 255
     DIRECTORY_LENGTH = 4096
-
+    DISTRIBUTED_PREFIX_LENGTH = 60
     # env dump path
     ASCEND_WORK_PATH = "ASCEND_WORK_PATH"
     DUMP_DIR = "dump_data"
@@ -105,6 +106,8 @@ class Const:
     ENV_DISABLE = "0"
 
     MAX_SEED_VALUE = 2**32 - 1
+
+    INPLACE_LIST = ["broadcast", "all_reduce", "reduce", "all_gather", "gather", "scatter", "reduce_scatter"]
 
 
 class CompareConst:
@@ -681,3 +684,11 @@ def check_path_before_create(path):
     if not re.match(Const.FILE_PATTERN, os.path.realpath(path)):
         print_error_log('The file path {} contains special characters.'.format(path))
         raise CompareException(CompareException.INVALID_PATH_ERROR)
+
+
+def check_inplace_op(prefix):
+    if len(prefix) > Const.DISTRIBUTED_PREFIX_LENGTH:
+        return False
+    match_op = re.findall(r"Distributed_(.+?)_\d", prefix)
+    op_name = match_op[0] if match_op else None
+    return op_name in Const.INPLACE_LIST
