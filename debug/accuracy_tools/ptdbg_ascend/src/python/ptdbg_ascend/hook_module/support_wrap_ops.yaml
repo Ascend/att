@@ -1058,6 +1058,7 @@ torch_npu:
   - npu_roi_align
   - npu_roi_alignbk
   - npu_ptiou
+  - npu_fusion_attention
 
 aten:
   - signbit
@@ -1799,3 +1800,5 @@ distributed:
   - irecv
   - scatter
   - reduce_scatter
+  - _reduce_scatter_base
+  - _all_gather_base
