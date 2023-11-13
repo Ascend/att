@@ -149,7 +149,12 @@ class Comparator:
                 is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
             is_bwd_success, bwd_compare_alg_results = True, None
-        self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
+        if is_bwd_success and bwd_compare_alg_results is None:
+            self.record_results(api_name, is_fwd_success, CompareConst.NA, fwd_compare_alg_results,
+                                bwd_compare_alg_results)
+        else:
+            self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results,
+                                bwd_compare_alg_results)
         if is_fwd_success and is_bwd_success:
             self.test_result_cnt['success_num'] += 1
         elif not is_fwd_success and not is_bwd_success:
@@ -212,7 +217,8 @@ class Comparator:
         except IndexError as error:
             print_error_log(f"There is index error.\n{str(error)}")
             raise CompareException(CompareException.INVALID_DATA_ERROR) from error
-        test_final_success = False if CompareConst.ERROR in test_all_result or CompareConst.WARNING in test_all_result else True
+        test_final_success = False if CompareConst.ERROR in test_all_result or CompareConst.WARNING in test_all_result \
+            else True
         return test_final_success, detailed_result_total
     
     @staticmethod
