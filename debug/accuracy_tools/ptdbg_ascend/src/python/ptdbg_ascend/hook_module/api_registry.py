@@ -147,15 +147,4 @@ class ApiRegistry:
                     self.torch_npu_hook_attr[attr_name[5:]] = getattr(wrap_npu_custom.HOOKNpuOP, attr_name)
 
 
-def store_ori_attr(ori_api_group, api_list, api_ori_attr):
-    for api in api_list:
-        api_ori_attr[api] = getattr(ori_api_group, api)
-
-
-def set_api_attr(api_group, attr_dict):
-    for api, api_attr in attr_dict.items():
-        setattr(api_group, api, api_attr)
-
-
 api_register = ApiRegistry()
-
