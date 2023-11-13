@@ -8,6 +8,8 @@ class CompareConst:
     PASS = 'pass'
     WARNING = 'warning'
     ERROR = 'error'
+    TRUE = 'True'
+    FALSE = 'False'
 
 
 def check_dtype_comparable(x, y):
