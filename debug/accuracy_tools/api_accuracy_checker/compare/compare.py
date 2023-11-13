@@ -148,13 +148,13 @@ class Comparator:
             else:
                 is_bwd_success, bwd_compare_alg_results = self._compare_core_wrapper(bench_grad, npu_grad)
         else:
-            is_bwd_success, bwd_compare_alg_results = True, None
+            is_bwd_success, bwd_compare_alg_results = CompareConst.NA, None
         self.record_results(api_name, is_fwd_success, is_bwd_success, fwd_compare_alg_results, bwd_compare_alg_results)
-        if is_fwd_success and is_bwd_success:
+        if is_fwd_success != CompareConst.FALSE and is_bwd_success != CompareConst.FALSE:
             self.test_result_cnt['success_num'] += 1
-        elif not is_fwd_success and not is_bwd_success:
+        elif is_fwd_success == CompareConst.FALSE and is_bwd_success == CompareConst.FALSE:
             self.test_result_cnt['forward_and_backward_fail_num'] += 1
-        elif not is_fwd_success:
+        elif is_fwd_success == CompareConst.FALSE:
             self.test_result_cnt['forward_fail_num'] += 1
             self.test_result_cnt['forward_or_backward_fail_num'] += 1
         else:
@@ -212,7 +212,8 @@ class Comparator:
         except IndexError as error:
             print_error_log(f"There is index error.\n{str(error)}")
             raise CompareException(CompareException.INVALID_DATA_ERROR) from error
-        test_final_success = False if CompareConst.ERROR in test_all_result or CompareConst.WARNING in test_all_result else True
+        test_final_success = CompareConst.FALSE \
+            if CompareConst.ERROR in test_all_result or CompareConst.WARNING in test_all_result else CompareConst.TRUE
         return test_final_success, detailed_result_total
     
     @staticmethod
@@ -220,8 +221,8 @@ class Comparator:
         tensor_num = bench_out.numel()
         if tensor_num >= 100:
             if abs((bench_out == 0).sum() - (npu_out == 0).cpu().sum()) / tensor_num < 0.1:
-                return True, 1
+                return CompareConst.TRUE, 1
             else:
-                return False, 0
+                return CompareConst.FALSE, 0
         else:
-            return True, 1
+            return CompareConst.TRUE, 1
