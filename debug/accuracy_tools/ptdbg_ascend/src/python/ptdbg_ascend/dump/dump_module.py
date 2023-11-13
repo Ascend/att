@@ -17,11 +17,10 @@ def module_dump(module, dump_name):
     pid = os.getpid()
     api_register.api_originality()
     if dump_name not in module_count:
-        module_count[dump_name] = 1
-        dump_name += '_0_'
+        module_count[dump_name] = 0
     else:
         module_count[dump_name] += 1
-        dump_name = dump_name + '_' + str(module_count[dump_name] - 1)
+    dump_name = dump_name + '_' + str(module_count.get(dump_name)) + "_"
     module.register_forward_hook(acc_cmp_dump(dump_name + "forward", pid=pid))
     module.register_backward_hook(acc_cmp_dump(dump_name + "backward", pid=pid))
 
