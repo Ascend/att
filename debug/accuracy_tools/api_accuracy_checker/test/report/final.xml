@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite errors="0" failures="10" hostname="DESKTOP-8HAOM6I" name="pytest" skipped="0" tests="85" time="5.752" timestamp="2023-10-27T11:12:46.677094"><testcase classname="ut.common.test_base_api.TestBaseAPI" name="test_analyze_builtin" time="0.002" /><testcase classname="ut.common.test_base_api.TestBaseAPI" name="test_analyze_device_in_kwargs" time="0.026" /><testcase classname="ut.common.test_base_api.TestBaseAPI" name="test_analyze_dtype_in_kwargs" time="0.003" /><testcase classname="ut.common.test_base_api.TestBaseAPI" name="test_analyze_element" time="0.003" /><testcase classname="ut.common.test_base_api.TestBaseAPI" name="test_analyze_tensor" time="0.017" /><testcase classname="ut.common.test_base_api.TestBaseAPI" name="test_get_tensor_extremum" time="0.003" /><testcase classname="ut.common.test_base_api.TestBaseAPI" name="test_get_type_name" time="0.002" /><testcase classname="ut.common.test_base_api.TestBaseAPI" name="test_is_builtin_class" time="0.002" /><testcase classname="ut.common.test_base_api.TestBaseAPI" name="test_transfer_types" time="0.002" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_add_time_as_suffix" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_check_file_or_directory_path" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_check_input_file_valid" time="0.002" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_check_mode_valid" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_check_need_convert" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_check_object_type" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_check_path_length_valid" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_check_path_pattern_valid" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_create_directory" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_execute_command" time="0.055" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_format_value" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_get_api_name_from_matcher" time="0.002" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_get_data_len_by_shape" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_get_dump_data_path" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_get_file_content_bytes" time="0.008" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_get_json_contents" time="0.008" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_get_process_rank" time="0.002" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_get_time" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_islink" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_parse_arg_value" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_parse_value_by_comma" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_print_info_log" time="0.001" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_read_json" time="0.003" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_seed_all" time="0.005" /><testcase classname="ut.common.test_common_utils.TestUtils" name="test_write_csv" time="0.009" /><testcase classname="ut.common.test_config.TestConfig" name="test_update_config" time="0.005"><failure message="TypeError: update_config() got an unexpected keyword argument 'enable_dataloader'">self = &lt;test_config.TestConfig testMethod=test_update_config&gt;
+
+    def test_update_config(self):
+&gt;       self.config.update_config(dump_path='/new/path/to/dump', enable_dataloader=False)
+E       TypeError: update_config() got an unexpected keyword argument 'enable_dataloader'
+
+ut/common/test_config.py:20: TypeError</failure></testcase><testcase classname="ut.common.test_config.TestConfig" name="test_validate" time="0.005" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_compare_bool_tensor" time="0.008" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_compare_builtin_type" time="0.002" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_compare_torch_tensor" time="0.005" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_compare_uint8_data" time="0.003" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_cosine_sim" time="0.003" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_cosine_standard" time="0.001" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_flatten_compare_result" time="0.001" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_get_max_abs_err" time="0.001" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_get_max_rel_err" time="0.001" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_get_msg_and_handle_value" time="0.001" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_get_rel_err_ratio_ten_thousandth" time="0.001" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_get_rel_err_ratio_thousandth" time="0.001" /><testcase classname="ut.compare.test_algorithm.TestAlgorithmMethods" name="test_max_rel_err_standard" time="0.002" /><testcase classname="ut.compare.test_compare_utils.TestCompareUtils" name="test_check_dtype_comparable" time="0.001" /><testcase classname="ut.dump.test_api_info.TestAPIInfo" name="test_APIInfo" time="0.001" /><testcase classname="ut.dump.test_api_info.TestAPIInfo" name="test_BackwardAPIInfo" time="0.001" /><testcase classname="ut.dump.test_api_info.TestAPIInfo" name="test_ForwardAPIInfo" time="0.004" /><testcase classname="ut.dump.test_dump.TestDumpUtil" name="test_get_dump_switch" time="0.001" /><testcase classname="ut.dump.test_dump.TestDumpUtil" name="test_incr_iter_num_maybe_exit" time="0.008" /><testcase classname="ut.dump.test_dump.TestDumpUtil" name="test_set_dump_switch" time="0.005" /><testcase classname="ut.dump.test_dump_scopr.TestDumpScope" name="test_iter_tracer" time="0.002"><failure message="AssertionError: 'OFF' != 'ON'&#10;- OFF&#10;+ ON">self = &lt;test_dump_scopr.TestDumpScope testMethod=test_iter_tracer&gt;
+
+    def test_iter_tracer(self):
+        DumpUtil.call_num = 0
+        def dummy_func():
+            return "Hello, World!"
+    
+        wrapped_func = iter_tracer(dummy_func)
+        result = wrapped_func()
+&gt;       self.assertEqual(DumpUtil.dump_switch, "ON")
+E       AssertionError: 'OFF' != 'ON'
+E       - OFF
+E       + ON
+
+ut/dump/test_dump_scopr.py:13: AssertionError</failure></testcase><testcase classname="ut.dump.test_info_dump.TestInfoDump" name="test_write_api_info_json_backward" time="0.002" /><testcase classname="ut.dump.test_info_dump.TestInfoDump" name="test_write_api_info_json_invalid_type" time="0.001" /><testcase classname="ut.hook_module.test_wrap_functional.TestWrapFunctional" name="test_get_functional_ops" time="0.001" /><testcase classname="ut.hook_module.test_wrap_functional.TestWrapFunctional" name="test_wrap_functional_ops_and_bind" time="0.001" /><testcase classname="ut.hook_module.test_wrap_tensor.TestWrapTensor" name="test_HOOKTensor" time="0.002" /><testcase classname="ut.hook_module.test_wrap_tensor.TestWrapTensor" name="test_TensorOPTemplate" time="0.001" /><testcase classname="ut.hook_module.test_wrap_tensor.TestWrapTensor" name="test_get_tensor_ops" time="0.001" /><testcase classname="ut.hook_module.test_wrap_tensor.TestWrapTensor" name="test_wrap_tensor_op" time="0.001" /><testcase classname="ut.hook_module.test_wrap_tensor.TestWrapTensor" name="test_wrap_tensor_ops_and_bind" time="0.002" /><testcase classname="ut.hook_module.test_wrap_torch.TestWrapTorch" name="test_TorchOPTemplate" time="0.001" /><testcase classname="ut.hook_module.test_wrap_torch.TestWrapTorch" name="test_forward" time="0.002" /><testcase classname="ut.hook_module.test_wrap_torch.TestWrapTorch" name="test_get_torch_ops" time="0.002" /><testcase classname="ut.hook_module.test_wrap_torch.TestWrapTorch" name="test_input_param_need_adapt" time="0.001" /><testcase classname="ut.hook_module.test_wrap_torch.TestWrapTorch" name="test_wrap_torch_ops_and_bind" time="0.002" /><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_api_params" time="0.130"><failure message="RuntimeError: &quot;max_all&quot; not implemented for 'Half'">self = &lt;test_data_generate.TestDataGenerateMethods testMethod=test_gen_api_params&gt;
+
+    def test_gen_api_params(self):
+        api_info = copy.deepcopy(api_info_dict)
+        args_params, kwargs_params = gen_api_params(api_info, True, None)
+&gt;       max_diff = abs(args_params[0].max() - max_value)
+
+ut/run_ut/test_data_generate.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../hook_module/wrap_tensor.py:59: in tensor_op_template
+    return TensorOPTemplate(op_name, hook)(*args, **kwargs)
+../hook_module/hook_module.py:59: in __call__
+    result = self._call_func(*input, **kwargs)
+../hook_module/hook_module.py:84: in _call_func
+    result = self.forward(*input, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = TensorOPTemplate()
+args = (tensor([[[[-5.1250, -1.2891,  1.8672,  ..., -4.4883,  4.9766,  2.8359],
+          [ 2.0312,  2.0898,  0.0156,  ..., -... [-0.8203, -0.6719, -1.3418,  ..., -1.8555,  4.4531,  5.7422]]]],
+       dtype=torch.float16, grad_fn=&lt;MulBackward0&gt;),)
+kwargs = {}
+
+    @torch_device_guard
+    def forward(self, *args, **kwargs):
+&gt;       return getattr(torch._C._TensorBase, str(self.op_name_))(*args, **kwargs)
+E       RuntimeError: "max_all" not implemented for 'Half'
+
+../hook_module/wrap_tensor.py:53: RuntimeError</failure></testcase><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_args" time="0.090"><failure message="RuntimeError: &quot;max_all&quot; not implemented for 'Half'">self = &lt;test_data_generate.TestDataGenerateMethods testMethod=test_gen_args&gt;
+
+    def test_gen_args(self):
+        args_result = gen_args(api_info_dict.get('args'))
+&gt;       max_diff = abs(args_result[0].max() - max_value)
+
+ut/run_ut/test_data_generate.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../hook_module/wrap_tensor.py:59: in tensor_op_template
+    return TensorOPTemplate(op_name, hook)(*args, **kwargs)
+../hook_module/hook_module.py:59: in __call__
+    result = self._call_func(*input, **kwargs)
+../hook_module/hook_module.py:113: in _call_func
+    return forward_call(*input, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = TensorOPTemplate()
+args = (tensor([[[[-5.1250, -2.8750, -1.9043,  ..., -0.1523,  2.7227,  1.7773],
+          [-4.4180, -3.5391, -2.4824,  ...,  ... [ 2.3828, -2.0098, -4.1797,  ...,  5.6719,  2.7656,  5.7422]]]],
+       dtype=torch.float16, grad_fn=&lt;MulBackward0&gt;),)
+kwargs = {}
+
+    @torch_device_guard
+    def forward(self, *args, **kwargs):
+&gt;       return getattr(torch._C._TensorBase, str(self.op_name_))(*args, **kwargs)
+E       RuntimeError: "max_all" not implemented for 'Half'
+
+../hook_module/wrap_tensor.py:53: RuntimeError</failure></testcase><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_bool_tensor" time="0.002" /><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_common_tensor" time="0.077"><failure message="RuntimeError: &quot;max_all&quot; not implemented for 'Half'">self = &lt;test_data_generate.TestDataGenerateMethods testMethod=test_gen_common_tensor&gt;
+
+    def test_gen_common_tensor(self):
+        info = api_info_dict.get('args')[0]
+        low, high = info.get('Min'), info.get('Max')
+        data_dtype = info.get('dtype')
+        shape = tuple(info.get('shape'))
+        data = gen_common_tensor(low, high, shape, data_dtype, None)
+&gt;       max_diff = abs(data.max() - max_value)
+
+ut/run_ut/test_data_generate.py:90: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../hook_module/wrap_tensor.py:59: in tensor_op_template
+    return TensorOPTemplate(op_name, hook)(*args, **kwargs)
+../hook_module/hook_module.py:59: in __call__
+    result = self._call_func(*input, **kwargs)
+../hook_module/hook_module.py:113: in _call_func
+    return forward_call(*input, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = TensorOPTemplate()
+args = (tensor([[[[-5.1250e+00, -4.9922e+00,  2.7109e+00,  ...,  5.0469e+00,
+           -2.6094e+00, -4.8008e+00],
+          ....6758e+00, -3.8359e+00, -1.2734e+00,  ..., -1.9043e+00,
+           -4.9609e+00,  5.7422e+00]]]], dtype=torch.float16),)
+kwargs = {}
+
+    @torch_device_guard
+    def forward(self, *args, **kwargs):
+&gt;       return getattr(torch._C._TensorBase, str(self.op_name_))(*args, **kwargs)
+E       RuntimeError: "max_all" not implemented for 'Half'
+
+../hook_module/wrap_tensor.py:53: RuntimeError</failure></testcase><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_data" time="0.076"><failure message="RuntimeError: &quot;max_all&quot; not implemented for 'Half'">self = &lt;test_data_generate.TestDataGenerateMethods testMethod=test_gen_data&gt;
+
+    def test_gen_data(self):
+        data = gen_data(api_info_dict.get('args')[0], True, None)
+&gt;       max_diff = abs(data.max() - max_value)
+
+ut/run_ut/test_data_generate.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../hook_module/wrap_tensor.py:59: in tensor_op_template
+    return TensorOPTemplate(op_name, hook)(*args, **kwargs)
+../hook_module/hook_module.py:59: in __call__
+    result = self._call_func(*input, **kwargs)
+../hook_module/hook_module.py:113: in _call_func
+    return forward_call(*input, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = TensorOPTemplate()
+args = (tensor([[[[-5.1250,  2.4648, -0.3555,  ...,  5.5859,  4.6953,  1.0625],
+          [ 3.0859, -1.1719,  1.9414,  ..., -... [-0.8945,  4.0703, -2.4355,  ..., -2.3184,  4.9297,  5.7422]]]],
+       dtype=torch.float16, grad_fn=&lt;MulBackward0&gt;),)
+kwargs = {}
+
+    @torch_device_guard
+    def forward(self, *args, **kwargs):
+&gt;       return getattr(torch._C._TensorBase, str(self.op_name_))(*args, **kwargs)
+E       RuntimeError: "max_all" not implemented for 'Half'
+
+../hook_module/wrap_tensor.py:53: RuntimeError</failure></testcase><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_kwargs" time="0.001" /><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_kwargs_1" time="0.014"><failure message="RuntimeError: Expected one of cpu, cuda, xpu, mkldnn, opengl, opencl, ideep, hip, msnpu, xla, vulkan device type at start of device string: npu">self = &lt;test_data_generate.TestDataGenerateMethods testMethod=test_gen_kwargs_1&gt;
+
+    def test_gen_kwargs_1(self):
+        k_dict = {"device": {"type": "torch.device", "value": "npu:0"}}
+        for key, value in k_dict.items():
+&gt;           gen_torch_kwargs(k_dict, key, value)
+
+ut/run_ut/test_data_generate.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+kwargs_params = {'device': {'type': 'torch.device', 'value': 'npu:0'}}
+key = 'device', value = {'type': 'torch.device', 'value': 'npu:0'}
+
+    def gen_torch_kwargs(kwargs_params, key, value):
+        if value.get('type') == "torch.device":
+&gt;           kwargs_params[key] = eval(value.get('type'))(value.get('value'))
+E           RuntimeError: Expected one of cpu, cuda, xpu, mkldnn, opengl, opencl, ideep, hip, msnpu, xla, vulkan device type at start of device string: npu
+
+../run_ut/data_generate.py:205: RuntimeError</failure></testcase><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_kwargs_2" time="0.002" /><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_kwargs_device" time="0.002"><failure message="RuntimeError: Expected one of cpu, cuda, xpu, mkldnn, opengl, opencl, ideep, hip, msnpu, xla, vulkan device type at start of device string: npu">self = &lt;test_data_generate.TestDataGenerateMethods testMethod=test_gen_kwargs_device&gt;
+
+    def test_gen_kwargs_device(self):
+        k_dict = {"kwargs": {"device": {"type": "torch.device", "value": "npu:0"}}}
+&gt;       kwargs_params = gen_kwargs(k_dict, None)
+
+ut/run_ut/test_data_generate.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../run_ut/data_generate.py:197: in gen_kwargs
+    gen_torch_kwargs(kwargs_params, key, value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+kwargs_params = {'device': {'type': 'torch.device', 'value': 'npu:0'}}
+key = 'device', value = {'type': 'torch.device', 'value': 'npu:0'}
+
+    def gen_torch_kwargs(kwargs_params, key, value):
+        if value.get('type') == "torch.device":
+&gt;           kwargs_params[key] = eval(value.get('type'))(value.get('value'))
+E           RuntimeError: Expected one of cpu, cuda, xpu, mkldnn, opengl, opencl, ideep, hip, msnpu, xla, vulkan device type at start of device string: npu
+
+../run_ut/data_generate.py:205: RuntimeError</failure></testcase><testcase classname="ut.run_ut.test_data_generate.TestDataGenerateMethods" name="test_gen_random_tensor" time="0.074"><failure message="RuntimeError: &quot;max_all&quot; not implemented for 'Half'">self = &lt;test_data_generate.TestDataGenerateMethods testMethod=test_gen_random_tensor&gt;
+
+    def test_gen_random_tensor(self):
+        data = gen_random_tensor(api_info_dict.get('args')[0], None)
+&gt;       max_diff = abs(data.max() - max_value)
+
+ut/run_ut/test_data_generate.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../hook_module/wrap_tensor.py:59: in tensor_op_template
+    return TensorOPTemplate(op_name, hook)(*args, **kwargs)
+../hook_module/hook_module.py:59: in __call__
+    result = self._call_func(*input, **kwargs)
+../hook_module/hook_module.py:113: in _call_func
+    return forward_call(*input, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = TensorOPTemplate()
+args = (tensor([[[[-5.1250, -2.9180,  3.3516,  ..., -4.4102, -2.4609, -0.0586],
+          [ 4.1484,  3.0625,  4.8281,  ..., -...953,  1.2539],
+          [-3.2266,  3.1328, -2.0898,  ..., -0.3594,  2.2891,  5.7422]]]],
+       dtype=torch.float16),)
+kwargs = {}
+
+    @torch_device_guard
+    def forward(self, *args, **kwargs):
+&gt;       return getattr(torch._C._TensorBase, str(self.op_name_))(*args, **kwargs)
+E       RuntimeError: "max_all" not implemented for 'Half'
+
+../hook_module/wrap_tensor.py:53: RuntimeError</failure></testcase><testcase classname="ut.run_ut.test_run_ut.TestRunUtMethods" name="test_UtDataInfo" time="0.001" /><testcase classname="ut.run_ut.test_run_ut.TestRunUtMethods" name="test_exec_api" time="0.105" /><testcase classname="ut.run_ut.test_run_ut.TestRunUtMethods" name="test_generate_cpu_params" time="0.078" /><testcase classname="ut.run_ut.test_run_ut.TestRunUtMethods" name="test_generate_npu_params" time="0.078"><failure message="RuntimeError: Expected one of cpu, cuda, xpu, mkldnn, opengl, opencl, ideep, hip, msnpu, xla, vulkan device type at start of device string: npu">self = &lt;test_run_ut.TestRunUtMethods testMethod=test_generate_npu_params&gt;
+
+    def test_generate_npu_params(self):
+        api_info = copy.deepcopy(api_info_dict)
+        [api_type, api_name, _] = api_full_name.split("*")
+        args, kwargs, need_grad = get_api_info(api_info, api_name)
+&gt;       npu_args, npu_kwargs = generate_npu_params(args, kwargs, True)
+
+ut/run_ut/test_run_ut.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../run_ut/run_ut.py:66: in generate_npu_params
+    npu_args = recursive_arg_to_npu(input_args)
+../run_ut/run_ut.py:53: in recursive_arg_to_npu
+    return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
+../run_ut/run_ut.py:53: in &lt;genexpr&gt;
+    return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+arg_in = tensor([[[[-5.1250, -1.0273,  2.4883,  ...,  2.0547,  3.7188,  0.2070],
+          [-0.4180,  4.3281,  5.2969,  ..., -4...   [-2.4395, -4.5195, -0.3984,  ...,  1.3906,  2.1016,  5.7422]]]],
+       dtype=torch.float16, grad_fn=&lt;MulBackward0&gt;)
+
+    def recursive_arg_to_npu(arg_in):
+        if isinstance(arg_in, (list, tuple)):
+            return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
+        elif isinstance(arg_in, torch.Tensor):
+            if need_backward and arg_in.requires_grad:
+&gt;               arg_in = arg_in.clone().detach().to("npu").requires_grad_()
+E               RuntimeError: Expected one of cpu, cuda, xpu, mkldnn, opengl, opencl, ideep, hip, msnpu, xla, vulkan device type at start of device string: npu
+
+../run_ut/run_ut.py:56: RuntimeError</failure></testcase></testsuite></testsuites>
