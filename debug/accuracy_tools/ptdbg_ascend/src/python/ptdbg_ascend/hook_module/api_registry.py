@@ -34,7 +34,7 @@ except ImportError:
 else:
     is_gpu = False
     from . import wrap_npu_custom
-    from .wrap_npu_custom import WrapNpuOps, get_npu_ops
+    from .wrap_npu_custom import get_npu_ops
 
 
 class ApiRegistry:
