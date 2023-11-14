@@ -18,13 +18,16 @@ class Config:
             'real_data': bool,
             'dump_step': int,
             'error_data_path': str,
-            'target_iter': int,
+            'target_iter': list,  # 修改target_iter的类型为list
             'precision': int
         }
         if not isinstance(value, validators.get(key)):
             raise ValueError(f"{key} must be {validators[key].__name__} type")
-        if key == 'target_iter' and value < 0:
-            raise ValueError("target_iter must be greater than 0")
+        if key == 'target_iter':
+            if not all(isinstance(i, int) for i in value):  
+                raise ValueError("All elements in target_iter must be int type")
+            if any(i < 0 for i in value):
+                raise ValueError("All elements in target_iter must be greater than 0")
         if key == 'precision' and value < 0:
             raise ValueError("precision must be greater than 0")
         return value
@@ -35,7 +38,7 @@ class Config:
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
-    def update_config(self, dump_path, real_data=False, target_iter=1):
+    def update_config(self, dump_path, real_data=False, target_iter=[1]):
         args = {
             "dump_path": dump_path,
             "real_data": real_data,

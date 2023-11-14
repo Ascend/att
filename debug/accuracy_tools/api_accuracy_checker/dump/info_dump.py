@@ -6,6 +6,7 @@ import threading
 from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
 from api_accuracy_checker.common.utils import check_file_or_directory_path, initialize_save_path
 from api_accuracy_checker.common.config import msCheckerConfig
+from api_accuracy_checker.dump.dump import DumpUtil
 
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker
 
@@ -14,6 +15,7 @@ lock = threading.Lock()
 
 def write_api_info_json(api_info):
     dump_path = msCheckerConfig.dump_path
+    dump_path = os.path.join(msCheckerConfig.dump_path, "step" + str(DumpUtil.call_num))
     rank = api_info.rank
     if isinstance(api_info, ForwardAPIInfo):
         file_path = os.path.join(dump_path, f'forward_info_{rank}.json')
