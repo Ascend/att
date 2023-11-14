@@ -24,7 +24,7 @@ from .wrap_tensor import get_tensor_ops
 from .wrap_vf import get_vf_ops
 from .wrap_distributed import get_distributed_ops
 from .wrap_aten import get_aten_ops
-from ..common.utils import torch_without_guard_version
+from ..common.utils import torch_without_guard_version, npu_distributed_api
 torch_version_above_2 = torch.__version__.split('+')[0] > '2.0'
 
 try:
@@ -121,9 +121,8 @@ class ApiRegistry:
         for attr_name in dir(wrap_distributed.HOOKDistributedOP):
             if attr_name.startswith("wrap_"):
                 self.distributed_hook_attr[attr_name[5:]] = getattr(wrap_distributed.HOOKDistributedOP, attr_name)
-                if not is_gpu and not torch_without_guard_version:
-                    self.store_ori_attr(torch_npu.distributed, set(dir(torch_npu.distributed)) & get_distributed_ops(),
-                                        self.npu_distributed_ori_attr)
+                if not is_gpu and not torch_without_guard_version and attr_name in npu_distributed_api:
+                    self.store_ori_attr(torch_npu.distributed, get_distributed_ops(), self.npu_distributed_ori_attr)
                     self.npu_distributed_hook_attr[attr_name[5:]] = getattr(wrap_distributed.HOOKDistributedOP,
                                                                             attr_name)
 
