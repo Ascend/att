@@ -24,7 +24,6 @@ from .wrap_tensor import get_tensor_ops
 from .wrap_vf import get_vf_ops
 from .wrap_distributed import get_distributed_ops
 from .wrap_aten import get_aten_ops
-from .wrap_npu_custom import get_npu_ops
 from ..common.utils import torch_without_guard_version, npu_distributed_api
 torch_version_above_2 = torch.__version__.split('+')[0] > '2.0'
 
@@ -35,7 +34,7 @@ except ImportError:
 else:
     is_gpu = False
     from . import wrap_npu_custom
-    from .wrap_npu_custom import WrapNpuOps
+    from .wrap_npu_custom import WrapNpuOps, get_npu_ops
 
 
 class ApiRegistry:
