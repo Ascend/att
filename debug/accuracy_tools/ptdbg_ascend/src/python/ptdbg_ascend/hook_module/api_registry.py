@@ -122,7 +122,8 @@ class ApiRegistry:
             if attr_name.startswith("wrap_"):
                 self.distributed_hook_attr[attr_name[5:]] = getattr(wrap_distributed.HOOKDistributedOP, attr_name)
                 if not is_gpu and not torch_without_guard_version:
-                    self.store_ori_attr(torch_npu.distributed, get_distributed_ops(), self.npu_distributed_ori_attr)
+                    self.store_ori_attr(torch_npu.distributed, set(dir(torch_npu.distributed)) & get_distributed_ops(),
+                                        self.npu_distributed_ori_attr)
                     self.npu_distributed_hook_attr[attr_name[5:]] = getattr(wrap_distributed.HOOKDistributedOP,
                                                                             attr_name)
 
