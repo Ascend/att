@@ -24,7 +24,7 @@ from .wrap_tensor import get_tensor_ops
 from .wrap_vf import get_vf_ops
 from .wrap_distributed import get_distributed_ops
 from .wrap_aten import get_aten_ops
-from ..common.utils import torch_without_guard_version
+from ..common.utils import torch_without_guard_version, npu_distributed_api
 torch_version_above_2 = torch.__version__.split('+')[0] > '2.0'
 
 try:
@@ -34,7 +34,7 @@ except ImportError:
 else:
     is_gpu = False
     from . import wrap_npu_custom
-    from .wrap_npu_custom import WrapNpuOps
+    from .wrap_npu_custom import get_npu_ops
 
 
 class ApiRegistry:
@@ -118,11 +118,12 @@ class ApiRegistry:
 
         self.store_ori_attr(dist, get_distributed_ops(), self.distributed_ori_attr)
         wrap_distributed.wrap_distributed_ops_and_bind(hook)
+        if not is_gpu and not torch_without_guard_version:
+            self.store_ori_attr(torch_npu.distributed, npu_distributed_api, self.npu_distributed_ori_attr)
         for attr_name in dir(wrap_distributed.HOOKDistributedOP):
             if attr_name.startswith("wrap_"):
                 self.distributed_hook_attr[attr_name[5:]] = getattr(wrap_distributed.HOOKDistributedOP, attr_name)
-                if not is_gpu and not torch_without_guard_version:
-                    self.store_ori_attr(torch_npu.distributed, get_distributed_ops(), self.npu_distributed_ori_attr)
+                if not is_gpu and not torch_without_guard_version and attr_name[5:] in npu_distributed_api:  
                     self.npu_distributed_hook_attr[attr_name[5:]] = getattr(wrap_distributed.HOOKDistributedOP,
                                                                             attr_name)
 
@@ -140,7 +141,7 @@ class ApiRegistry:
                 self.vf_hook_attr[attr_name[5:]] = getattr(wrap_vf.HOOKVfOP, attr_name)
 
         if not is_gpu:
-            self.store_ori_attr(torch_npu, WrapNpuOps, self.torch_npu_ori_attr)
+            self.store_ori_attr(torch_npu, get_npu_ops(), self.torch_npu_ori_attr)
             wrap_npu_custom.wrap_npu_ops_and_bind(hook)
             for attr_name in dir(wrap_npu_custom.HOOKNpuOP):
                 if attr_name.startswith("wrap_"):

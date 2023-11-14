@@ -51,6 +51,7 @@ if not is_gpu and not torch_without_guard_version:
 
 device = collections.namedtuple('device', ['type', 'index'])
 prefixes = ['api_stack', 'list', 'range', 'acl']
+npu_distributed_api = ['isend', 'irecv']
 
 
 class Const:
