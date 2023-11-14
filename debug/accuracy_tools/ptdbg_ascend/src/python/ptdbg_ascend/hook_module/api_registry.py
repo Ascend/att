@@ -141,7 +141,7 @@ class ApiRegistry:
                 self.vf_hook_attr[attr_name[5:]] = getattr(wrap_vf.HOOKVfOP, attr_name)
 
         if not is_gpu:
-            self.store_ori_attr(torch_npu, get_npu_ops, self.torch_npu_ori_attr)
+            self.store_ori_attr(torch_npu, get_npu_ops(), self.torch_npu_ori_attr)
             wrap_npu_custom.wrap_npu_ops_and_bind(hook)
             for attr_name in dir(wrap_npu_custom.HOOKNpuOP):
                 if attr_name.startswith("wrap_"):
