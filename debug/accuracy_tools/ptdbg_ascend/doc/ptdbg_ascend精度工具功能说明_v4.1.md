@@ -419,7 +419,7 @@ set_dump_switch("ON", mode="api_list", api_list=["distributed"])
 
 * dump_mode="acl"场景下，会增加npu的内存消耗，请谨慎开启。
 * 部分API存在调用嵌套关系，比如functional.batch_norm实际调用torch.batch_norm，该场景会影响acl init初始化多次，导致功能异常。
-* 混合精度动态loss scale场景下，正常训练会有"Gradient overflow. SKipping step"日志，添加溢出检测后日志消失，可以通过设置环境变量export OVERFLOW_DEBUG_MODE_ENABLE=1,并将register_hook位置调整amp.initialize之前解决。此功能需要cann包配套支持，不支持版本执行抛错EZ3003 
+* 混合精度动态loss scale场景下，正常训练会有"Gradient overflow. SKipping step"日志，添加溢出检测后日志消失，可以通过设置环境变量export OVERFLOW_DEBUG_MODE_ENABLE=1，并将register_hook位置调整amp.initialize之前解决。此功能需要cann包配套支持，不支持版本执行报错EZ3003。
 
 ## debugger方式dump和溢出检测（推荐）
 
