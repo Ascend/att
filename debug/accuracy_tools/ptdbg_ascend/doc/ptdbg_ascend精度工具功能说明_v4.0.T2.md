@@ -1097,6 +1097,55 @@ set_dump_switch("ON", mode="acl", scope=["Functional_conv2d_1_backward"])
 set_backward_input(["./npu_dump/dump_conv2d_v2.0/rank0/dump/Functional_conv2d_1_backward_input.0.npy"])
 ```
 
+## dump.json配置文件说明
+
+**dump.json配置示例**
+
+```python
+{
+ "dump":
+ {
+         "dump_list":[],
+         "dump_path":"./dump/output",
+         "dump_mode":"all",
+         "dump_op_switch":"on"
+ }
+}
+```
+
+**dump.json参数说明**
+
+| 字段名         | 说明                                                         |
+| -------------- | ------------------------------------------------------------ |
+| dump_list      | 待dump数据的API模型。为空，无需配置。                        |
+| dump_path      | dump数据文件存储到运行环境的目录，主要用于指定ACL dump数据路径。支持配置绝对路径或相对路径。dump_path须为已存在目录。 |
+| dump_mode      | dump数据模式，配置如下：<br/>- output：dump API的输出数据。默认值。<br/>- input：dump API的输入数据。<br/>-  all：dump API的输入、输出数据。 |
+| dump_op_switch | 单API模型dump数据开关，配置如下： * off：关闭单API模型dump，默认值。 * on：开启单API模型dump。 |
+
+**dump目录说明**
+
+配置register_hook的dump_config后，采集的dump数据会在{dump_path}/{time}/{deviceid}/{model_id}目录下生成，例如“/home/HwHiAiUser/output/20200808163566/0/0”
+
+```bash
+├── 20230131172437
+│   └── 1
+│       ├── 0
+│       │   ├── Add.Add.45.0.1675157077183551
+│       │   ├── Cast.trans_Cast_0.31.0.1675157077159449
+│       │   ├── Cast.trans_Cast_5.43.0.1675157077180129
+│       │   ├── MatMul.MatMul.39.0.1675157077172961
+│       │   ├── Mul.Mul.29.0.1675157077155731
+│       │   ├── NPUAllocFloatStatus.NPUAllocFloatStatus.24.0.1675157077145262
+│       │   ├── TransData.trans_TransData_1.33.0.1675157077162791
+│       │   └── TransData.trans_TransData_4.41.0.1675157077176648
+│       ├── 1701737061
+│       │   └── Cast.trans_Cast_2.35.0.1675157077166214
+│       ├── 25
+│       │   └── NPUClearFloatStatus.NPUClearFloatStatus.26.0.1675157077150342
+│       └── 68
+│           └── TransData.trans_TransData_3.37.0.1675157077169473
+```
+
 ## 模块级精度数据dump 
 
 ### 总体说明
@@ -1182,55 +1231,6 @@ if __name__ == "__main__":
     loss = out.sum()
     loss.bachward()
     set_dump_wwitch("OFF")
-```
-
-## dump.json配置文件说明
-
-**dump.json配置示例**
-
-```python
-{
- "dump":
- {
-         "dump_list":[],
-         "dump_path":"./dump/output",
-         "dump_mode":"all",
-         "dump_op_switch":"on"
- }
-}
-```
-
-**dump.json参数说明**
-
-| 字段名         | 说明                                                         |
-| -------------- | ------------------------------------------------------------ |
-| dump_list      | 待dump数据的API模型。为空，无需配置。                        |
-| dump_path      | dump数据文件存储到运行环境的目录，主要用于指定ACL dump数据路径。支持配置绝对路径或相对路径。dump_path须为已存在目录。 |
-| dump_mode      | dump数据模式，配置如下：<br/>- output：dump API的输出数据。默认值。<br/>- input：dump API的输入数据。<br/>-  all：dump API的输入、输出数据。 |
-| dump_op_switch | 单API模型dump数据开关，配置如下： * off：关闭单API模型dump，默认值。 * on：开启单API模型dump。 |
-
-**dump目录说明**
-
-配置register_hook的dump_config后，采集的dump数据会在{dump_path}/{time}/{deviceid}/{model_id}目录下生成，例如“/home/HwHiAiUser/output/20200808163566/0/0”
-
-```bash
-├── 20230131172437
-│   └── 1
-│       ├── 0
-│       │   ├── Add.Add.45.0.1675157077183551
-│       │   ├── Cast.trans_Cast_0.31.0.1675157077159449
-│       │   ├── Cast.trans_Cast_5.43.0.1675157077180129
-│       │   ├── MatMul.MatMul.39.0.1675157077172961
-│       │   ├── Mul.Mul.29.0.1675157077155731
-│       │   ├── NPUAllocFloatStatus.NPUAllocFloatStatus.24.0.1675157077145262
-│       │   ├── TransData.trans_TransData_1.33.0.1675157077162791
-│       │   └── TransData.trans_TransData_4.41.0.1675157077176648
-│       ├── 1701737061
-│       │   └── Cast.trans_Cast_2.35.0.1675157077166214
-│       ├── 25
-│       │   └── NPUClearFloatStatus.NPUClearFloatStatus.26.0.1675157077150342
-│       └── 68
-│           └── TransData.trans_TransData_3.37.0.1675157077169473
 ```
 
 ## dump数据存盘说明
