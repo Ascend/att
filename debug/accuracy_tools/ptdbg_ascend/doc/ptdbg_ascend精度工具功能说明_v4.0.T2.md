@@ -274,11 +274,16 @@ register_hook需要在set_dump_path之后调用，也需要在每个进程上被
 | 40   | torch_npu.npu_bert_apply_adam       |
 | 41   | torch_npu.npu_giou                  |
 | 42   | torch_npu.npu_ciou                  |
-| 43   | torch_npu.npu_ciou_backward         |
-| 44   | torch_npu.npu_diou                  |
-| 45   | torch_npu.npu_diou_backward         |
-| 46   | torch_npu.npu_sign_bits_pack        |
-| 47   | torch_npu.npu_sign_bits_unpack      |
+| 43   | torch_npu.npu_diou                  |
+| 44   | torch_npu.npu_sign_bits_pack        |
+| 45   | torch_npu.npu_sign_bits_unpack      |
+| 46   | torch_npu.npu_flash_attention       |
+| 47   | torch_npu.npu_scaled_masked_softmax |
+| 48   | torch_npu.npu_rotary_mul            |
+| 49   | torch_npu.npu_roi_align             |
+| 50   | torch_npu.npu_roi_alignbk           |
+| 51   | torch_npu.npu_ptiou                 |
+| 52   | torch_npu.npu_fusion_attention      |
 
 ### 通信API的数据dump
 
@@ -296,19 +301,21 @@ set_dump_switch("ON", mode="api_list", api_list=["distributed"])
 
 通信类API支持列表：
 
-| 序号 | Distributed    |
-| :--- | -------------- |
-| 1    | send           |
-| 2    | recv           |
-| 3    | broadcast      |
-| 4    | all_reduce     |
-| 5    | reduce         |
-| 6    | all_gather     |
-| 7    | gather         |
-| 8    | isend          |
-| 9    | irecv          |
-| 10   | scatter        |
-| 11   | reduce_scatter |
+| 序号 | Distributed          |
+| :--- | -------------------- |
+| 1    | send                 |
+| 2    | recv                 |
+| 3    | broadcast            |
+| 4    | all_reduce           |
+| 5    | reduce               |
+| 6    | all_gather           |
+| 7    | gather               |
+| 8    | isend                |
+| 9    | irecv                |
+| 10   | scatter              |
+| 11   | reduce_scatter       |
+| 12   | _reduce_scatter_base |
+| 13   | _all_gather_base     |
 
 ### 溢出检测场景
 
@@ -443,7 +450,7 @@ PrecisionDebugger(dump_path=None, hook_name=None, rank=None, step=[], enable_dat
 | dump_path         | 设置dump数据目录路径，参数示例："./dump_path"。<br/>默认在dump_path目录下生成`ptdbg_dump_{version}`目录，并在该目录下生成`dump.pkl`文件以及`dump`数据文件保存目录。<br/>当**configure_hook**函数配置了mode参数时，`dump.pkl`文件以及`dump`数据文件保存目录名称添加mode参数值为前缀，详情请参见“**dump数据存盘说明**”。<br/>未配置dump_path时，也可以通过环境变量ASCEND_WORK_PATH配置dump路径，此时dump数据将落盘在${ASCEND_WORK_PATH}/dump_data下，自定义配置dump_path优先级高于环境变量，dump_path和环境变量需要二选一。 | 否       |
 | hook_name         | dump模式，可取值dump和overflow_check，表示dump和溢出检测功能，二选一。 | 是       |
 | rank              | 指定对某张卡上的数据进行dump或溢出检测，默认未配置（表示dump所有卡的数据），须根据实际卡的Rank ID配置。应配置为大于0的正整数，且须根据实际卡的Rank ID配置，若所配置的值大于实际训练所运行的卡的Rank ID，则dump数据为空，比如当前环境Rank ID为0~7，实际训练运行0~3卡，此时若配置Rank ID为4或不存在的10等其他值，此时dump数据为空。 | 否       |
-| step              | 指定dump某个step的数据。                                     | 否       |
+| step              | 指定dump某个step的数据，默认未配置，须指定为训练脚本中存在的step。step为list格式，可配置逐个step，例如：step=[1,2,3]；也可以配置step范围，例如：step=list(range(1,10))，表示dump第1到第10个step。 | 否       |
 | enable_dataloader | 自动控制开关，可取值True或False，配置为True后自动识别dump step参数指定的迭代，并在该迭代执行完成后退出训练，此时start和stop函数可不配置，配置为False则需要配置start和stop函数并在最后一个stop函数后或一个step结束的位置添加debugger.step()。 | 否       |
 
 ### configure_hook函数（可选）
