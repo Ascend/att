@@ -4,9 +4,10 @@ import os
 import threading
 
 from api_accuracy_checker.dump.api_info import ForwardAPIInfo, BackwardAPIInfo
-from api_accuracy_checker.common.utils import check_file_or_directory_path, initialize_save_path
+from api_accuracy_checker.common.utils import check_file_or_directory_path, initialize_save_path, create_directory
+from ptdbg_ascend.src.python.ptdbg_ascend.common.utils import check_path_before_create
 from api_accuracy_checker.common.config import msCheckerConfig
-from api_accuracy_checker.dump.dump import DumpUtil
+
 
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker
 
@@ -14,8 +15,11 @@ lock = threading.Lock()
 
 
 def write_api_info_json(api_info):
+    from api_accuracy_checker.dump.dump import DumpUtil
     dump_path = msCheckerConfig.dump_path
-    dump_path = os.path.join(msCheckerConfig.dump_path, "step" + str(DumpUtil.call_num))
+    dump_path = os.path.join(msCheckerConfig.dump_path, "step" + str(DumpUtil.call_num-1))
+    check_path_before_create(dump_path)
+    create_directory(dump_path)
     rank = api_info.rank
     if isinstance(api_info, ForwardAPIInfo):
         file_path = os.path.join(dump_path, f'forward_info_{rank}.json')
@@ -58,9 +62,6 @@ def initialize_output_json():
     dump_path_checker = FileChecker(msCheckerConfig.dump_path, FileCheckConst.DIR)
     dump_path = dump_path_checker.common_check()
     files = ['forward_info.json', 'backward_info.json', 'stack_info.json']
-    if msCheckerConfig.real_data:
-        initialize_save_path(dump_path, 'forward_real_data')
-        initialize_save_path(dump_path, 'backward_real_data')
     for file in files:
         file_path = os.path.join(dump_path, file)
         if os.path.exists(file_path):

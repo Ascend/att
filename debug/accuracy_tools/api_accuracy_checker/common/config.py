@@ -18,7 +18,7 @@ class Config:
             'real_data': bool,
             'dump_step': int,
             'error_data_path': str,
-            'target_iter': list,  # 修改target_iter的类型为list
+            'target_iter': list,
             'precision': int
         }
         if not isinstance(value, validators.get(key)):
@@ -38,7 +38,9 @@ class Config:
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
-    def update_config(self, dump_path, real_data=False, target_iter=[1]):
+    def update_config(self, dump_path, real_data=False, target_iter=None):
+        if target_iter is None:
+            target_iter = self.config.get('target_iter')
         args = {
             "dump_path": dump_path,
             "real_data": real_data,
