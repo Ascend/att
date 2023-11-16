@@ -28,7 +28,7 @@ from ..advisor.advisor import Advisor
 from ..common.utils import check_compare_param, add_time_as_suffix, \
     print_warn_log, print_error_log, CompareException, Const,\
     CompareConst, format_value, check_file_not_exists
-from ..common.file_check_util import FileChecker, FileCheckConst, change_mode
+from ..common.file_check_util import FileChecker, FileCheckConst, change_mode, FileOpen
 
 
 def correct_data(result):
@@ -537,7 +537,10 @@ def compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=False,
 
 
 def parse(pkl_file, module_name_prefix):
-    pkl_handle = open(pkl_file, "r")
+    pkl_handle = FileOpen(pkl_file, "r")
+    if not isinstance(module_name_prefix, str):
+        print_error_log("The parameter:module_name_prefix is not a string.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
     done = False
     title_printed = False
     while not done:
