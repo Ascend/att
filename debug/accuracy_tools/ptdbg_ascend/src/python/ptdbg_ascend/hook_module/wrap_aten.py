@@ -53,7 +53,7 @@ class AtenOPTemplate(HOOKModule):
         else:
             op_name_ = op.name().split("::")[-1]
             overload_name = op._overloadname
-            if not op._overloadname in op_name_:
+            if not '.' + overload_name in op_name_:
                 op_name_ = op_name_ + '.' + overload_name
         self.op = op
         self.prefix_op_name_ = "Aten_" + str(op_name_) + "_"
