@@ -1,11 +1,13 @@
-from ptdbg_ascend.hook_module.wrap_aten import AtenOPTemplate, AtenOPPacketTemplate
 import unittest
 import torch
+from ptdbg_ascend.hook_module.wrap_aten import AtenOPTemplate, AtenOPPacketTemplate
+
 
 def noop_hook_wrapper(name):
     def noop_hook(module, in_feat, out_feat):
         pass
     return noop_hook
+
 
 class TestWrapAten(unittest.TestCase):
     def setUp(self):

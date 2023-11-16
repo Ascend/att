@@ -73,8 +73,7 @@ class AtenOPPacketTemplate():
         try:
             attr = getattr(self.opPacket, key)
         except AttributeError as e:
-            print_error_log(str(e))
-            raise AttributeError(f"AtenOPPacketTemplace or OpOverloadPacket do not have attribute '{key}'.")
+            raise AttributeError(f"AtenOPPacketTemplate or OpOverloadPacket does not have attribute '{key}'.") from e
         if isinstance(attr, torch._ops.OpOverload):
             return AtenOPTemplate(attr, self.hook)
         else:
@@ -96,6 +95,6 @@ def wrap_aten_ops_and_bind(hook):
     _aten_ops = get_aten_ops()
     global aten_func
     for op_name in _aten_ops:
-        if not isinstance(aten_func[op_name], torch._ops.OpOverloadPacket):
+        if not isinstance(aten_func.get(op_name), torch._ops.OpOverloadPacket):
             continue
-        setattr(HOOKAtenOP, "wrap_" + str(op_name), wrap_aten_op(aten_func[op_name], hook))
+        setattr(HOOKAtenOP, "wrap_" + str(op_name), wrap_aten_op(aten_func.get(op_name), hook))
