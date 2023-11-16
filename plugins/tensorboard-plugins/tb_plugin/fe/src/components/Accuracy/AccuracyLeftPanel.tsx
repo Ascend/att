@@ -33,7 +33,8 @@ import { RegexConfigModal } from './RegexConfigModal'
 import { FileInfo } from './entity'
 
 interface IProps {
-  onChangeFileList: (files: FileInfo[]) => void
+  onChangeCheckedFileList: (files: FileInfo[]) => void
+  onChangeUploadedCount: (count: number) => void
 }
 
 // 匹配数字包括科学计数法
@@ -108,7 +109,7 @@ const useStyles = makeStyles(() => ({
 // 最大文件上传数量
 export const MAX_FILE_COUNT = 6
 export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
-  const { onChangeFileList } = props
+  const { onChangeCheckedFileList, onChangeUploadedCount } = props
   const classes = useStyles()
   const [configModalVis, setConfigModalVis] = useState<boolean>(false)
   const [deleteModalVis, setDeleteModalVis] = useState<boolean>(false)
@@ -297,7 +298,8 @@ export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
   }, [JSON.stringify(fileList)])
 
   useEffect(() => {
-    onChangeFileList(fileList)
+    onChangeCheckedFileList(fileList.filter(item => item.checked))
+    onChangeUploadedCount(fileList.length)
   }, [JSON.stringify(fileList)])
 
   return (
