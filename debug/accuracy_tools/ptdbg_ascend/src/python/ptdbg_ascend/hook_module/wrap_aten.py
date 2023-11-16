@@ -53,7 +53,7 @@ class AtenOPTemplate(HOOKModule):
         else:
             op_name_ = op.name().split("::")[-1]
         self.op = op
-        self.prefix_op_name_ = "Aten_" + str(op_name) + "_"
+        self.prefix_op_name_ = "Aten_" + str(op_name_) + "_"
         super().__init__(hook)
 
     @torch_device_guard
