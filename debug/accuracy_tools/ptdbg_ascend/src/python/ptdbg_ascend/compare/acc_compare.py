@@ -537,39 +537,38 @@ def compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=False,
 
 
 def parse(pkl_file, module_name_prefix):
-    pkl_handle = FileOpen(pkl_file, "r")
     if not isinstance(module_name_prefix, str):
         print_error_log("The parameter:module_name_prefix is not a string.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
-    done = False
-    title_printed = False
-    while not done:
-        pkl_line = pkl_handle.readline()
-        if pkl_line == '\n':
-            continue
-        if len(pkl_line) == 0:
-            done = True
-            break
+    with FileOpen(pkl_file, "r") as f:
+        done = False
+        title_printed = False
+        while not done:
+            pkl_line = f.readline()
+            if pkl_line == '\n':
+                continue
+            if len(pkl_line) == 0:
+                done = True
+                break
 
-        msg = json.loads(pkl_line)
-        info_prefix = msg[0]
-        if not info_prefix.startswith(module_name_prefix):
-            continue
+            msg = json.loads(pkl_line)
+            info_prefix = msg[0]
+            if not info_prefix.startswith(module_name_prefix):
+                continue
 
-        if info_prefix.find("stack_info") != -1:
-            print("\nTrace back({}):".format(msg[0]))
-            for item in reversed(msg[1]):
-                print("  File \"{}\", line {}, in {}".format(item[0], item[1], item[2]))
-                print("    {}".format(item[3]))
-            continue
-        if len(msg) > 5:
-            summery_info = "  [{}][dtype: {}][shape: {}][max: {}][min: {}][mean: {}]" \
-                .format(msg[0], msg[3], msg[4], msg[5][0], msg[5][1], msg[5][2])
-            if not title_printed:
-                print("\nStatistic Info:")
-                title_printed = True
-            print(summery_info)
-    pkl_handle.close()
+            if info_prefix.find("stack_info") != -1:
+                print("\nTrace back({}):".format(msg[0]))
+                for item in reversed(msg[1]):
+                    print("  File \"{}\", line {}, in {}".format(item[0], item[1], item[2]))
+                    print("    {}".format(item[3]))
+                continue
+            if len(msg) > 5:
+                summery_info = "  [{}][dtype: {}][shape: {}][max: {}][min: {}][mean: {}]" \
+                    .format(msg[0], msg[3], msg[4], msg[5][0], msg[5][1], msg[5][2])
+                if not title_printed:
+                    print("\nStatistic Info:")
+                    title_printed = True
+                print(summery_info)
 
 
 def compare_process(npu_pkl_handle, bench_pkl_handle, stack_mode, fuzzy_match):
