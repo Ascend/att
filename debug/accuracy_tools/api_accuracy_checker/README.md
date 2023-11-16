@@ -29,30 +29,32 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
 2. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
 
-   ```python
-   import api_accuracy_checker.dump
-   ```
+   - 如果训练脚本是通过torch.utils.data.dataloader方式加载数据，就可以在训练脚本中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
 
-   若训练脚本中的代码不是通过dataloader来加载数据或在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，导致多卡训练dump结果只有一组json，那么需要在训练代码中添加打开工具开关的调用：
+      ```python
+      import api_accuracy_checker.dump
+      ```
 
-     ```Python
-   import api_accuracy_checker.dump as DP
-   DP.dump.set_dump_switch("ON")
-   
-   ...
-   
-   DP.dump.set_dump_switch("OFF")    # 可选，未配置"OFF"参数时表示dump从DP.dump.set_dump_switch("ON")开始的所有数据
-     ```
+      工具默认抓取训练的**第二个迭代**并且在第二个迭代后会报错退出训练进程，可通过target_iter参数配置。报错信息如下，这个报错仅用于停止训练，属于正常现象：
 
-   DP.dump.set_dump_switch：开启工具dump模块，该接口取值为"ON"和"OFF"。
+      ```bash
+      Exception: Model pretest: exit after iteration 1.
+      ```
 
-   上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
+   - 若训练脚本中的代码不是通过torch.utils.data.dataloader来加载数据或在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，导致多卡训练dump结果只有一组json，那么需要在训练代码中添加打开工具开关的调用：
 
-   工具默认抓取训练的**第二个迭代**并且在第二个迭代后会报错退出训练进程，可通过target_iter参数配置。报错信息如下，这个报错仅用于停止训练，属于正常现象：
+      ```Python
+      import api_accuracy_checker.dump as DP
+      DP.dump.set_dump_switch("ON")
+      
+      ...
+      
+      DP.dump.set_dump_switch("OFF")    # 可选，未配置"OFF"参数时表示dump从DP.dump.set_dump_switch("ON")开始的所有数据
+      ```
 
-   ```bash
-   Exception: Model pretest: exit after iteration 1.
-   ```
+      DP.dump.set_dump_switch：开启工具dump模块，该接口取值为"ON"和"OFF"。
+
+      上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
 
    dump信息默认会存盘到“./”路径下（相对于启动训练的路径），包括：
 
@@ -112,7 +114,7 @@ API预检通过测试，则在accuracy_checking_details.csv文件中的“pass�
 
 4. 在accuracy_checking_result.csv中以“Forward Test Success”和“Backward Test Success”字段统计该算子前向反向输出的测试结果，对于标记“pass”的算子，则在accuracy_checking_result.csv中标记“TRUE”表示测试通过，对于标记“error”或“warning”的算子，则在accuracy_checking_result.csv中标记“FALSE”表示测试不通过。由于一个算子可能有多个前向或反向的输入或输出，那么该类算子的输入或输出中必须全为“pass”，才能在accuracy_checking_result.csv中标记“TRUE”，只要有一个输入或输出标记“error”或“warning”，那么在accuracy_checking_result.csv中标记“FALSE”。
 
-双百、双千、双万精度指标是指NPU的Tensor中的元素逐个与对应的标杆数据对比，相对误差小于百分之一、千分之一、万分之一的比例占总元素个数的比例小于百分之一、千分之一、万分之一。
+双百、双千、双万精度指标是指NPU的Tensor中的元素逐个与对应的标杆数据对比，相对误差大于百分之一、千分之一、万分之一的比例占总元素个数的比例小于百分之一、千分之一、万分之一。
 
 # 解析工具
 
