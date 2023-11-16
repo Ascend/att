@@ -21,7 +21,7 @@ import torch
 import yaml
 
 from .hook_module import HOOKModule
-from ..common.utils import torch_device_guard, print_error_log
+from ..common.utils import torch_device_guard
 from ..common.file_check_util import FileOpen
 
 
