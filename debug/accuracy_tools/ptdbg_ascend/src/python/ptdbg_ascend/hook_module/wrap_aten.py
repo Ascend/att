@@ -93,7 +93,6 @@ def wrap_aten_op(op, hook):
 
 def wrap_aten_ops_and_bind(hook):
     _aten_ops = get_aten_ops()
-    global aten_func
     for op_name in _aten_ops:
         if not isinstance(aten_func.get(op_name), torch._ops.OpOverloadPacket):
             continue
