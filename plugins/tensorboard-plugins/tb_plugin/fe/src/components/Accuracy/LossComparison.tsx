@@ -27,6 +27,7 @@ import { MAX_FILE_COUNT } from './AccuracyLeftPanel'
 
 interface IProps {
   fileList: FileInfo[]
+  fileCount: number
 }
 
 const useStyles = makeStyles(() => ({
@@ -54,12 +55,11 @@ const useStyles = makeStyles(() => ({
 }))
 
 export const LossComparison: React.FC<IProps> = (props) => {
-  const { fileList } = props
+  const { fileList, fileCount } = props
   const classes = useStyles()
-  const checkedFiles = fileList.filter(item => item.checked)
 
   const onImportFile = () => {
-    if (fileList.length >= MAX_FILE_COUNT) {
+    if (fileCount >= MAX_FILE_COUNT) {
       message.warn(`You can import no more than ${MAX_FILE_COUNT} files.`)
       return
     }
@@ -68,7 +68,7 @@ export const LossComparison: React.FC<IProps> = (props) => {
 
   return (
     <div className={classes.root}>
-      {checkedFiles.length <= 0 ?
+      {fileList.length <= 0 ?
         <>
           <span className="welcomeLabel">Welcome to loss comparison</span>
           <div className='importText'>Select left files or <span onClick={onImportFile}>Import files</span></div>
@@ -76,9 +76,9 @@ export const LossComparison: React.FC<IProps> = (props) => {
         </>
         :
         <>
-          <LossDisplayPanel fileList={checkedFiles} />
-          {checkedFiles.length > 1 &&
-            <ComparisonPanel fileList={checkedFiles} />
+          <LossDisplayPanel fileList={fileList} />
+          {fileList.length > 1 &&
+            <ComparisonPanel fileList={fileList} />
           }
         </>
       }
