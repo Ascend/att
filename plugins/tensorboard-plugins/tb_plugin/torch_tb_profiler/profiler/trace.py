@@ -33,17 +33,17 @@ class EventTypes(object):
 
 
 EventTypeMap = {
-    'Trace': EventTypes.TRACE,
+    'trace': EventTypes.TRACE,
     'cpu_op': EventTypes.OPERATOR,
-    'Operator': EventTypes.OPERATOR,
-    'Runtime': EventTypes.RUNTIME,
-    'Kernel': EventTypes.KERNEL,
-    'Memcpy': EventTypes.MEMCPY,
+    'operator': EventTypes.OPERATOR,
+    'runtime': EventTypes.RUNTIME,
+    'kernel': EventTypes.KERNEL,
+    'memcpy': EventTypes.MEMCPY,
     'gpu_memcpy': EventTypes.MEMCPY,
-    'Memset': EventTypes.MEMSET,
+    'memset': EventTypes.MEMSET,
     'gpu_memset': EventTypes.MEMSET,
-    'Python': EventTypes.PYTHON,
-    'Memory': EventTypes.MEMORY,
+    'python': EventTypes.PYTHON,
+    'memory': EventTypes.MEMORY,
     'python_function': EventTypes.PYTHON_FUNCTION
 }
 
@@ -158,18 +158,16 @@ class PLModuleEvent(DurationEvent):
         super().__init__(EventTypes.PL_MODULE, data)
         self.module_id = 0  # just to be compatible with ModuleEvent processing
         self.name = self.name.replace('[pl][module]', '')
-        # self.shape = self.name[:self.name.rfind(']')+1]
-        # self.name = self.name[self.name.rfind(']')+1:]
         self.module_type = self.name[:self.name.find(': ')]
-        self.name = self.name[self.name.find(': ')+2:]
+        self.name = self.name[self.name.find(': ') + 2:]
 
 
 def create_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
     try:
-        type = event.get('ph')
-        if type == 'X':
+        event_type = event.get('ph')
+        if event_type == 'X':
             return create_trace_event(event, is_pytorch_lightning)
-        elif type == 'i' and event.get('name') == '[memory]':
+        elif event_type == 'i' and event.get('name') == '[memory]':
             return MemoryEvent(EventTypes.MEMORY, event)
         else:
             return None
@@ -180,7 +178,7 @@ def create_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
 
 def create_trace_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
     category = event.get('cat')
-    event_type = EventTypeMap.get(category)
+    event_type = EventTypeMap.get(category.lower()) if category else None
     if event_type == EventTypes.OPERATOR:
         name = event.get('name')
         if name and name.startswith('ProfilerStep#'):
@@ -216,15 +214,15 @@ def create_association_events(events) -> Dict[int, int]:
     result = {}
     for e in events:
         ph = e.get('ph')
-        id = e['id']
+        e_id = e['id']
         ts = e['ts']
         if ph == 's':
-            forward_map[id] = ts
+            forward_map[e_id] = ts
         elif ph == 'f':
-            backward_map[id] = ts
+            backward_map[e_id] = ts
 
-    for id, ts in forward_map.items():
-        backward_ts = backward_map.get(id)
+    for e_id, ts in forward_map.items():
+        backward_ts = backward_map.get(e_id)
         if backward_ts is not None:
             result[ts] = backward_ts
 
