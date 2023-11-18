@@ -54,7 +54,7 @@ def compare_torch_tensor(cpu_output, npu_output, compare_column):
         return CompareConst.PASS, compare_column, message
     # rel err
     rel_err = get_rel_err(abs_err, b_value)
-    if n_value.dtype in np.float16:
+    if n_value.dtype == np.float16:
         hundred_res, hundred_status = get_rel_err_ratio(rel_err, 0.01)
         compare_column.rel_err_hundredth = hundred_res
         if not hundred_status:

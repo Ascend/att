@@ -164,9 +164,9 @@ class Comparator:
             if status in [CompareConst.ERROR, CompareConst.WARNING]:
                 test_final_success = False
         else:
-            for i in range(len(status)):
-                detailed_result_total.append(compare_result[i].to_column_value(status[i], message[i]))
-                if status[i] in [CompareConst.ERROR, CompareConst.WARNING]:
+            for item, item_status in enumerate(status):
+                detailed_result_total.append(compare_result[item].to_column_value(item_status, message[item]))
+                if item_status in [CompareConst.ERROR, CompareConst.WARNING]:
                     test_final_success = False
         return test_final_success, detailed_result_total
 
