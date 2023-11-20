@@ -24,6 +24,7 @@ import sys
 import numpy as np
 import pandas as pd
 
+from .match import graph_mapping
 from ..advisor.advisor import Advisor
 from ..common.utils import check_compare_param, add_time_as_suffix, \
     print_warn_log, print_error_log, CompareException, Const,\
@@ -122,9 +123,20 @@ def get_max_relative_err(n_value, b_value):
     return format_value(max_relative_err), ""
 
 
+def check_graph_mode(a_op_name, b_op_name):
+    if "Aten" in a_op_name and not "Aten" in b_op_name:
+        return True
+    if not "Aten" in a_op_name and "Aten" in b_op_name:
+        return True
+    return False
+
+
 def check_op(npu_dict, bench_dict, fuzzy_match):
     a_op_name = npu_dict["op_name"]
     b_op_name = bench_dict["op_name"]
+    graph_mode = check_graph_mode(a_op_name, b_op_name)
+    if graph_mode:
+        return graph_mapping.match(a_op_name[0], b_op_name[0])
     struct_match = check_struct_match(npu_dict, bench_dict)
     if not fuzzy_match:
         return a_op_name == b_op_name and struct_match
@@ -268,36 +280,62 @@ def match_op(npu_queue, bench_queue, fuzzy_match):
     return -1, -1
 
 
-def get_accuracy(result, n_dict, b_dict):
-    index_out = 0
+def get_accuracy_core(result, n_dict, b_dict, n_start, n_len, b_start, b_len, key):
+    min_len = min(n_len, b_len)
     npu_stack_info = n_dict.get("stack_info", None)
     bench_stack_info = b_dict.get("stack_info", None)
-
-    for index, n_name in enumerate(n_dict["op_name"]):
-        b_name = b_dict["op_name"][index]
-        if n_name.find("input") != -1:
-            n_struct = n_dict["input_struct"][index]
-            b_struct = b_dict["input_struct"][index]
-        else:
-            n_struct = n_dict["output_struct"][index_out]
-            b_struct = b_dict["output_struct"][index_out]
-            index_out += 1
+    for index in range(min_len):
+        n_name = n_dict['op_name'][n_start + index]
+        b_name = n_dict['op_name'][b_start + index]
+        n_struct = n_dict[key][index]
+        b_struct = b_dict[key][index]
         err_msg = ""
-        accuracy_check_res = CompareConst.ACCURACY_CHECK_YES
-
+        accuracy_check_yes = CompareConst.ACCURACY_CHECK_YES
         result_item = [n_name, b_name, n_struct[0], b_struct[0], n_struct[1], b_struct[1], " ", " ", " "]
 
-        summery_data = n_dict.get("summery")[index]
+        summery_data = n_dict.get("summery")[n_start + index]
+        result_item.extend(summery_data)
+        summery_data = b_dict.get("summery")[b_start + index]
         result_item.extend(summery_data)
 
-        summery_data = b_dict.get("summery")[index]
-        result_item.extend(summery_data)
-        result_item.append(accuracy_check_res)
+        result_item.append(accuracy_check_yes)
         result_item.append(err_msg)
-        if npu_stack_info and bench_stack_info and index == 0:
+        if npu_stack_info and bench_stack_info and index == 0 and key == "input_struct":
             result_item.extend(npu_stack_info)
 
         result.append(result_item)
+
+    if n_len > b_len:
+        for index in range(b_len, n_len):
+            n_name = n_dict['op_name'][n_start + index]
+            n_struct = n_dict[key][index]
+            result_item = [n_name, CompareConst.NAN, n_struct[0], CompareConst.NAN,
+                           n_struct[1], CompareConst.NAN, " ", " ", " "]
+            summery_data = n_dict.get("summery")[n_start + index]
+            result_item.extend(summery_data)
+            summery_data = [CompareConst.NAN for _ in range(len(n_dict.get("summery")[0]))]
+            result_item.extend(summery_data)
+
+            err_msg = ""
+            accuracy_check_yes = CompareConst.ACCURACY_CHECK_YES
+            result_item.append(accuracy_check_yes)
+            result_item.append(err_msg)
+
+            if npu_stack_info and bench_stack_info and index == 0 and key == "input_struct":
+                result_item.extend(npu_stack_info)
+
+            result.append(result_item)
+
+
+def get_accuracy(result, n_dict, b_dict):
+    n_num = len(n_dict)['op_name']
+    b_num = len(b_dict)['op_name']
+    n_num_input = len([name for name in n_dict['op_name'] if 'input' in name])
+    b_num_input = len([name for name in b_dict['op_name'] if 'input' in name])
+    n_num_output = n_num - n_num_input
+    b_num_output = b_num - b_num_input
+    get_accuracy_core(result, n_dict, b_dict, 0, n_num_input, 0, b_num_input, 'input_struct')
+    get_accuracy_core(result, n_dict, b_dict, n_num_input, n_num_output, b_num_input, b_num_output, 'output_struct')
 
 
 def _do_multi_process(input_parma, result_path):

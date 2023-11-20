@@ -101,6 +101,14 @@ class TestUtilsMethods(unittest.TestCase):
         self.assertEqual(max_relative_err, "0.000000000000")
         self.assertEqual(message, "")
 
+    def test_check_graph_mode(self):
+        op1 = "Aten"
+        op2 = "torch"
+        self.assertTrue(compare.check_graph_mode(op1, op2))
+        self.assertTrue(compare.check_graph_mode(op2, op1))
+        self.assertFalse(compare.check_graph_mode(op1, op1))
+        self.assertFalse(compare.check_graph_mode(op2, op2))
+
     def test_check_op(self):
         fuzzy_match = False
         result = compare.check_op(npu_dict, bench_dict, fuzzy_match)
