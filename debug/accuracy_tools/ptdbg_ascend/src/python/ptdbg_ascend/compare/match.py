@@ -26,3 +26,15 @@ class AtenIrMapping():
         if matching_op.lower() == torch_op_raw_name:
             return True
         return False
+
+
+graph_mapping = AtenIrMapping()
+
+
+
+
+
+
+
+
+

@@ -134,7 +134,7 @@ def check_graph_mode(a_op_name, b_op_name):
 def check_op(npu_dict, bench_dict, fuzzy_match):
     a_op_name = npu_dict["op_name"]
     b_op_name = bench_dict["op_name"]
-    graph_mode = check_graph_mode(a_op_name, b_op_name)
+    graph_mode = check_graph_mode(a_op_name[0], b_op_name[0])
     if graph_mode:
         return graph_mapping.match(a_op_name[0], b_op_name[0])
     struct_match = check_struct_match(npu_dict, bench_dict)
@@ -286,7 +286,7 @@ def get_accuracy_core(result, n_dict, b_dict, n_start, n_len, b_start, b_len, ke
     bench_stack_info = b_dict.get("stack_info", None)
     for index in range(min_len):
         n_name = n_dict['op_name'][n_start + index]
-        b_name = n_dict['op_name'][b_start + index]
+        b_name = b_dict['op_name'][b_start + index]
         n_struct = n_dict[key][index]
         b_struct = b_dict[key][index]
         err_msg = ""
@@ -328,8 +328,8 @@ def get_accuracy_core(result, n_dict, b_dict, n_start, n_len, b_start, b_len, ke
 
 
 def get_accuracy(result, n_dict, b_dict):
-    n_num = len(n_dict)['op_name']
-    b_num = len(b_dict)['op_name']
+    n_num = len(n_dict['op_name'])
+    b_num = len(b_dict['op_name'])
     n_num_input = len([name for name in n_dict['op_name'] if 'input' in name])
     b_num_input = len([name for name in b_dict['op_name'] if 'input' in name])
     n_num_output = n_num - n_num_input
@@ -381,7 +381,7 @@ def _handle_multi_process(func, input_parma, result_path, lock):
     pool = multiprocessing.Pool(process_num)
 
     def err_call(args):
-        print_error_log('multiprocess compare failed! season:{}'.format(args))
+        print_error_log('multiprocess compare failed! Reason: {}'.format(args))
         try:
             pool.terminate()
             if os.path.exists(result_path):
@@ -407,7 +407,7 @@ def compare_ops(idx, fusion_op_names, dump_path_dict, result_path, lock, input_p
     is_print_compare_log = input_parma.get("is_print_compare_log")
     for i, op_name in enumerate(fusion_op_names):
         if is_print_compare_log:
-            print("start comapre: {}".format(op_name))
+            print("start compare: {}".format(op_name))
         cos_sim, max_abs_err, max_relative_err, err_msg = compare_by_op(op_name, dump_path_dict, input_parma)
         if is_print_compare_log:
             print("[{}] Compare result: cosine {}, max_abs_err {}, max_relative_err {}, {}".format(op_name, cos_sim, max_abs_err, max_relative_err, err_msg))
@@ -477,7 +477,7 @@ def compare_by_op(op_name, op_name_mapping_dict, input_parma):
         n_value = np.load(n_path)
         b_value = np.load(b_path)
     except IOError as error:
-        return CompareConst.NAN, CompareConst.NAN, CompareConst.NAN, "Dump file:{} not found.".format(error.filename)
+        return CompareConst.NAN, CompareConst.NAN, CompareConst.NAN, "Dump file: {} not found.".format(error.filename)
     if len(n_value.shape) == 0:
         if n_value.dtype == bool:
             n_value = n_value.astype(float)
@@ -490,7 +490,7 @@ def compare_by_op(op_name, op_name_mapping_dict, input_parma):
     if n_value.shape != b_value.shape:
         return CompareConst.SHAPE_UNMATCH, CompareConst.SHAPE_UNMATCH, CompareConst.SHAPE_UNMATCH, "Shape of NPU and bench Tensor do not match. Skipped."
     if n_value.dtype != b_value.dtype:
-        print_warn_log("Dtype of NPU and bench Tensor do not match:{}".format(op_name))
+        print_warn_log("Dtype of NPU and bench Tensor do not match: {}".format(op_name))
         err_msg = " Dtype of NPU and bench Tensor do not match."
     else:
         err_msg = ""
