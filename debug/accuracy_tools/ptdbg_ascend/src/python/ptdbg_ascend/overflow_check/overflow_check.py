@@ -12,7 +12,7 @@ else:
 
 from ..common.utils import print_warn_log, get_time, print_info_log
 from ..dump.dump import forward_init_status, forward_acl_dump
-from .utils import OverFlowUtil, dump_overflow
+from .utils import OverFlowUtil, dump_overflow, check_overflow_npu, clear_overflow_npu
 from ..dump.utils import DumpUtil, Const, get_tensor_rank, create_dirs_if_not_exist
 from .info_dump import write_api_info_json, ForwardAPIInfo, BackwardAPIInfo
 from ..dump import dump
@@ -122,7 +122,7 @@ def overflow_check(name, **kwargs):
                 check_feat = out_feat
             module.has_overflow = check_data_overflow(check_feat)
         else:
-            module.has_overflow = torch_npu._C._check_overflow_npu()
+            module.has_overflow = check_overflow_npu()
         if not module.has_overflow:
             if hasattr(module, 'input_args'):
                 del module.input_args
@@ -149,7 +149,7 @@ def overflow_check(name, **kwargs):
                 acl_dump(module, module_name)
             dump.write_to_disk()
             # clear overflow flag for the next check
-            torch_npu._C._clear_overflow_npu()
+            clear_overflow_npu()
             if not OverFlowUtil.check_overflow_dump_times(overflow_nums):
                 for key in forward_api_info:
                     write_api_info_json(forward_api_info[key])
