@@ -67,10 +67,10 @@ aten_result = [['Aten__native_batch_norm_legit_functional.default_0_forward_inpu
     ['Aten__native_batch_norm_legit_functional.default_0_forward_input.3', 'Functional_batch_norm_0_forward_input.3', 'torch.float32', 'torch.float32', [256], [256], ' ', ' ', ' ', 2.763145923614502, -3.398397922515869, -0.052132632583379745, 1.0, 1.0, 1.0, 'Yes', ''],
     ['Aten__native_batch_norm_legit_functional.default_0_forward_input.4', 'Functional_batch_norm_0_forward_input.4', 'torch.float32', 'torch.float32', [256], [256], ' ', ' ', ' ', 2.673110008239746, -3.149275064468384, 0.01613386906683445, 0.0, 0.0, 0.0, 'Yes', ''],
     ['Aten__native_batch_norm_legit_functional.default_0_forward_output.0', 'Functional_batch_norm_0_forward_output', 'torch.float16', 'torch.float32', [256, 256, 14, 14], [256, 256, 14, 14], ' ', ' ', ' ', 13.5546875, -10.640625, -0.008758544921875, 5.397906303405762, -5.796811580657959, 2.5283952709287405e-10, 'Yes', ''],
-    ['Aten__native_batch_norm_legit_functional.default_0_forward_output.1', 'N/A', 'torch.float32', 'N/A', [256], 'N/A', ' ', ' ', ' ', 0.30550330877304077, -0.24485322833061218, -0.010361209511756897, 'N/A', 'N/A', 'N/A', 'Yes', ''],
-    ['Aten__native_batch_norm_legit_functional.default_0_forward_output.2', 'N/A', 'torch.float32', 'N/A', [256], 'N/A', ' ', ' ', ' ', 623.9192504882812, 432.96826171875, 520.2276611328125, 'N/A', 'N/A', 'N/A', 'Yes', ''],
-    ['Aten__native_batch_norm_legit_functional.default_0_forward_output.3', 'N/A', 'torch.float32', 'N/A', [256], 'N/A', ' ', ' ', ' ', 2.4797861576080322, -3.055997371673584, -0.04795549064874649, 'N/A', 'N/A', 'N/A', 'Yes', ''],
-    ['Aten__native_batch_norm_legit_functional.default_0_forward_output.4', 'N/A', 'torch.float32', 'N/A', [256], 'N/A', ' ', ' ', ' ', 61.7945556640625, 42.59713363647461, 52.03831481933594, 'N/A', 'N/A', 'N/A', 'Yes', '']
+    ['Aten__native_batch_norm_legit_functional.default_0_forward_output.1', 'Nan', 'torch.float32', 'Nan', [256], 'Nan', ' ', ' ', ' ', 0.30550330877304077, -0.24485322833061218, -0.010361209511756897, 'Nan', 'Nan', 'Nan', 'Yes', ''],
+    ['Aten__native_batch_norm_legit_functional.default_0_forward_output.2', 'Nan', 'torch.float32', 'Nan', [256], 'Nan', ' ', ' ', ' ', 623.9192504882812, 432.96826171875, 520.2276611328125, 'Nan', 'Nan', 'Nan', 'Yes', ''],
+    ['Aten__native_batch_norm_legit_functional.default_0_forward_output.3', 'Nan', 'torch.float32', 'Nan', [256], 'Nan', ' ', ' ', ' ', 2.4797861576080322, -3.055997371673584, -0.04795549064874649, 'Nan', 'Nan', 'Nan', 'Yes', ''],
+    ['Aten__native_batch_norm_legit_functional.default_0_forward_output.4', 'Nan', 'torch.float32', 'Nan', [256], 'Nan', ' ', ' ', ' ', 61.7945556640625, 42.59713363647461, 52.03831481933594, 'Nan', 'Nan', 'Nan', 'Yes', '']
     ]
 
 
