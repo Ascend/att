@@ -606,7 +606,7 @@ dump或溢出检测停止函数。
 debugger.stop()
 ```
 
-该函数为类函数，可以使用debugger.stopt()也可以使用PrecisionDebugger.stop()。
+该函数为类函数，可以使用debugger.stop()也可以使用PrecisionDebugger.stop()。
 
 ### 示例代码（自动模式）
 
