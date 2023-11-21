@@ -24,10 +24,14 @@ class Config:
         if not isinstance(value, validators.get(key)):
             raise ValueError(f"{key} must be {validators[key].__name__} type")
         if key == 'target_iter':
-            if not all(isinstance(i, int) for i in value):  
-                raise ValueError("All elements in target_iter must be int type")
+            if not isinstance(value, list):
+                raise ValueError("target_iter must be a list type")
+            if any(isinstance(i, bool) for i in value):
+                raise ValueError("target_iter cannot contain boolean values")
+            if not all(isinstance(i, int) for i in value):
+                raise ValueError("All elements in target_iter must be of int type")
             if any(i < 0 for i in value):
-                raise ValueError("All elements in target_iter must be greater than 0")
+                raise ValueError("All elements in target_iter must be greater than or equal to 0")
         if key == 'precision' and value < 0:
             raise ValueError("precision must be greater than 0")
         return value
@@ -40,7 +44,7 @@ class Config:
 
     def update_config(self, dump_path, real_data=False, target_iter=None):
         if target_iter is None:
-            target_iter = self.config.get('target_iter')
+            target_iter = self.config.get('target_iter',[1])
         args = {
             "dump_path": dump_path,
             "real_data": real_data,
