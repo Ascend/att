@@ -292,7 +292,6 @@ def get_accuracy(result, n_dict, b_dict):
             n_struct = n_dict[key][index]
             b_struct = b_dict[key][index]
             err_msg = ""
-            accuracy_check_yes = CompareConst.ACCURACY_CHECK_YES
             result_item = [n_name, b_name, n_struct[0], b_struct[0], n_struct[1], b_struct[1], " ", " ", " "]
 
             summery_data = n_dict.get("summery")[n_start + index]
@@ -300,7 +299,7 @@ def get_accuracy(result, n_dict, b_dict):
             summery_data = b_dict.get("summery")[b_start + index]
             result_item.extend(summery_data)
 
-            result_item.append(accuracy_check_yes)
+            result_item.append(CompareConst.ACCURACY_CHECK_YES)
             result_item.append(err_msg)
             if has_stack and index == 0 and key == "input_struct":
                 result_item.extend(npu_stack_info)
@@ -319,8 +318,7 @@ def get_accuracy(result, n_dict, b_dict):
                 result_item.extend(summery_data)
 
                 err_msg = ""
-                accuracy_check_yes = CompareConst.ACCURACY_CHECK_YES
-                result_item.append(accuracy_check_yes)
+                result_item.append(CompareConst.ACCURACY_CHECK_YES)
                 result_item.append(err_msg)
 
                 if has_stack and index == 0 and key == "input_struct":
