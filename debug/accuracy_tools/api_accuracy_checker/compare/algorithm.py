@@ -2,113 +2,126 @@
 import torch
 import numpy as np
 from api_accuracy_checker.compare.compare_utils import CompareConst, check_dtype_comparable
-from api_accuracy_checker.common.utils import Const 
+from api_accuracy_checker.common.utils import Const
 
 
-def compare_torch_tensor(cpu_output, npu_output, compare_alg):
-    if not check_dtype_comparable(cpu_output, npu_output):
-        return CompareConst.NA, False, f"Bench out dtype is {cpu_output.dtype} but\
-                 npu output dtype is {npu_output.dtype}, cannot compare."
-    if cpu_output.dtype in [bool, np.uint8, np.int8, np.int16, np.uint16, np.uint32, np.int32, np.int64, np.uint64]:
-        if compare_alg == cosine_sim:
-            return CompareConst.NA, True, f"Compare algorithm {compare_alg.__name__} is not supported for {cpu_output.dtype} data."
-        return compare_bool_tensor(cpu_output, npu_output)
-    return compare_alg(cpu_output, npu_output)
+class CompareColumn:
+    def __init__(self):
+        self.bench_type = CompareConst.NA
+        self.npu_type = CompareConst.NA
+        self.shape = CompareConst.NA
+        self.cosine_sim = CompareConst.NA
+        self.max_abs_err = CompareConst.NA
+        self.rel_err_hundredth = CompareConst.NA
+        self.rel_err_thousandth = CompareConst.NA
+        self.rel_err_ten_thousandth = CompareConst.NA
+        self.error_rate = CompareConst.NA
+
+    def to_column_value(self, is_pass, message):
+        return [self.bench_type, self.npu_type, self.shape, self.cosine_sim, self.max_abs_err, self.rel_err_hundredth,
+                self.rel_err_thousandth, self.rel_err_ten_thousandth, self.error_rate, is_pass, message]
 
 
-def compare_bool_tensor(cpu_output, npu_output):
+def compare_torch_tensor(cpu_output, npu_output, compare_column):
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
     if cpu_shape != npu_shape:
-        return CompareConst.NA, False, ""
+        return CompareConst.ERROR, compare_column, f"The shape of bench{str(cpu_shape)} " \
+                                                   f"and npu{str(npu_shape)} not equal."
+    if not check_dtype_comparable(cpu_output, npu_output):
+        return CompareConst.ERROR, compare_column, f"Bench out dtype is {cpu_output.dtype} but " \
+                                                   f"npu output dtype is {npu_output.dtype}, cannot compare."
+    message = ""
+    if cpu_output.dtype in [bool, np.uint8, np.int8, np.int16, np.uint16, np.uint32, np.int32, np.int64, np.uint64]:
+        message += f"Compare algorithm cosine_sim is not supported for {cpu_output.dtype} data. " \
+                   f"Only judged by Error Rate."
+        err_rate, status, msg = compare_bool_tensor(cpu_output, npu_output)
+        message += msg + "\n"
+        compare_column.error_rate = err_rate
+        return status, compare_column, message
+    # cos
+    cos_res, cos_status, msg = cosine_sim(cpu_output, npu_output)
+    compare_column.cosine_sim = cos_res
+    message += msg + "\n"
+    if not cos_status:
+        return CompareConst.ERROR, compare_column, message
+    # abs err
+    b_value, n_value = get_msg_and_handle_value(cpu_output, npu_output)
+    abs_err = np.abs(b_value - n_value)
+    max_abs_res, max_abs_status = get_max_abs_err(abs_err)
+    compare_column.max_abs_err = max_abs_res
+    if max_abs_status:
+        return CompareConst.PASS, compare_column, message
+    # rel err
+    rel_err = get_rel_err(abs_err, b_value)
+    if n_value.dtype == np.float16:
+        hundred_res, hundred_status = get_rel_err_ratio(rel_err, 0.01)
+        compare_column.rel_err_hundredth = hundred_res
+        if not hundred_status:
+            return CompareConst.ERROR, compare_column, message
+    thousand_res, thousand_status = get_rel_err_ratio(rel_err, 0.001)
+    compare_column.rel_err_thousandth = thousand_res
+    if n_value.dtype == np.float16:
+        if thousand_status:
+            return CompareConst.PASS, compare_column, message
+        return CompareConst.WARNING, compare_column, message
+    ten_thousand_res, ten_thousand_status = get_rel_err_ratio(rel_err, 0.0001)
+    compare_column.rel_err_ten_thousandth = ten_thousand_res
+    if n_value.dtype in [np.float32, np.float64]:
+        if not thousand_status:
+            return CompareConst.ERROR, compare_column, message
+        if not ten_thousand_status:
+            return CompareConst.WARNING, compare_column, message
+    return CompareConst.PASS, compare_column, message
+
+
+def compare_bool_tensor(cpu_output, npu_output):
     error_nums = (cpu_output != npu_output).sum()
     if cpu_output.size == 0:
-        return CompareConst.NAN, False, "There is not cpu calculation result."
+        return CompareConst.NAN, CompareConst.ERROR, "There is not cpu calculation result."
     error_rate = float(error_nums / cpu_output.size)
     result = CompareConst.PASS if error_rate == 0 else CompareConst.ERROR
     return error_rate, result, ""
 
 
 def get_msg_and_handle_value(b_value, n_value):
-    msg = ""
-    if not isinstance(b_value, np.ndarray) or not isinstance(n_value, np.ndarray):
-        msg = f"Max rel err only support numpy array! The actual type is {type(b_value)}, {type(n_value)}."
-        return CompareConst.NA, False, msg
-    if b_value.shape != n_value.shape:
-        msg = f"Shape of bench and npu outputs don't match. bench: {b_value.shape}, npu: {n_value.shape}."
-        return CompareConst.NA, False, msg
-
     if n_value.dtype in Const.FLOAT_TYPE:
         zero_mask = (n_value == 0)
         # 给0的地方加上eps防止除0
-        n_value[zero_mask] += np.finfo(n_value.dtype).eps 
+        n_value[zero_mask] += np.finfo(n_value.dtype).eps
         # 根据n_value为0的位置给n_value也加上eps，否则两者都是0的情况下相对误差会是1
-        b_value[zero_mask] += np.finfo(n_value.dtype).eps 
+        b_value[zero_mask] += np.finfo(n_value.dtype).eps
     else:
         # int type + float eps 会报错，所以这里要强转
         b_value, n_value = b_value.astype(float), n_value.astype(float)
         zero_mask = (n_value == 0)
-        n_value[zero_mask] += np.finfo(float).eps 
-        b_value[zero_mask] += np.finfo(float).eps 
-    return b_value, n_value, msg
+        n_value[zero_mask] += np.finfo(float).eps
+        b_value[zero_mask] += np.finfo(float).eps
+    return b_value, n_value
 
 
-def get_max_rel_err(b_value, n_value):
-    b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
-    rel_err = np.abs((n_value - b_value) / b_value).max()
-    if n_value.dtype == np.float32:
-        bool_result = rel_err < 0.0001
+def get_rel_err(abs_err, b_value):
+    rel_err = np.abs(abs_err / b_value)
+    return rel_err
+
+
+def get_max_abs_err(abs_err):
+    max_abs_err = abs_err.max()
+    bool_result = max_abs_err < 0.001
+    return max_abs_err, bool_result
+
+
+def get_rel_err_ratio(rel_err, thresholding):
+    if np.size(rel_err) == 0:
+        ratio = 1
     else:
-        bool_result = rel_err < 0.001
-    return rel_err, bool_result, msg
-
-
-def get_max_abs_err(b_value, n_value):
-    b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
-    abs_err = np.abs(b_value - n_value).max()
-    bool_result = abs_err < 0.001
-    return abs_err, bool_result, msg
-
-
-def get_rel_err_ratio_hundredth(b_value, n_value):
-    ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.01)
-    if n_value.dtype != np.float16:
-        msg = f"This indicator is not used to evaluate {n_value.dtype} data"
-        return ratio, CompareConst.PASS, msg
-    if bool_result:
-        return ratio, CompareConst.PASS, msg
-    return ratio, CompareConst.ERROR, msg
-
-
-def get_rel_err_ratio_thousandth(b_value, n_value):
-    ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.001)
-    if bool_result:
-        return ratio, CompareConst.PASS, msg
-    if n_value.dtype == np.float16:
-        return ratio, CompareConst.WARNING, msg
-    return ratio, CompareConst.ERROR, msg
-
-
-def get_rel_err_ratio_ten_thousandth(b_value, n_value):
-    ratio, bool_result, msg = get_rel_err_ratio(b_value, n_value, 0.0001)
-    if n_value.dtype == np.float16:
-        msg = f"This indicator is not used to evaluate {n_value.dtype} data"
-        return ratio, CompareConst.PASS, msg
-    if bool_result:
-        return ratio, CompareConst.PASS, msg
-    return ratio, CompareConst.WARNING, msg
-
-
-def get_rel_err_ratio(b_value, n_value, thresholding):
-    b_value, n_value, msg = get_msg_and_handle_value(b_value, n_value)
-    rel_errs = np.abs((n_value - b_value) / b_value)
-    ratio = np.divide(np.sum(rel_errs < thresholding), np.size(rel_errs))
+        ratio = np.divide(np.sum(rel_err < thresholding), np.size(rel_err))
     bool_result = ratio > (1 - thresholding)
-    return ratio, bool_result, msg
+    return ratio, bool_result
 
 
 def max_rel_err_standard(max_rel_errs):
-    bool_result = np.array(max_rel_errs) < 0.001 
+    bool_result = np.array(max_rel_errs) < 0.001
     return np.all(bool_result), bool_result
 
 
@@ -128,19 +141,19 @@ def cosine_sim(cpu_output, npu_output):
         return -1, False, msg
     if len(n_value) == 1:
         msg = "All the data in npu dump data is scalar. Please refer to other compare algorithms."
-        return cos, True, msg 
+        return cos, True, msg
     n_value_max = np.max(np.abs(n_value))
     b_value_max = np.max(np.abs(b_value))
     if n_value_max <= np.finfo(float).eps and b_value_max <= np.finfo(float).eps:
-        return cos, True, msg 
+        return cos, True, msg
     elif n_value_max <= np.finfo(float).eps:
         msg = "All the data is zero in npu dump data."
-        return CompareConst.NA, False, msg 
+        return CompareConst.NA, False, msg
     elif b_value_max <= np.finfo(float).eps:
         msg = "All the data is zero in bench dump data."
-        return CompareConst.NA, False, msg 
+        return CompareConst.NA, False, msg
     else:
-        n_value = n_value_max.astype(float) / n_value_max 
+        n_value = n_value_max.astype(float) / n_value_max
         b_value = b_value_max.astype(float) / b_value_max
         cos = np.dot(n_value, b_value) / (np.linalg.norm(n_value) * np.linalg.norm(b_value))
         if np.isnan(cos):
@@ -173,69 +186,44 @@ def flatten_compare_result(result):
     return flatten_result
 
 
-# 本函数用alg比对bench_out 和npu_out，返回详细比对结果compare_result和标志比对是否通过的布尔变量test_success
-def compare_core(bench_out, npu_out, alg):
-    msg = ""
+def compare_core(bench_out, npu_out):
+    compare_column = CompareColumn()
     if not isinstance(bench_out, type(npu_out)):
-        return [(CompareConst.NA, "bench and npu output type is different.")], False, [CompareConst.NA], [CompareConst.NA], [CompareConst.NA]
+        return CompareConst.ERROR, compare_column, "bench and npu output type is different."
     if isinstance(bench_out, (list, tuple)):
-        compare_result, test_success, bench_dtype, npu_dtype, shape = [], [], [], [], []
+        status, compare_result, message = [], [], []
         if len(bench_out) != len(npu_out):
-            return [(CompareConst.NA, "bench and npu output structure is different")], False, [CompareConst.NA], [CompareConst.NA], [CompareConst.NA]
+            return CompareConst.ERROR, compare_column, "bench and npu output structure is different."
         for b_out_i, n_out_i in zip(bench_out, npu_out):
-            compare_result_i, test_success_i, bench_dtype_i, npu_dtype_i, shape_i = compare_core(b_out_i, n_out_i, alg)
+            status_i, compare_result_i, message_i = compare_core(b_out_i, n_out_i)
+            status.append(status_i)
             compare_result.append(compare_result_i)
-            test_success.append(test_success_i)
-            bench_dtype.append(bench_dtype_i)
-            npu_dtype.append(npu_dtype_i)
-            shape.append(shape_i)
+            message.append(message_i)
     elif isinstance(bench_out, dict):
         b_keys, n_keys = set(bench_out.keys()), set(npu_out.keys())
         if b_keys != n_keys:
-            compare_result, test_success, bench_dtype, npu_dtype, shape = [(CompareConst.NA, "bench and npu output dict keys are different")], [False], \
-                [CompareConst.NA], [CompareConst.NA], [CompareConst.NA]
+            return CompareConst.ERROR, compare_column, "bench and npu output dict keys are different."
         else:
-            compare_result, test_success, bench_dtype, npu_dtype, shape = compare_core(list(bench_out.values()), list(npu_out.values()), alg)
+            status, compare_result, message = compare_core(list(bench_out.values()), list(npu_out.values()))
     elif isinstance(bench_out, torch.Tensor):
         copy_bench_out = bench_out.detach().clone()
         copy_npu_out = npu_out.detach().clone()
-        bench_dtype = [str(copy_bench_out.dtype)]
-        npu_dtype = [str(copy_npu_out.dtype)]
-        shape = [tuple(npu_out.shape)]
+        compare_column.bench_type = str(copy_bench_out.dtype)
+        compare_column.npu_type = str(copy_npu_out.dtype)
+        compare_column.shape = tuple(npu_out.shape)
         if copy_npu_out.dtype == torch.bfloat16:
             copy_bench_out = copy_bench_out.to(torch.float32)
             copy_npu_out = copy_npu_out.to(torch.float32)
-        compare_result, test_success, msg = compare_torch_tensor(copy_bench_out.numpy(), copy_npu_out.cpu().numpy(), alg)
+        status, compare_result, message = compare_torch_tensor(copy_bench_out.numpy(), copy_npu_out.cpu().numpy(),
+                                                               compare_column)
     elif isinstance(bench_out, (bool, int, float, str)):
-        compare_result, test_success, msg = compare_builtin_type(bench_out, npu_out)
-        bench_dtype = [str(type(bench_out))]
-        npu_dtype = [str(type(npu_out))]
-        shape = [str(type(npu_out))]
+        compare_column.bench_dtype = str(type(bench_out))
+        compare_column.npu_dtype = str(type(npu_out))
+        compare_column.shape = str(type(npu_out))
+        status, compare_result, message = compare_builtin_type(bench_out, npu_out, compare_column)
     elif bench_out is None:
-        compare_result, test_success, msg = CompareConst.NA, True, "output is None"
-        bench_dtype = [CompareConst.NA]
-        npu_dtype = [CompareConst.NA]
-        shape = [CompareConst.NA]
+        return CompareConst.PASS, compare_column, "Output is None."
     else:
-        compare_result, test_success, msg = CompareConst.NA, True, "Unexpected output type \
-                     in compare_core: {}".format(type(bench_out))
-        bench_dtype = [CompareConst.NA]
-        npu_dtype = [CompareConst.NA]
-        shape = [CompareConst.NA]
-    if isinstance(compare_result, list):
-        compare_result = flatten_compare_result(compare_result)
-    else:
-        compare_result = [(compare_result, msg)]
-    if isinstance(test_success, list):
-        test_success = flatten_compare_result(test_success)
-    else:
-        test_success = [test_success]
-    if isinstance(bench_dtype, list):
-        bench_dtype = flatten_compare_result(bench_dtype)
-        npu_dtype = flatten_compare_result(npu_dtype)
-        shape = flatten_compare_result(shape)
-    else:
-        bench_dtype = [bench_dtype]
-        npu_dtype = [npu_dtype]
-        shape = [shape]
-    return compare_result, test_success, bench_dtype, npu_dtype, shape
+        return CompareConst.PASS, compare_column, "Unexpected output type in compare_core: {}".format(type(bench_out))
+
+    return status, compare_result, message

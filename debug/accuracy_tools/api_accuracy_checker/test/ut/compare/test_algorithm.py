@@ -1,14 +1,16 @@
 import unittest
 import numpy as np
 from api_accuracy_checker.compare import algorithm as alg
+from api_accuracy_checker.compare.algorithm import CompareColumn
 
 class TestAlgorithmMethods(unittest.TestCase):
 
     def test_compare_torch_tensor(self):
-        cpu_output = np.array([1, 2, 3])
-        npu_output = np.array([1, 2, 3])
-        compare_alg = alg.get_max_rel_err
-        self.assertEqual(alg.compare_torch_tensor(cpu_output, npu_output, compare_alg), (0.0, 'pass', ''))
+        cpu_output = np.array([1.0, 2.0, 3.0])
+        npu_output = np.array([1.0, 2.0, 3.0])
+        compare_column = CompareColumn()
+        status, compare_column, message = alg.compare_torch_tensor(cpu_output, npu_output, compare_column)
+        self.assertEqual(status, "pass")
 
     def test_compare_bool_tensor(self):
         cpu_output = np.array([True, False, True])
@@ -18,27 +20,27 @@ class TestAlgorithmMethods(unittest.TestCase):
     def test_get_msg_and_handle_value(self):
         b_value = np.array([1.0, 2.0, 3.0])
         n_value = np.array([1.0, 2.0, 3.0])
-        self.assertEqual(alg.get_msg_and_handle_value(b_value, n_value), (b_value, n_value, ''))
-
-    def test_get_max_rel_err(self):
-        b_value = np.array([1.0, 2.0, 3.0])
-        n_value = np.array([1.0, 2.0, 3.0])
-        self.assertEqual(alg.get_max_rel_err(b_value, n_value), (0.0, True, ''))
+        self.assertEqual(alg.get_msg_and_handle_value(b_value, n_value), (b_value, n_value))
 
     def test_get_max_abs_err(self):
         b_value = np.array([1.0, 2.0, 3.0])
         n_value = np.array([1.0, 2.0, 3.0])
-        self.assertEqual(alg.get_max_abs_err(b_value, n_value), (0.0, True, ''))
+        abs_err = np.abs(b_value - n_value)
+        self.assertEqual(alg.get_max_abs_err(abs_err), (0.0, True))
 
     def test_get_rel_err_ratio_thousandth(self):
         b_value = np.array([1.0, 2.0, 3.0])
         n_value = np.array([1.0, 2.0, 3.0])
-        self.assertEqual(alg.get_rel_err_ratio_thousandth(b_value, n_value), (1.0, 'pass', ''))
+        abs_err = np.abs(b_value - n_value)
+        rel_err = alg.get_rel_err(abs_err, b_value)
+        self.assertEqual(alg.get_rel_err_ratio(rel_err, 0.001), (1.0, True))
 
     def test_get_rel_err_ratio_ten_thousandth(self):
         b_value = np.array([1.0, 2.0, 3.0])
         n_value = np.array([1.0, 2.0, 3.0])
-        self.assertEqual(alg.get_rel_err_ratio_ten_thousandth(b_value, n_value), (1.0, 'pass', ''))
+        abs_err = np.abs(b_value - n_value)
+        rel_err = alg.get_rel_err(abs_err, b_value)
+        self.assertEqual(alg.get_rel_err_ratio(rel_err, 0.0001), (1.0, True))
 
     def test_max_rel_err_standard(self):
         max_rel_errs = [0.0001, 0.0002, 0.0003]
