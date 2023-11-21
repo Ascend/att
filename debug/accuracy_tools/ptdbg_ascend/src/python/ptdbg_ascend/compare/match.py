@@ -3,6 +3,7 @@ import yaml
 from ..common.file_check_util import FileOpen
 from ..common.utils import CompareException
 
+
 class AtenIrMapping():
     def __init__(self):
         cur_path = os.path.dirname(os.path.realpath(__file__))
@@ -21,9 +22,9 @@ class AtenIrMapping():
             aten_op_raw_name_overload = '_'.join(aten_op.split("_")[1:-3])
             aten_op_raw_name = aten_op_raw_name_overload.split('.')[0]
             torch_op_raw_name = '_'.join(torch_op.split("_")[1:-3]).lower()
-        except IndexError:
-            raise CompareException.INVALID_DATA_ERROR(f"Dump op name format error: {aten_op}, {torch_op}. "
-                            f"Your dump data may be corrupted.")
+        except IndexError as e:
+            err_msg = f"Dump op name format error: {aten_op}, {torch_op}. Your dump data may be corrupted."
+            raise CompareException.INVALID_DATA_ERROR(err_msg) from e
         matching_op = self.aten_mapping.get(aten_op_raw_name)
         if matching_op is None:
             return False
