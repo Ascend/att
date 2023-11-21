@@ -49,7 +49,7 @@ pip3 install tqdm prettytable yaml
 
 精度比对工具：在预检工具的输入随机生成的情况下，有些场景预检工具有概率检测不到算子精度问题，这时候除了多跑几次预检工具之外，用户还可以使用dump 比对工具来检测精度问题。具体来说，dump统计量、分段dump、模块化dump，通讯算子dump等功能可以用较轻的数据量实现不同侧重的精度比对，从而定位精度问题。
 
-[精度比对工具使用指南](https://gitee.com/ascend/att/blob/master/debug/accuracy_tools/ptdbg_ascend/doc/ptdbg_ascend%E7%B2%BE%E5%BA%A6%E5%B7%A5%E5%85%B7%E5%8A%9F%E8%83%BD%E8%AF%B4%E6%98%8E_v3.2.md#debugger%E6%96%B9%E5%BC%8Fdump%E5%92%8C%E6%BA%A2%E5%87%BA%E6%A3%80%E6%B5%8B%E6%8E%A8%E8%8D%90)
+[精度比对工具使用指南](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend#%E5%BF%AB%E9%80%9F%E5%AE%89%E8%A3%85)
 
 [精度预检工具使用指南](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/api_accuracy_checker#%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F)
 
