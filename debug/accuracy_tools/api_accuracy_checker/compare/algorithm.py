@@ -112,7 +112,10 @@ def get_max_abs_err(abs_err):
 
 
 def get_rel_err_ratio(rel_err, thresholding):
-    ratio = np.divide(np.sum(rel_err < thresholding), np.size(rel_err))
+    if np.size(rel_err) == 0:
+        ratio = 1
+    else:
+        ratio = np.divide(np.sum(rel_err < thresholding), np.size(rel_err))
     bool_result = ratio > (1 - thresholding)
     return ratio, bool_result
 
