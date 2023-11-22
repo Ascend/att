@@ -63,23 +63,13 @@ export const RegexConfigModal: React.FC<IProps> = (props) => {
   const classes = useStyles()
   const [lossTag, setLossTag] = useState<string>(props.file.lossTag)
   const [iterTag, setIterTag] = useState<string>(props.file.iterTag)
-  const [lossRegex, setLossRegex] = useState<boolean>(props.file.useLossRegex)
-  const [iterRegex, setIterRegex] = useState<boolean>(props.file.useIterRegex)
 
   const lossTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLossTag(e.target.value)
   }
 
-  const lossRegexChange = (e: CheckboxChangeEvent) => {
-    setLossRegex(e.target.checked)
-  }
-
   const iterTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIterTag(e.target.value)
-  }
-
-  const iterRegexChange = (e: CheckboxChangeEvent) => {
-    setIterRegex(e.target.checked)
   }
 
   const configModalOk = () => {
@@ -91,16 +81,13 @@ export const RegexConfigModal: React.FC<IProps> = (props) => {
       message.warning('Iteration Tag cannot be empty or only spaces!')
       return
     }
-    if (lossTag === props.file.lossTag && iterTag === props.file.iterTag
-      && lossRegex === props.file.useLossRegex && iterRegex === props.file.useIterRegex) {
+    if (lossTag === props.file.lossTag && iterTag === props.file.iterTag) {
       props.onCancel()
     } else {
       const configFile: FileInfo = {
         ...props.file,
         lossTag,
-        iterTag,
-        useLossRegex: lossRegex,
-        useIterRegex: iterRegex
+        iterTag
       }
       props.onOk(configFile)
     }
@@ -114,18 +101,16 @@ export const RegexConfigModal: React.FC<IProps> = (props) => {
       open
       centered
       maskClosable={false}
-      width={560}
+      width={480}
       className={classes.root}
     >
       <div className={classes.filterItem}>
         <span className="tagLabel">Loss Tag</span>
         <Input onChange={lossTagChange} value={lossTag} maxLength={200} />
-        <Checkbox checked={lossRegex} onChange={lossRegexChange}>Regex</Checkbox>
       </div>
       <div className={classes.filterItem}>
         <span className="tagLabel">Iteration Tag</span>
         <Input onChange={iterTagChange} value={iterTag} maxLength={200} />
-        <Checkbox checked={iterRegex} onChange={iterRegexChange}>Regex</Checkbox>
       </div>
     </Modal>
   )
