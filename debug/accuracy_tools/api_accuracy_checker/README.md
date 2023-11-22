@@ -102,6 +102,12 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    ```
    数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path
 
+## API预检白名单
+
+精度预检工具可以对指定API进行预检操作，只需要修改att\debug\accuracy_tools\api_accuracy_checker\hook_module目录下的support_wrap_ops.yaml文件。
+
+support_wrap_ops.yaml文件当前记录所有PyTorch API名称，可以直接编辑该文件，删除不需要的API，保留需要预检的API。
+
 ## API预检指标
 
 API预检通过测试，则在accuracy_checking_details.csv文件中的“pass”列标记“pass”，否则标记“error”或“warning”，详细规则如下：
