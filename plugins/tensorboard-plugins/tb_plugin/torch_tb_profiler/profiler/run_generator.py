@@ -101,8 +101,9 @@ class RunGenerator(object):
             if self.profile_data.has_memory:
                 profile_run.views.append(consts.MEMORY_VIEW)
                 profile_run.memory_div_curve = None
-                self.process_data, self.component_curve_data, peak_memory_events = self._handle_memory_data()
+                self.process_data, self.component_curve_data = self._handle_memory_data()
                 profile_run.memory_all_curve = self._get_memory_all_curve()
+                peak_memory_events = self._handle_memory_component()
                 profile_run.memory_events = self._get_memory_event(peak_memory_events)
 
             if self.profile_data.has_communication:
@@ -565,18 +566,7 @@ class RunGenerator(object):
     def _handle_memory_data(self):
         process_data = defaultdict()
         pta_or_ge_data = defaultdict()
-        path = self.profile_data.memory_component_path
-        datas = RunGenerator._get_csv_data(path)
-        peak_memory_events = {
-            'metadata': {
-                'title': 'Component Peak Memory',
-                'default_device': '',
-            },
-            'columns': [{'name': 'Component', 'type': 'string'},
-                        {'name': 'Peak Memory Usage(MB)', 'type': 'number'},
-                        {'name': 'Time(ms)', 'type': 'number'}]
-        }
-        peak_memory_rows = defaultdict(list)
+        datas = RunGenerator._get_csv_data(self.profile_data.memory_curve_path)
         required_column_idxs = {
             'Component': -1,
             'Device Type': -1,
@@ -586,7 +576,7 @@ class RunGenerator(object):
         }
         (tag_type_idx, device_type_idx, time_idx, reserved_idx, allocated_idx), column_exist_count = \
             RunGenerator._check_csv_columns(datas[0], required_column_idxs)
-        if column_exist_count < 5:
+        if column_exist_count < len(required_column_idxs):
             logger.error('Required column is missing in file "memory_record.csv"')
         else:
             for ls in datas[1:]:
@@ -604,7 +594,34 @@ class RunGenerator(object):
                     line_chart_data = [time_column, round(float(ls[allocated_idx]), 3),
                                        round(float(ls[reserved_idx]), 3)]
                     pta_or_ge_data.setdefault(device_type, {}).setdefault(ls[tag_type_idx], []).append(line_chart_data)
-                else:
+
+        return process_data, pta_or_ge_data
+
+    def _handle_memory_component(self):
+        peak_memory_events = {
+            'metadata': {
+                'title': 'Component Peak Memory',
+                'default_device': '',
+            },
+            'columns': [{'name': 'Component', 'type': 'string'},
+                        {'name': 'Peak Memory Reserved(MB)', 'type': 'number'},
+                        {'name': 'Time(ms)', 'type': 'number'}]
+        }
+        peak_memory_rows = defaultdict(list)
+        component_datas = RunGenerator._get_csv_data(self.profile_data.memory_component_path)
+        if component_datas:
+            required_column_idxs = {
+                'Component': -1,
+                'Timestamp(us)': -1,
+                'Total Reserved(MB)': -1,
+                'Device': -1
+            }
+            (tag_type_idx, time_idx, reserved_idx, device_type_idx), column_exist_count = \
+                RunGenerator._check_csv_columns(component_datas[0], required_column_idxs)
+            if column_exist_count < len(required_column_idxs):
+                logger.error('Required column is missing in file "npm_module_mem.csv"')
+            else:
+                for ls in component_datas[1:]:
                     memory_curve_id_dict = {
                         'device_type_idx': device_type_idx,
                         'reserved_idx': reserved_idx,
@@ -612,9 +629,8 @@ class RunGenerator(object):
                         'time_idx': time_idx
                     }
                     self._handle_peak_memory_rows(memory_curve_id_dict, ls, peak_memory_rows)
-
         peak_memory_events['rows'] = peak_memory_rows
-        return process_data, pta_or_ge_data, peak_memory_events
+        return peak_memory_events
 
     def _handle_peak_memory_rows(self, memory_curve_id_dict, ls, peak_memory_rows):
         # Record the peak memory usage of other components.

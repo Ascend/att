@@ -122,6 +122,7 @@ class RunProfileData(object):
 
         # npu memory data
         self.memory_operator_path: str = None
+        self.memory_curve_path: str = None
         self.memory_component_path: str = None
         self.start_ts: float = 0.0
 
@@ -173,10 +174,12 @@ class RunProfileData(object):
                 profile.kernel_file_path = io.join(path, file)
             if str(file) == 'memory_record.csv':
                 has_memory_record = True
-                profile.memory_component_path = io.join(path, file)
+                profile.memory_curve_path = io.join(path, file)
             if str(file) == 'operator_memory.csv':
                 has_memory_operator = True
                 profile.memory_operator_path = io.join(path, file)
+            if str(file) == 'npu_module_mem.csv':
+                profile.memory_component_path = io.join(path, file)
             if str(file) == 'operator_details.csv':
                 profile.has_operator_view = True
                 profile.operator_path = io.join(path, file)
