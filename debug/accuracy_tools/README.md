@@ -34,7 +34,7 @@ export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
 环境和依赖
 
 ```
-pip3 install tqdm prettytable yaml
+pip3 install tqdm prettytable pyyaml
 ```
 
 ## 工具使用
