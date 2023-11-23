@@ -436,8 +436,8 @@ class RunGenerator(object):
             # convert time metric 'us' to 'ms'
             # some operators may not have the following columns
             nums = [ls[0] if ls[0] else '<unknown>', abs(float(ls[1])),
-                    round((float(ls[2]) - self.profile_data.start_ts) / 1000, 2) if ls[2] else None,
-                    round((float(ls[3]) - self.profile_data.start_ts) / 1000, 2) if ls[3] else None,
+                    round((float(ls[2]) - self.profile_data.profiler_start_ts) / 1000, 2) if ls[2] else None,
+                    round((float(ls[3]) - self.profile_data.profiler_start_ts) / 1000, 2) if ls[3] else None,
                     round(float(ls[4]) / 1000, 2) if ls[4] else None]
             display_datas[device_type].append(nums)
         table['rows'] = display_datas
@@ -580,7 +580,7 @@ class RunGenerator(object):
             logger.error('Required column is missing in file "memory_record.csv"')
         else:
             for ls in datas[1:]:
-                time_column = round((float(ls[time_idx]) - self.profile_data.start_ts) / 1000, 2)
+                time_column = round((float(ls[time_idx]) - self.profile_data.profiler_start_ts) / 1000, 2)
                 device_type = ls[device_type_idx]
                 if ls[tag_type_idx] == 'PTA+GE':
                     process_data.setdefault(device_type, {}).setdefault('Allocated', []).append(
@@ -639,7 +639,7 @@ class RunGenerator(object):
         reserved_idx = memory_curve_id_dict.get('reserved_idx')
         tag_type_idx = memory_curve_id_dict.get('tag_type_idx')
         time_idx = memory_curve_id_dict.get('time_idx')
-        time_column = round((float(ls[time_idx]) - self.profile_data.start_ts) / 1000, 2)
+        time_column = round((float(ls[time_idx]) - self.profile_data.profiler_start_ts) / 1000, 2)
         for item in peak_memory_rows[ls[device_type_idx]]:
             if item[0] == ls[tag_type_idx]:
                 if item[1] < ls[reserved_idx]:

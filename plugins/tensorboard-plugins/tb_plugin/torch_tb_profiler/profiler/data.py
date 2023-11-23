@@ -67,6 +67,7 @@ class RunProfileData(object):
                 else:
                     event = trace.create_event(data, self.is_pytorch_lightning)
                     if event is not None:
+                        event.ts = float(event.ts)
                         self.profiler_start_ts = min(self.profiler_start_ts, event.ts)
                         self.events.append(event)
 
@@ -124,7 +125,6 @@ class RunProfileData(object):
         self.memory_operator_path: str = None
         self.memory_curve_path: str = None
         self.memory_component_path: str = None
-        self.start_ts: float = 0.0
 
         # npu operator data
         self.operator_path: str = None
@@ -166,7 +166,7 @@ class RunProfileData(object):
         profile = RunProfileData.from_json(worker, span, trace_json)
         profile.trace_file_path = trace_path
         profile.has_trace = has_trace
-        profile.start_ts = 0 if math.isinf(start_ts) else start_ts
+        profile.profiler_start_ts = 0 if math.isinf(start_ts) else start_ts
 
         for file in io.listdir(path):
             if str(file) == 'kernel_details.csv':

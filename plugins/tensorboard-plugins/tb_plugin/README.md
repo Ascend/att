@@ -264,25 +264,35 @@
 
 ##### 文件配置
 ###### 文件导入
-  界面分为左侧边栏和右侧展示界面。点击左侧的Import Files或在左侧未勾选文件时点击右侧界面中心的Import Files字体，将会弹出系统文件资源管理窗，可以上传需要比对的.txt或.log格式的精度数据文件。
-  <font color='red'>注：当前最多支持上传6个文件。</font>
+  界面分为左侧边栏和右侧展示界面。点击左侧的Import Files或在左侧未勾选文件时点击右侧界面中心的Import Files字体，将会弹出系统文件资源管理窗，可以上传需要比对的.txt或.log格式的模型网络训练日志文件。
+
+  <font color='red'>注：当前最多支持上传6个文件，单个文件大小不能超过10MB。</font>
   ![Alt text](./docs/images/accuracy.PNG)
 
 ###### 已上传文件操作
   文件上传后，在左侧侧边栏出现文件列表。每个文件栏内都有配置数据匹配条件、导出CSV以及删除三种操作图标。
+
   ![Alt text](./docs/images/accuracy_file_operator.PNG)
 
-  * 点击配置数据匹配条件图标后，出现匹配条件配置弹框，需要设置Loss Tag和Iteration Tag两个配置项，弹框内每个Tag都包含一个输入框和勾选框。
+  * 点击配置数据匹配条件图标后，出现匹配条件配置弹框，需要设置Loss Tag和Iteration Tag两个配置项，弹框内每个Tag都包含一个输入框。
   ![Alt text](./docs/images/accuracy_config_modal.PNG) 
-    1. 在Regex勾选框未勾选时，匹配数据时将逐行读取文件，查找是否存在输入框内设定的文本，若找到该文本，若为Loss Tag则查找其后是否存在数字或以科学计数法表示的数字（忽略两者中间空格），若为Iteration Tag则查找其后是否存在整数（忽略两者中间空格）；并将找到的第一项作为匹配值。
-    2. 在Regex勾选框已勾选时，匹配数据时将逐行读取文件，并以输入框内的输入作为正则表达式去匹配数据，并将匹配到的第一项作为匹配值。
+  根据2个Tag的取值有如下3点匹配规则：
+    1. 匹配数据时将逐行读取文件，查找是否存在输入框内设定的文本，若找到该文本，若为Loss Tag则查找其后是否存在数字或以科学计数法表示的数字（忽略两者中间空格），若为Iteration Tag则查找其后是否存在整数（忽略两者中间空格）。
+    2. 若存在多个匹配项，将第一项作为匹配值。
     3. 只有当Loss Tag和Iteration都存在匹配值时，该行的Iteration和Loss才会为有效数据。
-    4. E.g.  
-    * Itertion Tag的Regex未勾选时，输入框内输入`iteration`可匹配`iteration  5/1000`数据，匹配值为`5`，但无法匹配`iteration: 5`的数据，因为中间多了非数字字符`:`。
-    * Loss Tag的Regex未勾选时，输入框内输入`loss:`可匹配`loss: 1.14514e-2`数据，匹配值为`1.14514e-2`。
-    * Loss Tag的Regex勾选时，输入框内输入`/[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/`可匹配数字和科学计数法。
+    
+    E.g.
 
-  * 点击导出CSV图标后，将导出找到的Iteration和Loss数据为csv文件。
+    ![Alt text](./docs/images/accuracy_file.PNG)
+
+    对于以上这份txt文件，当设定Loss Tag为`loss:`以及Iteration Tag为`iteration`时：
+       * 根据上方第1点规则，Iteration Tag可匹配图中区域1内的整数，但无法匹配区域3内的整数，因为`iteration`和整数中间多了非数字字符`:`。
+       * Loss Tag可匹配图中区域2和4内的数字，但区域2内为第一项匹配值，根据上方第2点规则，因此只取区域2内数字。
+       * Loss Tag在图中区域5内有匹配数据，Iteration Tag在图中区域6内有匹配数据，但由于Iteration Tag在区域5内没有匹配数据，Loss Tag在图中区域6内没有匹配数据，根据上方第3点规则，区域5和区域6内不存在有效数据。
+    
+    因此上方这张图中最终提取出的有效数据为区域1和区域2内的同一行数字的集合。
+
+  * 点击导出CSV图标后，将导出找到的Iteration和Loss数据为csv文件。 \
   ![Alt text](./docs/images/accuracy_csv.PNG)
 
   * 点击删除图标后，界面弹出确认删除框，确认后可移除该文件。
