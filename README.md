@@ -25,7 +25,7 @@ Ascend Training Tools，昇腾训练工具链。针对训练&大模型场景，�
 
 1. [api_accuracy_checker（Ascend模型精度预检工具）](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/api_accuracy_checker)
 
-   在昇腾NPU上扫描用户训练模型中所有API，给出精度情况的诊断和分析。
+   在昇腾NPU上扫描用户训练模型中所有API，进行API复现，给出精度情况的诊断和分析。
 
 2. [ptdbg_ascend（PyTorch精度工具）](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend)
 
@@ -49,9 +49,9 @@ Ascend Training Tools，昇腾训练工具链。针对训练&大模型场景，�
 
    提供集群场景数据一键汇聚功能。
 
-### Tensorboard
+### [Tensorboard](https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin)
 
-Tensorboard支持NPU性能数据可视化插件[PyTorch Profiler TensorBoard NPU Plugin](https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin)。
+Tensorboard支持NPU性能数据可视化插件PyTorch Profiler TensorBoard NPU Plugin。
 
 支持将Ascend平台采集、解析的Pytorch Profiling数据可视化呈现，也兼容GPU数据采集、解析可视化。
 

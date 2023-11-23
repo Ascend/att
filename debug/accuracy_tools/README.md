@@ -8,13 +8,13 @@ NPU上训练的网络存在精度问题，精度指标（loss或者具体的评�
 
 | 工具名称                                                     | 说明                                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [api_accuracy_checker（Ascend模型精度预检工具）](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/api_accuracy_checker) | 在昇腾NPU上扫描用户训练模型中所有API，给出精度情况的诊断和分析。 |
+| [api_accuracy_checker（Ascend模型精度预检工具）](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/api_accuracy_checker) | 在昇腾NPU上扫描用户训练模型中所有API，进行API复现，给出精度情况的诊断和分析。 |
 | [ptdbg_ascend（PyTorch精度工具）](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend) | 进行PyTorch整网API粒度的数据dump、精度比对和溢出检测，从而定位PyTorch训练场景下的精度问题。 |
 
 ### 场景介绍
 
-**Ascend模型精度预检工具**会对全网每一个API根据其实际训练中的shape、dtype和数值范围生成随机的输入，对比它与标杆的输出差异，并指出输出差异过大不符合精度标准的API。该工具检查单API精度问题准确率超过80%，对比一般dump比对方法减少落盘数据量99%以上。
+**Ascend模型精度预检工具**会对全网每一个API根据其实际训练中的shape、dtype和数值范围生成随机的输入，对比它与标杆的输出差异，并指出输出差异过大不符合精度标准的API。该工具检查单API精度问题准确率超过80%，对比一般dump比对方法减少落盘数据量99%以上。具体使用请参见《[Ascend模型精度预检工具](https://gitee.com/ascend/att/blob/master/debug/accuracy_tools/api_accuracy_checker/README.md)》
 
-**PyTorch精度工具精度比对功能**在精度预检工具的输入随机生成的情况下，有些场景预检工具有概率无法检测到算子精度问题，此时除了使用预检工具多次检测之外，还可以使用ptdbg_ascend精度比对工具dump CPU或GPU及NPU精度数据进行比对，从而检测精度问题。具体来说，dump统计量、分段dump、模块化dump，通讯算子dump等功能可以用较轻的数据量实现不同侧重的精度比对，从而定位精度问题。具体使用请参见《[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)》。
+**PyTorch精度工具精度比对功能**在精度预检工具的输入随机生成的情况下，有些场景预检工具有概率无法检测到算子精度问题，此时可以使用预检工具真实数据模式或使用ptdbg_ascend精度比对工具dump CPU或GPU及NPU精度数据进行比对，从而检测精度问题；当API标杆数据为GPU侧时，则需要使用ptdbg_ascend精度比对工具dump GPU及NPU精度数据进行比对。具体来说，dump统计量、分段dump、模块化dump，通讯算子dump等功能可以用较轻的数据量实现不同侧重的精度比对，从而定位精度问题。具体使用请参见《[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)》。
 
 **PyTorch精度工具溢出检测功能**是在判断训练网络可能存在溢出现象时，例如某个step的loss突然变成inf nan，或者混精场景下loss_scale不断减小，可以通过ptdbg_ascend的精度检测工具检测API的溢出情况。具体使用请参见《[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)》。
