@@ -1178,10 +1178,10 @@ class DistributedRunGenerator(object):
             steps_to_overlap.setdefault(step_name, OrderedDict())
             costs = data.comm_overlap_costs[i]
             steps_to_overlap[step_name][data.worker] = [
-                costs.computation - costs.overlap,
-                costs.overlap,
-                costs.communication - costs.overlap,
-                costs.other
+                round(costs.computation - costs.overlap, 3),
+                round(costs.overlap, 3),
+                round(costs.communication - costs.overlap, 3),
+                round(costs.other, 3)
             ]
             steps_to_overlap['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_overlap['all'][data.worker], steps_to_overlap[step_name][data.worker])]
@@ -1193,7 +1193,8 @@ class DistributedRunGenerator(object):
             steps_to_overlap.setdefault(k, OrderedDict())
             # v: computation / overlap / communication_not_overlap / free time
             # steps_to_overlap: computation_not_overlap / overlap / communication_not_overlap / other
-            steps_to_overlap[k][data.worker] = list([v[0] - v[1], v[1], v[2], v[3]])
+            steps_to_overlap[k][data.worker] = list(
+                [round(v[0] - v[1], 3), round(v[1], 3), round(v[2], 3), round(v[3], 3)])
             steps_to_overlap['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_overlap['all'][data.worker], steps_to_overlap[k][data.worker])]
 
@@ -1206,8 +1207,8 @@ class DistributedRunGenerator(object):
         for k, v in steps.items():
             steps_to_wait.setdefault(k, OrderedDict())
 
-            trans = v.get('trans') * 1000  # 1ms = 1000us
-            wait = v.get('Synchronize') * 1000  # 1ms = 1000us
+            trans = round(v.get('trans') * 1000, 3)  # 1ms = 1000us
+            wait = round(v.get('Synchronize') * 1000, 3)  # 1ms = 1000us
             steps_to_wait[k][data.worker] = list([trans, wait])
             steps_to_wait['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[k][data.worker])]
@@ -1220,8 +1221,8 @@ class DistributedRunGenerator(object):
             return
         for step, comm_stats in data.step_comm_stats.items():
             steps_to_wait.setdefault(step, OrderedDict())[data.worker] = [
-                comm_stats[1],
-                comm_stats[0] - comm_stats[1]
+                round(comm_stats[1], 3),
+                round(comm_stats[0] - comm_stats[1], 3)
             ]
             steps_to_wait['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[step][data.worker])]
@@ -1283,11 +1284,11 @@ class DistributedRunGenerator(object):
             row = [
                 op,
                 stats[0],
-                stats[1] * 1024 * 1024,
+                round(stats[1] * 1024 * 1024, 3),
                 round(stats[1] * 1024 * 1024 / stats[0] if stats != 0 else 0),  # 1MB = 1024 * 1024 bytes
-                stats[2] * 1000,
+                round(stats[2] * 1000, 3),
                 round(stats[2] * 1000 / stats[0] if stats != 0 else 0),  # 1ms = 1000us
-                stats[3] * 1000,
+                round(stats[3] * 1000, 3),
                 round(stats[3] * 1000 / stats[0] if stats != 0 else 0)  # 1ms = 1000us
             ]
             table['rows'].append(row)
@@ -1311,11 +1312,11 @@ class DistributedRunGenerator(object):
             row = [
                 op,
                 stats[0],
-                stats[1],
+                round(stats[1], 3),
                 round(stats[1] / stats[0] if stats != 0 else 0),
-                stats[2],
+                round(stats[2], 3),
                 round(stats[2] / stats[0] if stats != 0 else 0),
-                stats[3],
+                round(stats[3], 3),
                 round(stats[3] / stats[0] if stats != 0 else 0)
             ]
             table['rows'].append(row)
