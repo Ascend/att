@@ -215,7 +215,9 @@ export const App = () => {
   // #endregion
 
   React.useEffect(() => {
-    setup().then(() => {
+    setup().catch(() => {
+      console.log('google chart is not supported offline')
+    }).finally(() => {
       setLoaded(true)
     })
   }, [])

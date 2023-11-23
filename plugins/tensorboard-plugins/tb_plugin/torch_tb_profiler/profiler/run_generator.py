@@ -676,51 +676,39 @@ class RunGenerator(object):
         column_tootip = {'type': 'string', 'role': 'tooltip', 'p': {'html': 'true'}}
         data = {}
         data['steps'] = {}
-        data['steps']['columns'] = [{'type': 'string', 'name': 'Step'}]
+        data['steps']['columns'] = ['Step']
         if show_gpu:
-            data['steps']['columns'].extend([{'type': 'number', 'name': 'Kernel'},
-                                             column_tootip,
-                                             {'type': 'number', 'name': 'Memcpy'},
-                                             column_tootip,
-                                             {'type': 'number', 'name': 'Memset'},
-                                             column_tootip])
+            data['steps']['columns'].extend(['Kernel', 'Memcpy', 'Memset'])
         if self.profile_data.has_communication:
-            data['steps']['columns'].extend([{'type': 'number', 'name': 'Communication'},
-                                             column_tootip])
+            data['steps']['columns'].append('Communication')
         if show_gpu:
-            data['steps']['columns'].extend([{'type': 'number', 'name': 'Runtime'},
-                                             column_tootip])
-        data['steps']['columns'].extend([{'type': 'number', 'name': 'DataLoader'},
-                                         column_tootip,
-                                         {'type': 'number', 'name': 'CPU Exec'},
-                                         column_tootip,
-                                         {'type': 'number', 'name': 'Other'},
-                                         column_tootip])
+            data['steps']['columns'].append('Runtime')
+        data['steps']['columns'].extend(['DataLoader', 'CPU Exec', 'Other'])
 
         data['steps']['rows'] = []
         for i in range(len(self.profile_data.steps_costs)):
             costs = self.profile_data.steps_costs[i]
             step_name = self.profile_data.steps_names[i]
-            row = [step_name]
+            row = [{'value': step_name}]
             if show_gpu:
-                row.extend([costs.costs[ProfileRole.Kernel],
-                            build_part_time_str(costs.costs[ProfileRole.Kernel], 'Kernel'),
-                            costs.costs[ProfileRole.Memcpy],
-                            build_part_time_str(costs.costs[ProfileRole.Memcpy], 'Memcpy'),
-                            costs.costs[ProfileRole.Memset],
-                            build_part_time_str(costs.costs[ProfileRole.Memset], 'Memset')])
+                row.extend([{'value': costs.costs[ProfileRole.Kernel],
+                             'tooltip': build_part_time_str(costs.costs[ProfileRole.Kernel], 'Kernel')},
+                            {'value': costs.costs[ProfileRole.Memcpy],
+                             'tooltip': build_part_time_str(costs.costs[ProfileRole.Memcpy], 'Memcpy')},
+                            {'value': costs.costs[ProfileRole.Memset],
+                             'tooltip': build_part_time_str(costs.costs[ProfileRole.Memset], 'Memset')}])
             if self.profile_data.has_communication:
-                row.extend([costs.costs[ProfileRole.Communication],
-                            build_part_time_str(costs.costs[ProfileRole.Communication], 'Communication')])
+                row.append({'value': costs.costs[ProfileRole.Communication],
+                            'tooltip': build_part_time_str(costs.costs[ProfileRole.Communication], 'Communication')})
             if show_gpu:
-                row.extend([costs.costs[ProfileRole.Runtime],
-                            build_part_time_str(costs.costs[ProfileRole.Runtime], 'Runtime')])
-            row.extend([costs.costs[ProfileRole.DataLoader],
-                        build_part_time_str(costs.costs[ProfileRole.DataLoader], 'DataLoader'),
-                        costs.costs[ProfileRole.CpuOp],
-                        build_part_time_str(costs.costs[ProfileRole.CpuOp], 'CPU Exec'),
-                        costs.costs[ProfileRole.Other],
-                        build_part_time_str(costs.costs[ProfileRole.Other], 'Other')])
+                row.append({'value': costs.costs[ProfileRole.Runtime],
+                            'tooltip': build_part_time_str(costs.costs[ProfileRole.Runtime], 'Runtime')})
+            row.extend([{'value': costs.costs[ProfileRole.DataLoader],
+                         'tooltip': build_part_time_str(costs.costs[ProfileRole.DataLoader], 'DataLoader')},
+                        {'value': costs.costs[ProfileRole.CpuOp],
+                         'tooltip': build_part_time_str(costs.costs[ProfileRole.CpuOp], 'CPU Exec')},
+                        {'value': costs.costs[ProfileRole.Other],
+                         'tooltip': build_part_time_str(costs.costs[ProfileRole.Other], 'Other')}])
             data['steps']['rows'].append(row)
 
         avg_costs = []

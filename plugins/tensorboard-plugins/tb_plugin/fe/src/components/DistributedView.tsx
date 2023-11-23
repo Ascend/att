@@ -10,12 +10,13 @@ import InputLabel from '@material-ui/core/InputLabel'
 import MenuItem from '@material-ui/core/MenuItem'
 import Select, { SelectProps } from '@material-ui/core/Select'
 import { makeStyles } from '@material-ui/core/styles'
+import { Table } from 'antd'
+import { ColumnsType } from 'antd/es/table'
 import * as React from 'react'
 import * as api from '../api'
 import { DistributedGraph, GpuInfo, Graph } from '../api'
 import { firstOrUndefined } from '../utils'
 import { ColumnChart } from './charts/ColumnChart'
-import { TableChart } from './charts/TableChart'
 import { DataLoading } from './DataLoading'
 import { GpuInfoTable } from './GpuInfoTable'
 import { makeChartHeaderRenderer, useTooltipCommonStyles } from './helpers'
@@ -49,6 +50,17 @@ const useStyles = makeStyles((theme) => ({
   },
   description: {
     marginLeft: theme.spacing(1)
+  },
+  table: {
+    height: '100%',
+    border: '1px solid #efefef',
+    '& .ant-table-tbody > tr': {
+      height: 20,
+      fontSize: '10pt',
+      '& > td': {
+        padding: '0 8px!important'
+      }
+    }
   }
 }))
 
@@ -79,6 +91,8 @@ export const DistributedView: React.FC<IProps> = (props) => {
   const [overlapStep, setOverlapStep] = React.useState('')
   const [waittimeStep, setWaittimeStep] = React.useState('')
   const [commopsWorker, setCommopsWorker] = React.useState('')
+  const [columns, setColumns] = React.useState<ColumnsType<any>>([])
+  const [pageSize, setPageSize] = React.useState(30)
 
   React.useEffect(() => {
     if (waittimeSteps.includes('all')) {
@@ -153,10 +167,40 @@ export const DistributedView: React.FC<IProps> = (props) => {
   )
 
   const getTableData = (tableData?: any, worker?: string) => {
-    if (!tableData || !worker) return undefined
-    return tableData[worker] as Graph
+    if (!tableData || !worker) {
+      return []
+    }
+    let dataInfo: api.Graph = tableData[worker]
+    const stringCompare = (a: string, b: string) => a.localeCompare(b)
+    const numberCompare = (a: number, b: number) => a - b
+    let column: any[] = dataInfo.columns.map(item => {
+      return {
+        title: item.name,
+        key: item.name,
+        dataIndex: item.name,
+        sorter: item.type == 'string' ? (a: any, b: any) => stringCompare(a[item.name], b[item.name])
+          : (a: any, b: any) => numberCompare(a[item.name], b[item.name])
+      }
+    })
+    setColumns(column)
+    return dataInfo.rows.map((row, index) => {
+      if (row.length !== dataInfo.columns.length) {
+        return null
+      }
+      const dataRow: { [column: string]: number | string } = { key: index }
+      dataInfo.columns.forEach((column, index) => {
+        dataRow[column.name] = row[index] as string | number
+      })
+      return dataRow
+    })
   }
-  const commopsTable = getTableData(commopsTableData, commopsWorker)
+  const commopsTable: any[] = React.useMemo(() => {
+    return getTableData(commopsTableData, commopsWorker)
+  }, [commopsTableData, commopsWorker])
+
+  const onShowSizeChange = (current: number, size: number) => {
+    setPageSize(size)
+  }
 
   return (
     <div className={classes.root}>
@@ -217,7 +261,6 @@ export const DistributedView: React.FC<IProps> = (props) => {
                 )}
               </DataLoading>
             </Grid>
-
             <Grid item sm={6}>
               <DataLoading value={waittimeData}>
                 {(chartData) => (
@@ -286,9 +329,18 @@ export const DistributedView: React.FC<IProps> = (props) => {
                   </CardContent>
                 </Card>
                 <Grid item>
-                  <DataLoading value={commopsTable}>
-                    {(graph) => <TableChart graph={graph} />}
-                  </DataLoading>
+                  <Table
+                    className={classes.table}
+                    columns={columns}
+                    size='small'
+                    dataSource={commopsTable}
+                    pagination={{
+                      pageSize,
+                      pageSizeOptions: ['20', '30', '50', '100'],
+                      hideOnSinglePage: true,
+                      onShowSizeChange
+                    }}
+                  />
                 </Grid>
               </Grid>
             </Grid>

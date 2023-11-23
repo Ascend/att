@@ -1,14 +1,32 @@
 /*---------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------------------------------------------
+ * Copyright (c) 2023, Huawei Technologies.
+ * All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0  (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Modifications: Offer offline supporting.
  *--------------------------------------------------------------------------------------------*/
 
 import { makeStyles } from '@material-ui/core/styles'
 import * as React from 'react'
-import { Graph } from '../../api'
+import { StepedGraph } from '../../api'
 import { useResizeEventDependency } from '../../utils/resize'
+import * as echarts from 'echarts'
 
 interface IProps {
-  graph: Graph
+  graph: StepedGraph
   height?: number
   hAxisTitle?: string
   vAxisTitle?: string
@@ -30,46 +48,55 @@ export const SteppedAreaChart: React.FC<IProps> = (props) => {
     const element = graphRef.current
     if (!element) return
 
-    const data = new google.visualization.DataTable()
-    graph.columns.forEach((column) => {
-      data.addColumn({
-        type: column.type,
-        label: column.name,
-        role: column.role,
-        p: column.p
-      })
+    const chart = echarts.init(element)
+    const dataSource: Array<Array<number | string>> = []
+    dataSource.push(graph.columns)
+    graph.rows.forEach((row) => {
+      dataSource.push(row.map(item => item.value))
     })
-    data.addRows(graph.rows)
-
-    const options = {
-      title: graph.title,
-      isStacked: true,
-      height,
-      legend: { position: 'bottom' },
-      chartArea: { left: '15%', width: '80%', top: '10%' },
-      connectSteps: false,
-      areaOpacity: 0.9,
-      tooltip: { isHtml: true },
-      hAxis: {
-        title: hAxisTitle
+    const options: echarts.EChartsOption = {
+      title: {
+        text: graph.title
       },
-      vAxis: {
-        title: vAxisTitle
-      }
+      legend: {
+        bottom: 0
+      },
+      xAxis: {
+        type: 'category',
+        name: hAxisTitle,
+        axisLabel: {
+          interval: 0,
+        }
+      },
+      yAxis: {
+        type: 'value',
+        name: vAxisTitle
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: (params: any) => {
+          return graph.rows[params.dataIndex][params.seriesIndex + 1]?.tooltip || ''
+        }
+      },
+      dataset: {
+        source: dataSource
+      },
+      series: Array(graph.columns.length - 1).fill({
+        type: 'bar',
+        stack: 'samesign'
+      })
     }
 
-    const chart = new google.visualization.SteppedAreaChart(element)
-
-    chart.draw(data, options)
+    options && chart.setOption(options, true)
 
     return () => {
-      chart.clearChart()
+      chart.dispose()
     }
   }, [graph, height, resizeEventDependency])
 
   return (
     <div className={classes.root}>
-      <div ref={graphRef}></div>
+      <div ref={graphRef} style={{ height }}></div>
     </div>
   )
 }
