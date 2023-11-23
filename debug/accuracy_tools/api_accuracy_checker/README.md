@@ -11,23 +11,23 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 3. 支持随机生成模式和真实数据模式
 4. 单API测试，排除整网中的累计误差问题
 
-## 使用方式
+## 工具安装
 
-1. 安装预检工具
-
-   将att仓代码下载到本地，并配置环境变量。假设下载后att仓路径为 $ATT_HOME，环境变量应配置为：
+1. 将att仓代码下载到本地，并配置环境变量。假设下载后att仓路径为 $ATT_HOME，环境变量应配置为：
 
    ```bash
    export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
 
-   安装依赖tqdm、rich、pyyaml
+2. 安装依赖tqdm、rich、pyyaml
 
    ```bash
    pip3 install tqdm rich pyyaml
    ```
 
-2. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
+## 使用方式
+
+1. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
 
    - 如果训练脚本是通过torch.utils.data.dataloader方式加载数据，就可以在训练脚本中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
 
