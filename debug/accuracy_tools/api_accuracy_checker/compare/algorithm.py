@@ -25,6 +25,14 @@ class CompareColumn:
 def compare_torch_tensor(cpu_output, npu_output, compare_column):
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
+    npu_dtype = None
+    if npu_output.dtype == torch.bfloat16:
+        npu_dtype = torch.bfloat16
+        cpu_output = cpu_output.to(torch.float32)
+        npu_output = npu_output.to(torch.float32)        
+    npu_dtype = npu_output.dtype
+    cpu_output = cpu_output.numpy()
+    npu_output = npu_output.numpy()
     if cpu_shape != npu_shape:
         return CompareConst.ERROR, compare_column, f"The shape of bench{str(cpu_shape)} " \
                                                    f"and npu{str(npu_shape)} not equal."
@@ -54,20 +62,20 @@ def compare_torch_tensor(cpu_output, npu_output, compare_column):
         return CompareConst.PASS, compare_column, message
     # rel err
     rel_err = get_rel_err(abs_err, b_value)
-    if n_value.dtype == np.float16:
+    if npu_dtype in [torch.float16, torch.bfloat16]:
         hundred_res, hundred_status = get_rel_err_ratio(rel_err, 0.01)
         compare_column.rel_err_hundredth = hundred_res
         if not hundred_status:
             return CompareConst.ERROR, compare_column, message
     thousand_res, thousand_status = get_rel_err_ratio(rel_err, 0.001)
     compare_column.rel_err_thousandth = thousand_res
-    if n_value.dtype == np.float16:
+    if npu_dtype in [torch.float16, torch.bfloat16]:
         if thousand_status:
             return CompareConst.PASS, compare_column, message
         return CompareConst.WARNING, compare_column, message
     ten_thousand_res, ten_thousand_status = get_rel_err_ratio(rel_err, 0.0001)
     compare_column.rel_err_ten_thousandth = ten_thousand_res
-    if n_value.dtype in [np.float32, np.float64]:
+    if n_value.dtype in [torch.float32, torch.float64]:
         if not thousand_status:
             return CompareConst.ERROR, compare_column, message
         if not ten_thousand_status:
@@ -211,10 +219,7 @@ def compare_core(bench_out, npu_out):
         compare_column.bench_type = str(copy_bench_out.dtype)
         compare_column.npu_type = str(copy_npu_out.dtype)
         compare_column.shape = tuple(npu_out.shape)
-        if copy_npu_out.dtype == torch.bfloat16:
-            copy_bench_out = copy_bench_out.to(torch.float32)
-            copy_npu_out = copy_npu_out.to(torch.float32)
-        status, compare_result, message = compare_torch_tensor(copy_bench_out.numpy(), copy_npu_out.cpu().numpy(),
+        status, compare_result, message = compare_torch_tensor(copy_bench_out, copy_npu_out,
                                                                compare_column)
     elif isinstance(bench_out, (bool, int, float, str)):
         compare_column.bench_dtype = str(type(bench_out))
