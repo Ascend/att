@@ -110,7 +110,7 @@ export const LineChart: React.FC<IProps> = (props) => {
           }
         }
         if (graph.columns.length <= 4) {
-          let finalRows = graph.rows['PTA']
+          let finalRows = graph.rows['PTA'] ?? graph.rows['GE']
           if (graph.columns.length === 4) {
             const mergedAPPRows = graph.rows['APP'].map((item: Array<number | null>) => {
               return [item[0], null, null, item[1]]
