@@ -6,7 +6,7 @@ ATT工具针对模型训练精度问题设计推出了一系列精度工具，�
 
 NPU上训练的网络存在精度问题，精度指标（loss或者具体的评价指标）与标杆相差较多。对于该场景的问题，可以使用**Ascend模型精度预检工具**或者**PyTorch精度工具**进行定位。
 
-| 工具名称和安装链接                                           | 说明                                                         |
+| 工具名称                                                     | 说明                                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [api_accuracy_checker（Ascend模型精度预检工具）](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/api_accuracy_checker) | 在昇腾NPU上扫描用户训练模型中所有API，给出精度情况的诊断和分析。 |
 | [ptdbg_ascend（PyTorch精度工具）](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend) | 进行PyTorch整网API粒度的数据dump、精度比对和溢出检测，从而定位PyTorch训练场景下的精度问题。 |
