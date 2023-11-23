@@ -75,7 +75,7 @@ def compare_torch_tensor(cpu_output, npu_output, compare_column):
         return CompareConst.WARNING, compare_column, message
     ten_thousand_res, ten_thousand_status = get_rel_err_ratio(rel_err, 0.0001)
     compare_column.rel_err_ten_thousandth = ten_thousand_res
-    if n_value.dtype in [torch.float32, torch.float64]:
+    if npu_dtype in [torch.float32, torch.float64]:
         if not thousand_status:
             return CompareConst.ERROR, compare_column, message
         if not ten_thousand_status:
