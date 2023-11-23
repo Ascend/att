@@ -7,11 +7,12 @@ import CardContent from '@material-ui/core/CardContent'
 import CardHeader from '@material-ui/core/CardHeader'
 import Grid from '@material-ui/core/Grid'
 import { makeStyles } from '@material-ui/core/styles'
+import { Table } from 'antd'
+import { ColumnsType } from 'antd/es/table'
 import * as React from 'react'
 import * as api from '../api'
 import { PieChart } from './charts/PieChart'
 import { SteppedAreaChart } from './charts/SteppedAreaChart'
-import { TableChart } from './charts/TableChart'
 import { DataLoading } from './DataLoading'
 import { makeChartHeaderRenderer, useTooltipCommonStyles } from './helpers'
 import { TextListItem } from './TextListItem'
@@ -48,18 +49,19 @@ const useStyles = makeStyles((theme) => ({
   },
   topGraph: {
     height: topGraphHeight + 40
+  },
+  table: {
+    height: '100%',
+    border: '1px solid #efefef',
+    '& .ant-table-tbody > tr': {
+      height: 20,
+      fontSize: '10pt',
+      '& > td': {
+        padding: '0 8px!important'
+      }
+    }
   }
 }))
-
-const highlightNoTopLevel = (
-  row: number,
-  column: number,
-  cb: (key: string, value: any) => void
-) => {
-  if (row !== 0) {
-    cb('style', 'background: #e0e0e0')
-  }
-}
 
 export interface IProps {
   run: string
@@ -70,16 +72,43 @@ export interface IProps {
 export const Overview: React.FC<IProps> = (props) => {
   const { run, worker, span } = props
 
-  const [steps, setSteps] = React.useState<api.Graph | undefined>(undefined)
+  const [steps, setSteps] = React.useState<api.StepedGraph | undefined>(undefined)
   const [performances, setPerformances] = React.useState<api.Performance[]>([])
   const [environments, setEnvironments] = React.useState<api.Environment[]>([])
   const [gpuMetrics, setGpuMetrics] = React.useState<
     api.GpuMetrics | undefined
   >(undefined)
   const [recommendations, setRecommendations] = React.useState('')
+  const [columns, setColumns] = React.useState<ColumnsType<any>>([])
 
-  const synthesizedTableGraph = React.useMemo(() => {
-    return transformPerformanceIntoTable(performances)
+  const tableRows = React.useMemo(() => {
+    let dataInfo: api.Graph = transformPerformanceIntoTable(performances)
+    if (dataInfo.columns.length < 3) {
+      return []
+    }
+    const stringCompare = (a: string, b: string) => a.localeCompare(b)
+    const numberCompare = (a: number, b: number) => a - b
+    let column: any[] = dataInfo.columns.map(item => {
+      return {
+        title: item.name,
+        key: item.name,
+        dataIndex: item.name,
+        sorter: item.type == 'string' ? (a: any, b: any) => stringCompare(a[item.name], b[item.name])
+          : (a: any, b: any) => numberCompare(a[item.name], b[item.name])
+      }
+    })
+    setColumns(column)
+    return dataInfo.rows.map((row, index) => {
+      if (row.length < 3) {
+        return null
+      }
+      return {
+        key: index,
+        [dataInfo.columns[0].name]: row[0],
+        [dataInfo.columns[1].name]: row[1],
+        [dataInfo.columns[2].name]: row[2]
+      }
+    })
   }, [performances])
 
   const synthesizedPieGraph = React.useMemo(() => {
@@ -161,14 +190,15 @@ export const Overview: React.FC<IProps> = (props) => {
               <CardContent>
                 <Grid container spacing={1}>
                   <Grid item sm={6}>
-                    <TableChart
-                      graph={synthesizedTableGraph}
-                      height={topGraphHeight}
-                      allowHtml
-                      setCellProperty={highlightNoTopLevel}
+                    <Table
+                      className={classes.table}
+                      columns={columns}
+                      size='small'
+                      dataSource={tableRows}
+                      pagination={false}
                     />
                   </Grid>
-                  <Grid item sm={6}>
+                  <Grid item sm={5}>
                     <PieChart
                       graph={synthesizedPieGraph}
                       height={topGraphHeight}
