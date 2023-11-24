@@ -20,6 +20,7 @@ import json
 import os
 import threading
 from pathlib import Path
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -46,6 +47,7 @@ thread_lock = threading.Lock()
 pkl_name = ""
 rank = os.getpid()
 multi_output_apis = ["_sort_", "npu_flash_attention"]
+module_count = defaultdict(int)
 
 
 class DataInfo(object):
@@ -347,6 +349,16 @@ def acc_cmp_dump(name, **kwargs):
         return RuntimeError("Not get the specified process pid.")
 
     def acc_cmp_hook(module, in_feat, out_feat=None):
+        nonlocal name
+        if "_{}_" in name:
+            module_name = name.split("_")[1]
+            if Const.BACKWARD in name:
+                index = module_count[module_name] - 1
+                module_count[module_name] = index
+            else:
+                index = module_count[module_name]
+                module_count[module_name] = index + 1
+            name = name.format(index)
         if pid == os.getpid():
             dump_acc_cmp(name, in_feat, out_feat, dump_step, module)
         if hasattr(module, "input_args"):
