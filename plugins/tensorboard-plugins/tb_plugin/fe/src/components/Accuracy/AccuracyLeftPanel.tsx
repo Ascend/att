@@ -122,6 +122,8 @@ export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
 
   const parseFile = (file: FileInfo): FileInfo => {
     file.losses = []
+    file.iterLosses = {}
+    file.iters = []
     const lines = file.fileContent.split(/\r\n|\n|\r/)
     for (let i = 0; i < lines.length; i++) {
       const iter = parseByTag(lines[i], file.iterTag, false)
