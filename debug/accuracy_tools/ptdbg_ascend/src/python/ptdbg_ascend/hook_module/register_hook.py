@@ -127,6 +127,11 @@ def register_hook_core(hook, model=None):
         if not isinstance(model, torch.nn.Module):
             print_error_log("The argument model must be an object of torch.nn.Module")
             raise CompareException(CompareException.INVALID_PARAM_ERROR)
+        for _, module in model.named_modules():
+            if "torch.nn.modules" in str(module.__class__):
+                prefix = "Module_" + module.__class__.__name__
+                module.register_forward_hook(hook(prefix + "_{}_" + "forward"))
+                module.register_backward_hook(hook(prefix + "_{}_" + "backward"))
     else:
         api_register.initialize_hook(hook)
         api_register.api_modularity()
