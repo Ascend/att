@@ -29,10 +29,11 @@ def compare_torch_tensor(cpu_output, npu_output, compare_column):
     if npu_output.dtype == torch.bfloat16:
         npu_dtype = torch.bfloat16
         cpu_output = cpu_output.to(torch.float32)
-        npu_output = npu_output.to(torch.float32)        
-    npu_dtype = npu_output.dtype
+        npu_output = npu_output.to(torch.float32)
+    else:        
+        npu_dtype = npu_output.dtype
     cpu_output = cpu_output.numpy()
-    npu_output = npu_output.numpy()
+    npu_output = npu_output.cpu().numpy()
     if cpu_shape != npu_shape:
         return CompareConst.ERROR, compare_column, f"The shape of bench{str(cpu_shape)} " \
                                                    f"and npu{str(npu_shape)} not equal."
