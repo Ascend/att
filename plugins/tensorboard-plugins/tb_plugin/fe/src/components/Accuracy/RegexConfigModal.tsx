@@ -17,11 +17,10 @@
  * limitations under the License.
  *--------------------------------------------------------------------------------------------*/
 
-import { Checkbox, Input, message, Modal } from 'antd'
+import { Input, message, Modal } from 'antd'
 import * as React from 'react'
 import { useState } from 'react'
 import { makeStyles } from '@material-ui/core/styles'
-import { CheckboxChangeEvent } from 'antd/es/checkbox'
 import { FileInfo } from './entity'
 
 interface IProps {

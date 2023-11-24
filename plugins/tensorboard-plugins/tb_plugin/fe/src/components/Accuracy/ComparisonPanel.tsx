@@ -228,6 +228,9 @@ export const ComparisonPanel: React.FC<IProps> = (props) => {
     const tempValue = selectedFiles.filter(item => {
       return !!fileList.find(file => file.fileName === item)
     })
+    if (JSON.stringify(tempValue) === JSON.stringify(selectedFiles)) {
+      compareFile(tempValue)
+    }
     setSelectedFiles(tempValue)
   }, [fileList])
 
