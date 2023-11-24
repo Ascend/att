@@ -18,7 +18,7 @@ from api_accuracy_checker.run_ut.ut_api_info import UtAPIInfo
 from api_accuracy_checker.common.config import msCheckerConfig
 
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker, \
-    change_mode, check_file_suffix
+    change_mode, check_file_suffix, check_link
 
 
 
@@ -250,6 +250,8 @@ def _run_ut():
     except Exception as error:
         print_error_log(f"Set NPU device id failed. device id is: {args.device_id}")
         raise NotImplementedError from error
+    check_link(args.forward_input_file)
+    check_link(args.backward_input_file)
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
     check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)

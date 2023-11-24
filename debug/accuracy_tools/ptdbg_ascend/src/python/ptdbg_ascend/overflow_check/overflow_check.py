@@ -86,7 +86,7 @@ def overflow_check(name, **kwargs):
     if not pid:
         return RuntimeError("Not get the specified process pid.")
 
-    def overflowcheck_hook(module, in_feat, out_feat):
+    def overflowcheck_hook(module, in_feat, out_feat=None):
         if not check_overflow_environment(pid):
             return
         dump_file = DumpUtil.get_dump_path()

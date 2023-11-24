@@ -17,12 +17,13 @@
 import os
 import sys
 import re
-from ..common.utils import print_error_log, CompareException, check_compare_param
+from ..common.utils import print_error_log, CompareException, check_compare_param, check_file_or_directory_path
 from .acc_compare import compare_core
 
 
 def compare_distributed(npu_dump_dir, bench_dump_dir, output_path, **kwargs):
     def check_and_return_dir_contents(dump_dir, prefix):
+        check_file_or_directory_path(dump_dir, True)
         contents = os.listdir(dump_dir)
         pattern = re.compile(f'^{prefix}[0-9]+$')
         for name in contents:

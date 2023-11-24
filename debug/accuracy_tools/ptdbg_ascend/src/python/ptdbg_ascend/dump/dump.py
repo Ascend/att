@@ -182,8 +182,13 @@ def dump_api_tensor(dump_step, in_feat, name_template, out_feat):
         if Const.PRE_FORWARD in name_template:
             name_template = name_template.replace(Const.PRE_FORWARD, Const.FORWARD)
         else:
-            dump_tensor(in_feat, name_template.format("output"), dump_step)
-            return
+            if Const.BACKWARD in name_template and Const.BACKWARD in DumpUtil.dump_mode:
+                return
+            elif Const.BACKWARD not in name_template and Const.FORWARD in DumpUtil.dump_mode:
+                if "output" in DumpUtil.dump_mode:
+                    dump_tensor(in_feat, name_template.format("output"), dump_step)
+                if "input" in DumpUtil.dump_mode:
+                    return
 
     if Const.BACKWARD in name_template and Const.BACKWARD in DumpUtil.dump_mode:
         if 'input' in DumpUtil.dump_mode:
