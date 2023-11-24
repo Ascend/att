@@ -113,7 +113,7 @@ class FileChecker:
         check_path_pattern_vaild(self.file_path)
         check_common_file_size(self.file_path)
         check_file_suffix(self.file_path, self.file_type)
-        return os.path.realpath(self.file_path)
+        return self.file_path
 
     def check_path_ability(self):
         if self.ability == FileCheckConst.WRITE_ABLE:
