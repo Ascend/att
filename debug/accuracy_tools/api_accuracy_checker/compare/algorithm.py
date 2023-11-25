@@ -25,13 +25,10 @@ class CompareColumn:
 def compare_torch_tensor(cpu_output, npu_output, compare_column):
     cpu_shape = cpu_output.shape
     npu_shape = npu_output.shape
-    npu_dtype = None
+    npu_dtype = npu_output.dtype
     if npu_output.dtype == torch.bfloat16:
-        npu_dtype = torch.bfloat16
         cpu_output = cpu_output.to(torch.float32)
         npu_output = npu_output.to(torch.float32)
-    else:        
-        npu_dtype = npu_output.dtype
     cpu_output = cpu_output.numpy()
     npu_output = npu_output.cpu().numpy()
     if cpu_shape != npu_shape:
