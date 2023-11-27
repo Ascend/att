@@ -12,12 +12,10 @@ from .node import (CommunicationNode, DeviceNode, ModuleNode, OperatorNode, PLMo
                    ProfilerStepNode, RuntimeNode, create_operator_node)
 from .op_tree import OpTreeBuilder
 from .range_utils import merge_ranges
-from .trace import BaseEvent, DurationEvent, EventTypes, KernelEvent
+from .trace import BaseEvent, DurationEvent, EventTypes, KernelEvent, NcclOpNameSet, GlooOpNameSet
 
 logger = utils.get_logger()
 
-NcclOpNameSet = ['nccl:broadcast', 'nccl:reduce', 'nccl:all_reduce', 'nccl:all_gather', 'nccl:reduce_scatter']
-GlooOpNameSet = ['gloo:broadcast', 'gloo:reduce', 'gloo:all_reduce', 'gloo:all_gather', 'gloo:reduce_scatter']
 CommLibTypes = IntEnum('CommLibTypes', ['Nccl', 'Gloo'], start=0)
 
 
@@ -173,7 +171,8 @@ class NodeParserMixin:
                             EventTypes.OPERATOR,
                             EventTypes.PL_MODULE,
                             EventTypes.PROFILER_STEP,
-                            EventTypes.MODULE]:
+                            EventTypes.MODULE,
+                            EventTypes.USER_ANNOTATION]:
             if event.type == EventTypes.PROFILER_STEP:
                 op_node = ProfilerStepNode.create(event)
             elif event.type == EventTypes.MODULE:
@@ -188,16 +187,17 @@ class NodeParserMixin:
                     self.comm_lib.add(CommLibTypes.Nccl)
                 if event.name in GlooOpNameSet:
                     self.comm_lib.add(CommLibTypes.Gloo)
-                    ts = event.ts
-                    dur = event.duration
-                    comm_node.kernel_ranges.append((ts, ts + dur))
-                    comm_node.total_time = dur
+                ts = event.ts
+                dur = event.duration
+                comm_node.kernel_ranges.append((ts, ts + dur))
+                comm_node.total_time = dur
                 self.communication_data[op_node.external_id] = comm_node
             if event.name == 'DataParallel.forward':
                 self.use_dp = True
             if event.name == 'DistributedDataParallel.forward':
                 self.use_ddp = True
-            tid2list[int(tid)].append(op_node)
+            if op_node:
+                tid2list[int(tid)].append(op_node)
         elif event.type == EventTypes.PL_PROFILE:
             op_node = PLProfileNode.create(event)
             pl_tid2list[int(tid)].append(op_node)
@@ -260,6 +260,10 @@ class StepParser:
         return bool(self.role_ranges[ProfileRole.Memcpy] or self.role_ranges[ProfileRole.Memset])
 
     def _parse_step(self, event: DurationEvent, comm_nodes: Dict[int, CommunicationNode]):
+        def check_name(name: str):
+            return (name.startswith('enumerate(DataLoader)#') and name.endswith('.__next__')) or name.startswith(
+                'enumerate(DataPipe)#')
+
         ts = event.ts
         dur = event.duration
         evt_type = event.type
@@ -274,15 +278,13 @@ class StepParser:
             self.role_ranges[ProfileRole.Memset].append((ts, ts + dur))
         elif evt_type == EventTypes.RUNTIME:
             self.role_ranges[ProfileRole.Runtime].append((ts, ts + dur))
-        elif evt_type == EventTypes.OPERATOR:
-            if ((event.name.startswith('enumerate(DataLoader)#') and event.name.endswith('.__next__'))
-                    or event.name.startswith('enumerate(DataPipe)#')):
-                self.role_ranges[ProfileRole.DataLoader].append((ts, ts + dur))
+        elif evt_type in [EventTypes.OPERATOR, EventTypes.USER_ANNOTATION] and check_name(event.name):
+            self.role_ranges[ProfileRole.DataLoader].append((ts, ts + dur))
         elif event.type == EventTypes.PROFILER_STEP:
             self.steps.append((ts, ts + dur))
             self.steps_names.append(str(event.step))
-        elif evt_type in [EventTypes.PYTHON, EventTypes.OPERATOR]:
-            if event.name in GlooOpNameSet:
+        elif evt_type in [EventTypes.PYTHON, EventTypes.OPERATOR, EventTypes.USER_ANNOTATION]:
+            if event.name in GlooOpNameSet or event.name in NcclOpNameSet:
                 self.role_ranges[ProfileRole.Communication].append((ts, ts + dur))
             else:
                 self.role_ranges[ProfileRole.CpuOp].append((ts, ts + dur))

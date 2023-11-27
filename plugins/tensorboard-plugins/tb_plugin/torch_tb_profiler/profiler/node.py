@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 from .. import utils
 from .tensor_core import TC_Allowlist, TC_OP_Allowlist
 from .trace import (DurationEvent, EventTypes, KernelEvent, ModuleEvent,
-                    OperatorEvent, PLProfileEvent)
+                    OperatorEvent, PLProfileEvent, NcclOpNameSet, GlooOpNameSet)
 
 logger = utils.get_logger()
 
@@ -296,6 +296,11 @@ def create_operator_node(event: OperatorEvent):
         return DataLoaderNode.create(event)
     elif event.name.startswith('Optimizer.step'):
         return OptimizerNode.create(event)
+    elif event.type == EventTypes.USER_ANNOTATION:
+        if event.name in GlooOpNameSet or event.name in NcclOpNameSet:
+            return OperatorNode.create(event)
+        else:
+            return None
     else:
         return OperatorNode.create(event)
 

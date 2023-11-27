@@ -1166,7 +1166,7 @@ class DistributedRunGenerator(object):
             else:
                 DistributedRunGenerator._get_npu_overlap_data(data, steps_to_overlap)
 
-            steps_to_overlap['all'][data.worker] = [x / step_number for x in steps_to_overlap['all'][data.worker]]
+            steps_to_overlap['all'][data.worker] = [int(x / step_number) for x in steps_to_overlap['all'][data.worker]]
         for k, v in steps_to_overlap.items():
             steps_to_overlap[k] = OrderedDict(sorted(v.items()))
         result['data'] = steps_to_overlap
@@ -1226,7 +1226,7 @@ class DistributedRunGenerator(object):
             ]
             steps_to_wait['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[step][data.worker])]
-        steps_to_wait['all'][data.worker] = [x / step_number for x in steps_to_wait['all'][data.worker]]
+        steps_to_wait['all'][data.worker] = [int(x / step_number) for x in steps_to_wait['all'][data.worker]]
 
     def _generate_wait_graph(self):
         result = dict()
