@@ -3,7 +3,16 @@ import os
 import copy
 import sys
 import time
-import torch_npu
+
+try:
+    import torch_npu
+except ImportError:
+    is_gpu = True
+    current_device = "cuda"
+else:
+    is_gpu = False
+    current_device = "npu"
+
 import yaml
 import torch
 from tqdm import tqdm
@@ -54,13 +63,13 @@ def generate_npu_params(input_args, input_kwargs, need_backward):
             return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
         elif isinstance(arg_in, torch.Tensor):
             if need_backward and arg_in.requires_grad:
-                arg_in = arg_in.clone().detach().to("npu").requires_grad_()
+                arg_in = arg_in.clone().detach().to(current_device).requires_grad_()
                 temp_arg_in = arg_in * 1
                 arg_in = temp_arg_in.type_as(arg_in)
                 arg_in.retain_grad()
                 return arg_in
             else:
-                return arg_in.clone().detach().to("npu")
+                return arg_in.clone().detach().to(current_device)
         else:
             return arg_in
 
@@ -199,7 +208,7 @@ def run_backward(api_full_name, args, backward_content, grad_index, npu_args, np
         if isinstance(arg, torch.Tensor):
             args_grad.append(arg.grad)
     grad_out = args_grad
-    npu_grad = grad.clone().detach().npu()
+    npu_grad = grad.clone().detach().to(current_device)
     if grad_index is not None:
         npu_out[grad_index].backward(npu_grad)
     else:
@@ -244,7 +253,7 @@ def _run_ut():
     _run_ut_parser(parser)
     args = parser.parse_args(sys.argv[1:])
     torch.npu.set_compile_mode(jit_compile=args.jit_compile)
-    npu_device = "npu:" + str(args.device_id)
+    npu_device = current_device + str(args.device_id)
     try:
         torch.npu.set_device(npu_device)
     except Exception as error:
