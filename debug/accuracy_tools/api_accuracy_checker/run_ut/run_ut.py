@@ -251,13 +251,17 @@ def _run_ut_parser(parser):
 def _run_ut():
     parser = argparse.ArgumentParser()
     _run_ut_parser(parser)
-    args = parser.parse_args(sys.argv[1:])
-    torch.npu.set_compile_mode(jit_compile=args.jit_compile)
-    npu_device = current_device + str(args.device_id)
+    args = parser.parse_args(sys.argv[1:])   
+    if not is_gpu:
+        torch.npu.set_compile_mode(jit_compile=args.jit_compile)
+    used_device = current_device + str(args.device_id)
     try:
-        torch.npu.set_device(npu_device)
+        if is_gpu:
+            torch.cuda.set_device(used_device) 
+        else:
+            torch.npu.set_device(used_device)
     except Exception as error:
-        print_error_log(f"Set NPU device id failed. device id is: {args.device_id}")
+        print_error_log(f"Set device id failed. device id is: {args.device_id}")
         raise NotImplementedError from error
     check_link(args.forward_input_file)
     check_link(args.backward_input_file)
