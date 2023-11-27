@@ -1232,7 +1232,7 @@ if __name__ == "__main__":
     
     # 注册工具
     set_dump_path("./dump_data/npu")
-    set_dump_wwitch("ON")
+    set_dump_witch("ON")
     register_hook(module, acc_cmp_dump)
     
     x = torch.randn(2, 2)
@@ -1242,7 +1242,7 @@ if __name__ == "__main__":
     module_dump_end()    # 结束模块级精度数据dump
     loss = out.sum()
     loss.bachward()
-    set_dump_wwitch("OFF")
+    set_dump_witch("OFF")
 ```
 
 ## dump数据存盘说明
