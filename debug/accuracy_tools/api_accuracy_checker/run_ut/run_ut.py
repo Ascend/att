@@ -137,18 +137,12 @@ def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
     if not is_fwd_success or not is_bwd_success:
         api_full_name = api_full_name.replace("*", ".")
         for element in data_info.in_fwd_data_list:
-            UtAPIInfo(api_full_name + '.forward.input', element, forward_path=ut_error_data_dir,
-                      backward_path=ut_error_data_dir)
-        UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out, forward_path=ut_error_data_dir,
-                  backward_path=ut_error_data_dir)
-        UtAPIInfo(api_full_name + '.forward.output.npu', data_info.npu_out, forward_path=ut_error_data_dir,
-                  backward_path=ut_error_data_dir)
-        UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in, forward_path=ut_error_data_dir,
-                  backward_path=ut_error_data_dir)
-        UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out, forward_path=ut_error_data_dir,
-                  backward_path=ut_error_data_dir)
-        UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out, forward_path=ut_error_data_dir,
-                  backward_path=ut_error_data_dir)
+            UtAPIInfo(api_full_name + '.forward.input', element, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.forward.output.npu', data_info.npu_out, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out, ut_error_data_dir)
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
