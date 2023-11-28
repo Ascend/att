@@ -22,6 +22,7 @@ import yaml
 
 from api_accuracy_checker.hook_module.hook_module import HOOKModule
 from api_accuracy_checker.common.utils import torch_device_guard
+from api_accuracy_checker.common.config import msCheckerConfig
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 
 cur_path = os.path.dirname(os.path.realpath(__file__))
@@ -33,7 +34,10 @@ with FileOpen(yaml_path, 'r') as f:
 def get_tensor_ops():
     global WrapTensorOps
     _tensor_ops = dir(torch._C._TensorBase)
-    return set(WrapTensorOps) & set(_tensor_ops)
+    if msCheckerConfig.white_list:
+        return set(WrapTensorOps) & set(_tensor_ops) & set(msCheckerConfig.white_list)
+    else:
+        return set(WrapTensorOps) & set(_tensor_ops)
 
 
 class HOOKTensor(object):
