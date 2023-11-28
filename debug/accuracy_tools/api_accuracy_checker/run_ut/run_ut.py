@@ -254,7 +254,7 @@ def _run_ut():
     args = parser.parse_args(sys.argv[1:])   
     if not is_gpu:
         torch.npu.set_compile_mode(jit_compile=args.jit_compile)
-    used_device = current_device + str(args.device_id)
+    used_device = current_device + ":" + str(args.device_id)
     try:
         if is_gpu:
             torch.cuda.set_device(used_device) 
