@@ -22,6 +22,7 @@ import yaml
 
 from api_accuracy_checker.hook_module.hook_module import HOOKModule
 from api_accuracy_checker.common.utils import torch_device_guard
+from api_accuracy_checker.common.config import msCheckerConfig
 
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 
@@ -34,7 +35,10 @@ with FileOpen(yaml_path, 'r') as f:
 def get_torch_ops():
     global WrapTorchOps
     _torch_ops = dir(torch._C._VariableFunctionsClass)
-    return set(WrapTorchOps) & set(_torch_ops)
+    if msCheckerConfig.white_list:
+        return return set(WrapTorchOps) & set(_torch_ops) & set(msCheckerConfig.white_list)
+    else:
+        return set(WrapTorchOps) & set(_torch_ops)
 
 
 class HOOKTorchOP(object):
