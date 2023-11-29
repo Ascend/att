@@ -36,7 +36,7 @@ def get_torch_ops():
     global WrapTorchOps
     _torch_ops = dir(torch._C._VariableFunctionsClass)
     if msCheckerConfig.white_list:
-        return return set(WrapTorchOps) & set(_torch_ops) & set(msCheckerConfig.white_list)
+        return set(WrapTorchOps) & set(_torch_ops) & set(msCheckerConfig.white_list)
     else:
         return set(WrapTorchOps) & set(_torch_ops)
 
