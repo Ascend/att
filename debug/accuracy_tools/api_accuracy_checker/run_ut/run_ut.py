@@ -31,7 +31,7 @@ def init_environment():
     for f in dir(torch.nn.functional):
         if f == "__name__":
             continue
-        if msCheckerConfig.white_list and f in msCheckerConfig.white_list::
+        if msCheckerConfig.white_list and f in msCheckerConfig.white_list:
             locals().update({f: getattr(torch.nn.functional, f)})
         else:
             locals().update({f: getattr(torch.nn.functional, f)})
