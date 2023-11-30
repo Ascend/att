@@ -19,7 +19,8 @@ class Config:
             'dump_step': int,
             'error_data_path': str,
             'target_iter': list,
-            'precision': int
+            'precision': int,
+            'white_list': list
         }
         if not isinstance(value, validators.get(key)):
             raise ValueError(f"{key} must be {validators[key].__name__} type")
@@ -34,6 +35,13 @@ class Config:
                 raise ValueError("All elements in target_iter must be greater than or equal to 0")
         if key == 'precision' and value < 0:
             raise ValueError("precision must be greater than 0")
+        if key == 'white_list':
+            if not isinstance(value, list):
+                raise ValueError("white_list must be a list type")
+            if any(isinstance(i, bool) for i in value):
+                raise ValueError("white_list cannot contain boolean values")
+            if not all(isinstance(i, str) for i in value):
+                raise ValueError("All elements in white_list must be of int type")
         return value
 
     def __getattr__(self, item):
