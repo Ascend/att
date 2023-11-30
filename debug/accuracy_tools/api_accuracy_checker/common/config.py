@@ -41,7 +41,7 @@ class Config:
             if any(isinstance(i, bool) for i in value):
                 raise ValueError("white_list cannot contain boolean values")
             if not all(isinstance(i, str) for i in value):
-                raise ValueError("All elements in white_list must be of int type")
+                raise ValueError("All elements in white_list must be of str type")
         return value
 
     def __getattr__(self, item):
