@@ -103,10 +103,10 @@ class FileChecker:
         功能：用户校验基本文件权限：软连接、文件长度、是否存在、读写权限、文件属组、文件特殊字符
         注意：文件后缀的合法性，非通用操作，可使用其他独立接口实现
         """
+        check_path_exists(self.file_path)
         check_link(self.file_path)
         self.file_path = os.path.realpath(self.file_path)
         check_path_length(self.file_path)
-        check_path_exists(self.file_path)
         check_path_type(self.file_path, self.path_type)
         self.check_path_ability()
         check_path_owner_consistent(self.file_path)

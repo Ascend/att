@@ -128,12 +128,25 @@ class CompareConst:
     BENCH_MAX = "Bench max"
     BENCH_MIN = "Bench min"
     BENCH_MEAN = "Bench mean"
+    MAX_DIFF = "Max diff"
+    MIN_DIFF = "Min diff"
+    MEAN_DIFF = "Mean diff"
     COSINE = "Cosine"
     MAX_ABS_ERR = "MaxAbsErr"
     MAX_RELATIVE_ERR = "MaxRelativeErr"
     ACCURACY = "Accuracy Reached or Not"
     STACK = "NPU_Stack_Info"
     ERROR_MESSAGE = "Err_message"
+
+    COMPARE_RESULT_HEADER = [
+        NPU_NAME, BENCH_NAME, NPU_DTYPE, BENCH_DTYPE, NPU_SHAPE, BENCH_SHAPE, COSINE, MAX_ABS_ERR, MAX_RELATIVE_ERR,
+        NPU_MAX, NPU_MIN, NPU_MEAN, BENCH_MAX, BENCH_MIN, BENCH_MEAN, ACCURACY, ERROR_MESSAGE
+    ]
+
+    SUMMARY_COMPARE_RESULT_HEADER = [
+        NPU_NAME, BENCH_NAME, NPU_DTYPE, BENCH_DTYPE, NPU_SHAPE, BENCH_SHAPE, MAX_DIFF, MIN_DIFF, MEAN_DIFF,
+        NPU_MAX, NPU_MIN, NPU_MEAN, BENCH_MAX, BENCH_MIN, BENCH_MEAN, ACCURACY, ERROR_MESSAGE
+    ]
 
     # compare result data
     NAN = 'Nan'
@@ -324,26 +337,26 @@ def check_summary_only_valid(summary_only):
     return summary_only
 
 
-def check_compare_param(input_parma, output_path, stack_mode=False, auto_analyze=True,
-                        fuzzy_match=False):  # 添加默认值来让不传参时能通过参数检查
-    if not (isinstance(input_parma, dict) and isinstance(output_path, str)
-            and isinstance(stack_mode, bool) and isinstance(fuzzy_match, bool)):
+def check_compare_param(input_parma, output_path, stack_mode=False, summary_compare=False):  # 添加默认值来让不传参时能通过参数检查
+    if not (isinstance(input_parma, dict) and isinstance(output_path, str)):
         print_error_log("Invalid input parameters")
-        raise CompareException(CompareException.INVALID_PARAM_ERROR)
-    if not isinstance(auto_analyze, bool):
-        print_error_log("Params auto_analyze only support True or False.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
     check_file_or_directory_path(input_parma.get("npu_pkl_path"), False)
     check_file_or_directory_path(input_parma.get("bench_pkl_path"), False)
-    check_file_or_directory_path(input_parma.get("npu_dump_data_dir"), True)
-    check_file_or_directory_path(input_parma.get("bench_dump_data_dir"), True)
+    if not summary_compare:
+        check_file_or_directory_path(input_parma.get("npu_dump_data_dir"), True)
+        check_file_or_directory_path(input_parma.get("bench_dump_data_dir"), True)
     check_file_or_directory_path(output_path, True)
-    npu_pkl = open(input_parma.get("npu_pkl_path"), "r")
-    bench_pkl = open(input_parma.get("bench_pkl_path"), "r")
-    check_file_mode(npu_pkl.name, bench_pkl.name, stack_mode)
-    _check_pkl(npu_pkl, input_parma.get("npu_pkl_path"))
-    _check_pkl(bench_pkl, input_parma.get("bench_pkl_path"))
-    return npu_pkl, bench_pkl
+    with FileOpen(input_parma.get("npu_pkl_path"), "r") as npu_pkl, \
+         FileOpen(input_parma.get("bench_pkl_path"), "r") as bench_pkl:
+        check_pkl_file(input_parma, npu_pkl, bench_pkl, stack_mode)
+
+
+def check_configuration_param(stack_mode=False, auto_analyze=True, fuzzy_match=False, summary_compare=False):
+    if not (isinstance(stack_mode, bool) and isinstance(auto_analyze, bool) and isinstance(fuzzy_match, bool) and
+            isinstance(summary_compare, bool)):
+        print_error_log("Invalid input parameters which should be only bool type.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
 
 
 def check_file_or_directory_path(path, isdir=False):
@@ -375,9 +388,9 @@ def is_starts_with(string, prefix_list):
     return any(string.startswith(prefix) for prefix in prefix_list)
 
 
-def check_file_mode(npu_pkl, bench_pkl, stack_mode):
-    npu_pkl_name = os.path.split(npu_pkl)[-1]
-    bench_pkl_name = os.path.split(bench_pkl)[-1]
+def check_pkl_file(input_param, npu_pkl, bench_pkl, stack_mode):
+    npu_pkl_name = os.path.split(npu_pkl.name)[-1]
+    bench_pkl_name = os.path.split(bench_pkl.name)[-1]
 
     if not is_starts_with(npu_pkl_name, prefixes) and not is_starts_with(bench_pkl_name, prefixes):
         if stack_mode:
@@ -390,6 +403,9 @@ def check_file_mode(npu_pkl, bench_pkl, stack_mode):
     else:
         print_error_log("The dump mode of the two files is not same, please check the dump files")
         raise CompareException(CompareException.INVALID_COMPARE_MODE)
+
+    _check_pkl(npu_pkl, input_param.get("npu_pkl_path"))
+    _check_pkl(bench_pkl, input_param.get("bench_pkl_path"))
 
 
 def check_file_size(input_file, max_size):

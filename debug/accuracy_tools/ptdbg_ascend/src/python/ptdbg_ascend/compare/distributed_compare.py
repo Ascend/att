@@ -17,7 +17,8 @@
 import os
 import sys
 import re
-from ..common.utils import print_error_log, CompareException, check_compare_param, check_file_or_directory_path
+from ..common.utils import print_error_log, CompareException, check_compare_param, check_file_or_directory_path, \
+    check_configuration_param
 from .acc_compare import compare_core
 
 
@@ -83,11 +84,12 @@ def compare_distributed(npu_dump_dir, bench_dump_dir, output_path, **kwargs):
             'bench_pkl_path': bench_pkl_path,
             'npu_dump_data_dir': npu_dump_data_dir,
             'bench_dump_data_dir': bench_dump_data_dir,
-            'is_print_compare_log':True
+            'is_print_compare_log': True
         }
         try:
-            npu_pkl, bench_pkl = check_compare_param(dump_result_param, output_path, **kwargs)
+            check_compare_param(dump_result_param, output_path, **kwargs)
+            check_configuration_param(**kwargs)
         except CompareException as error:
             print_error_log('Compare failed. Please check the arguments and do it again!')
             sys.exit(error.code)
-        compare_core(dump_result_param, output_path, npu_pkl, bench_pkl, suffix=f'_{nr}-{br}', **kwargs)
+        compare_core(dump_result_param, output_path, suffix=f'_{nr}-{br}', **kwargs)
