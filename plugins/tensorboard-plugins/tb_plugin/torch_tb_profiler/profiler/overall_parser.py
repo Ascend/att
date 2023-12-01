@@ -37,7 +37,8 @@ class OverallParser(object):
 
         @classmethod
         def create_from_range(cls, steps: List[Tuple[int, int]], role_ranges: List[List[Tuple[int, int]]]):
-            assert len(role_ranges) == ProfileRole.Total - 1
+            if len(role_ranges) != ProfileRole.Total - 1:
+                return cls([])
 
             cost_ranges: List[List[Tuple[int, int]]] = []
             slots: List[Tuple[int, int]] = []

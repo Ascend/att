@@ -18,8 +18,9 @@ from api_accuracy_checker.run_ut.ut_api_info import UtAPIInfo
 from api_accuracy_checker.common.config import msCheckerConfig
 
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker, \
-    change_mode, check_file_suffix
+    change_mode, check_file_suffix, check_link
 
+ut_error_data_dir = 'ut_error_data'
 
 
 def init_environment():
@@ -136,12 +137,12 @@ def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
     if not is_fwd_success or not is_bwd_success:
         api_full_name = api_full_name.replace("*", ".")
         for element in data_info.in_fwd_data_list:
-            UtAPIInfo(api_full_name + '.forward.input', element)
-        UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out)
-        UtAPIInfo(api_full_name + '.forward.output.npu', data_info.npu_out)
-        UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in)
-        UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out)
-        UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out)
+            UtAPIInfo(api_full_name + '.forward.input', element, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.forward.output.npu', data_info.npu_out, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out, ut_error_data_dir)
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
@@ -154,11 +155,11 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     need_backward = need_backward and need_grad
     if not need_grad:
         print_warn_log("%s function with out=... arguments don't support automatic differentiation, skip backward." % api_full_name)
+    if kwargs.get("device"):
+        del kwargs["device"]
     cpu_args, cpu_kwargs = generate_cpu_params(args, kwargs, need_backward)
     npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
     grad_out, npu_grad_out = None, None
-    if kwargs.get("device"):
-        del kwargs["device"]
     out = exec_api(api_type, api_name, cpu_args, cpu_kwargs)
     npu_out = exec_api(api_type, api_name, npu_args, npu_kwargs)
     grad_input_index = api_setting_dict.get(api_name)
@@ -216,7 +217,9 @@ def initialize_save_error_data():
     error_data_path_checker = FileChecker(msCheckerConfig.error_data_path, FileCheckConst.DIR,
                                           ability=FileCheckConst.WRITE_ABLE)
     error_data_path = error_data_path_checker.common_check()
-    initialize_save_path(error_data_path, 'ut_error_data' + time.strftime("%Y%m%d%H%M%S"))
+    global ut_error_data_dir
+    ut_error_data_dir = 'ut_error_data' + time.strftime("%Y%m%d%H%M%S")
+    initialize_save_path(error_data_path, ut_error_data_dir)
 
 
 def _run_ut_parser(parser):
@@ -250,6 +253,8 @@ def _run_ut():
     except Exception as error:
         print_error_log(f"Set NPU device id failed. device id is: {args.device_id}")
         raise NotImplementedError from error
+    check_link(args.forward_input_file)
+    check_link(args.backward_input_file)
     forward_file = os.path.realpath(args.forward_input_file)
     backward_file = os.path.realpath(args.backward_input_file)
     check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)

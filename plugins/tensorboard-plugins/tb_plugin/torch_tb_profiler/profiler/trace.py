@@ -10,6 +10,9 @@ __all__ = ['EventTypes', 'create_event']
 
 logger = utils.get_logger()
 
+NcclOpNameSet = ['nccl:broadcast', 'nccl:reduce', 'nccl:all_reduce', 'nccl:all_gather', 'nccl:reduce_scatter']
+GlooOpNameSet = ['gloo:broadcast', 'gloo:reduce', 'gloo:all_reduce', 'gloo:all_gather', 'gloo:reduce_scatter']
+
 
 class DeviceType(IntEnum):
     CPU = 0
@@ -30,21 +33,24 @@ class EventTypes(object):
     MODULE = 'Module'
     PL_PROFILE = 'pl_profile'
     PL_MODULE = 'pl_module'
+    USER_ANNOTATION = 'user_annotation'
 
 
 EventTypeMap = {
-    'Trace': EventTypes.TRACE,
+    'trace': EventTypes.TRACE,
     'cpu_op': EventTypes.OPERATOR,
-    'Operator': EventTypes.OPERATOR,
-    'Runtime': EventTypes.RUNTIME,
-    'Kernel': EventTypes.KERNEL,
-    'Memcpy': EventTypes.MEMCPY,
+    'operator': EventTypes.OPERATOR,
+    'runtime': EventTypes.RUNTIME,
+    'kernel': EventTypes.KERNEL,
+    'memcpy': EventTypes.MEMCPY,
     'gpu_memcpy': EventTypes.MEMCPY,
-    'Memset': EventTypes.MEMSET,
+    'memset': EventTypes.MEMSET,
     'gpu_memset': EventTypes.MEMSET,
-    'Python': EventTypes.PYTHON,
-    'Memory': EventTypes.MEMORY,
-    'python_function': EventTypes.PYTHON_FUNCTION
+    'python': EventTypes.PYTHON,
+    'memory': EventTypes.MEMORY,
+    'python_function': EventTypes.PYTHON_FUNCTION,
+    'user_annotation': EventTypes.USER_ANNOTATION,
+    'gpu_user_annotation': EventTypes.USER_ANNOTATION
 }
 
 
@@ -164,10 +170,10 @@ class PLModuleEvent(DurationEvent):
 
 def create_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
     try:
-        type = event.get('ph')
-        if type == 'X':
+        event_type = event.get('ph')
+        if event_type == 'X':
             return create_trace_event(event, is_pytorch_lightning)
-        elif type == 'i' and event.get('name') == '[memory]':
+        elif event_type == 'i' and event.get('name') == '[memory]':
             return MemoryEvent(EventTypes.MEMORY, event)
         else:
             return None
@@ -178,8 +184,14 @@ def create_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
 
 def create_trace_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
     category = event.get('cat')
-    event_type = EventTypeMap.get(category)
-    if event_type == EventTypes.OPERATOR:
+    event_type = EventTypeMap.get(category.lower()) if category else None
+    if event_type == EventTypes.USER_ANNOTATION:
+        name = event.get('name')
+        if name and name.startswith('ProfilerStep#'):
+            return ProfilerStepEvent(event)
+        if name in GlooOpNameSet or name in NcclOpNameSet:
+            return OperatorEvent(event_type, event)
+    elif event_type == EventTypes.OPERATOR:
         name = event.get('name')
         if name and name.startswith('ProfilerStep#'):
             return ProfilerStepEvent(event)
@@ -203,8 +215,7 @@ def create_trace_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
             return PythonFunctionEvent(event_type, event)
     elif event_type is not None:
         return DurationEvent(event_type, event)
-    else:
-        return None
+    return None
 
 
 def create_association_events(events) -> Dict[int, int]:
@@ -214,15 +225,15 @@ def create_association_events(events) -> Dict[int, int]:
     result = {}
     for e in events:
         ph = e.get('ph')
-        id = e['id']
+        e_id = e['id']
         ts = e['ts']
         if ph == 's':
-            forward_map[id] = ts
+            forward_map[e_id] = ts
         elif ph == 'f':
-            backward_map[id] = ts
+            backward_map[e_id] = ts
 
-    for id, ts in forward_map.items():
-        backward_ts = backward_map.get(id)
+    for e_id, ts in forward_map.items():
+        backward_ts = backward_map.get(e_id)
         if backward_ts is not None:
             result[ts] = backward_ts
 

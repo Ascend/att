@@ -104,6 +104,7 @@ export const AntTableChart: React.FC<IProps> = (props) => {
       }}
       rowClassName={classes.row}
       key={key}
+      scroll={{ x: graph.columns.length * 180 }}
       onRow={onRow}
     />
   )

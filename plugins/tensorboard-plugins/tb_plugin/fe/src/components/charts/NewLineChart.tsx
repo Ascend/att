@@ -29,16 +29,9 @@ interface IProps {
   tag: string
   hAxisTitle?: string
   vAxisTitle?: string
-  explorerOptions?: object
   onSelectionChanged?: (start: number, end: number) => void
   record?: any
 }
-
-const useStyles = makeStyles(() => ({
-  root: {
-    height: (props: Pick<IProps, 'height'>) => props.height
-  }
-}))
 
 export const LineChart: React.FC<IProps> = (props) => {
   const {
@@ -51,7 +44,6 @@ export const LineChart: React.FC<IProps> = (props) => {
     onSelectionChanged,
     record
   } = props
-  const classes = useStyles({ height })
   const graphRef = React.useRef<HTMLDivElement>(null)
   const [resizeEventDependency] = useResizeEventDependency()
   const [chartObj, setChartObj] = React.useState<echarts.ECharts | undefined>()
@@ -62,7 +54,6 @@ export const LineChart: React.FC<IProps> = (props) => {
     if (!element) return
     element.oncontextmenu = () => { return false }
 
-    echarts.init(element).dispose()
     let myChart = echarts.init(element)
 
     let option: echarts.EChartsOption = {
@@ -119,7 +110,7 @@ export const LineChart: React.FC<IProps> = (props) => {
           }
         }
         if (graph.columns.length <= 4) {
-          let finalRows = graph.rows['PTA']
+          let finalRows = graph.rows['PTA'] ?? graph.rows['GE']
           if (graph.columns.length === 4) {
             const mergedAPPRows = graph.rows['APP'].map((item: Array<number | null>) => {
               return [item[0], null, null, item[1]]
@@ -367,11 +358,13 @@ export const LineChart: React.FC<IProps> = (props) => {
     })
 
     setChartObj(myChart)
+    return () => {
+      myChart.dispose()
+    }
   }, [graph, height, resizeEventDependency])
 
   React.useEffect(() => {
-    const compare_fn = (key: number, mid: Array<number>) =>
-      key - parseFloat(mid[0].toFixed(2))
+    const compare_fn = (key: number, mid: Array<number>) => key - mid[0]
     if (chartObj && tag === 'Operator') {
       if (record) {
         let startId = -1
@@ -409,8 +402,6 @@ export const LineChart: React.FC<IProps> = (props) => {
   }, [graph, record, chartObj])
 
   return (
-    <div className={classes.root}>
-      <div ref={graphRef} style={{ height: '400px' }}></div>
-    </div>
+    <div ref={graphRef} style={{ height: '400px' }}></div>
   )
 }

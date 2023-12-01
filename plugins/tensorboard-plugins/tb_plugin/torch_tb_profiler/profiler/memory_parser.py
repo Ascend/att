@@ -311,7 +311,9 @@ class MemoryParser:
                 # profile json data prior to pytorch 1.10 do not have addr
                 # we should ignore them
                 continue
-            assert prev_ts <= r.ts
+            if prev_ts > r.ts:
+                logger.error(f'Invalid value, prev_ts {prev_ts} is greater than end_ts {r.ts}')
+                return []
             prev_ts = r.ts
             addr = r.addr
             size = r.bytes

@@ -24,11 +24,12 @@ import sys
 import numpy as np
 import pandas as pd
 
+from .match import graph_mapping
 from ..advisor.advisor import Advisor
 from ..common.utils import check_compare_param, add_time_as_suffix, \
     print_warn_log, print_error_log, CompareException, Const,\
     CompareConst, format_value, check_file_not_exists
-from ..common.file_check_util import FileChecker, FileCheckConst, change_mode
+from ..common.file_check_util import FileChecker, FileCheckConst, change_mode, FileOpen
 
 
 def correct_data(result):
@@ -122,9 +123,20 @@ def get_max_relative_err(n_value, b_value):
     return format_value(max_relative_err), ""
 
 
+def check_graph_mode(a_op_name, b_op_name):
+    if "Aten" in a_op_name and "Aten" not in b_op_name:
+        return True
+    if "Aten" not in a_op_name and "Aten" in b_op_name:
+        return True
+    return False
+
+
 def check_op(npu_dict, bench_dict, fuzzy_match):
     a_op_name = npu_dict["op_name"]
     b_op_name = bench_dict["op_name"]
+    graph_mode = check_graph_mode(a_op_name[0], b_op_name[0])
+    if graph_mode:
+        return graph_mapping.match(a_op_name[0], b_op_name[0])
     struct_match = check_struct_match(npu_dict, bench_dict)
     if not fuzzy_match:
         return a_op_name == b_op_name and struct_match
@@ -269,35 +281,59 @@ def match_op(npu_queue, bench_queue, fuzzy_match):
 
 
 def get_accuracy(result, n_dict, b_dict):
-    index_out = 0
-    npu_stack_info = n_dict.get("stack_info", None)
-    bench_stack_info = b_dict.get("stack_info", None)
+    def get_accuracy_core(n_start, n_len, b_start, b_len, key):
+        min_len = min(n_len, b_len)
+        npu_stack_info = n_dict.get("stack_info", None)
+        bench_stack_info = b_dict.get("stack_info", None)
+        has_stack = npu_stack_info and bench_stack_info
+        for index in range(min_len):
+            n_name = n_dict['op_name'][n_start + index]
+            b_name = b_dict['op_name'][b_start + index]
+            n_struct = n_dict[key][index]
+            b_struct = b_dict[key][index]
+            err_msg = ""
+            result_item = [n_name, b_name, n_struct[0], b_struct[0], n_struct[1], b_struct[1], " ", " ", " "]
 
-    for index, n_name in enumerate(n_dict["op_name"]):
-        b_name = b_dict["op_name"][index]
-        if n_name.find("input") != -1:
-            n_struct = n_dict["input_struct"][index]
-            b_struct = b_dict["input_struct"][index]
-        else:
-            n_struct = n_dict["output_struct"][index_out]
-            b_struct = b_dict["output_struct"][index_out]
-            index_out += 1
-        err_msg = ""
-        accuracy_check_res = CompareConst.ACCURACY_CHECK_YES
+            summery_data = n_dict.get("summery")[n_start + index]
+            result_item.extend(summery_data)
+            summery_data = b_dict.get("summery")[b_start + index]
+            result_item.extend(summery_data)
 
-        result_item = [n_name, b_name, n_struct[0], b_struct[0], n_struct[1], b_struct[1], " ", " ", " "]
+            result_item.append(CompareConst.ACCURACY_CHECK_YES)
+            result_item.append(err_msg)
+            if has_stack and index == 0 and key == "input_struct":
+                result_item.extend(npu_stack_info)
 
-        summery_data = n_dict.get("summery")[index]
-        result_item.extend(summery_data)
+            result.append(result_item)
 
-        summery_data = b_dict.get("summery")[index]
-        result_item.extend(summery_data)
-        result_item.append(accuracy_check_res)
-        result_item.append(err_msg)
-        if npu_stack_info and bench_stack_info and index == 0:
-            result_item.extend(npu_stack_info)
+        if n_len > b_len:
+            for index in range(b_len, n_len):
+                n_name = n_dict['op_name'][n_start + index]
+                n_struct = n_dict[key][index]
+                result_item = [n_name, CompareConst.NAN, n_struct[0], CompareConst.NAN,
+                               n_struct[1], CompareConst.NAN, " ", " ", " "]
+                summery_data = n_dict.get("summery")[n_start + index]
+                result_item.extend(summery_data)
+                summery_data = [CompareConst.NAN for _ in range(len(n_dict.get("summery")[0]))]
+                result_item.extend(summery_data)
 
-        result.append(result_item)
+                err_msg = ""
+                result_item.append(CompareConst.ACCURACY_CHECK_YES)
+                result_item.append(err_msg)
+
+                if has_stack and index == 0 and key == "input_struct":
+                    result_item.extend(npu_stack_info)
+
+                result.append(result_item)
+
+    n_num = len(n_dict['op_name'])
+    b_num = len(b_dict['op_name'])
+    n_num_input = len([name for name in n_dict['op_name'] if 'input' in name])
+    b_num_input = len([name for name in b_dict['op_name'] if 'input' in name])
+    n_num_output = n_num - n_num_input
+    b_num_output = b_num - b_num_input
+    get_accuracy_core(0, n_num_input, 0, b_num_input, 'input_struct')
+    get_accuracy_core(n_num_input, n_num_output, b_num_input, b_num_output, 'output_struct')
 
 
 def _do_multi_process(input_parma, result_path):
@@ -343,7 +379,7 @@ def _handle_multi_process(func, input_parma, result_path, lock):
     pool = multiprocessing.Pool(process_num)
 
     def err_call(args):
-        print_error_log('multiprocess compare failed! season:{}'.format(args))
+        print_error_log('multiprocess compare failed! Reason: {}'.format(args))
         try:
             pool.terminate()
             if os.path.exists(result_path):
@@ -369,7 +405,7 @@ def compare_ops(idx, fusion_op_names, dump_path_dict, result_path, lock, input_p
     is_print_compare_log = input_parma.get("is_print_compare_log")
     for i, op_name in enumerate(fusion_op_names):
         if is_print_compare_log:
-            print("start comapre: {}".format(op_name))
+            print("start compare: {}".format(op_name))
         cos_sim, max_abs_err, max_relative_err, err_msg = compare_by_op(op_name, dump_path_dict, input_parma)
         if is_print_compare_log:
             print("[{}] Compare result: cosine {}, max_abs_err {}, max_relative_err {}, {}".format(op_name, cos_sim, max_abs_err, max_relative_err, err_msg))
@@ -439,7 +475,7 @@ def compare_by_op(op_name, op_name_mapping_dict, input_parma):
         n_value = np.load(n_path)
         b_value = np.load(b_path)
     except IOError as error:
-        return CompareConst.NAN, CompareConst.NAN, CompareConst.NAN, "Dump file:{} not found.".format(error.filename)
+        return CompareConst.NAN, CompareConst.NAN, CompareConst.NAN, "Dump file: {} not found.".format(error.filename)
     if len(n_value.shape) == 0:
         if n_value.dtype == bool:
             n_value = n_value.astype(float)
@@ -452,7 +488,7 @@ def compare_by_op(op_name, op_name_mapping_dict, input_parma):
     if n_value.shape != b_value.shape:
         return CompareConst.SHAPE_UNMATCH, CompareConst.SHAPE_UNMATCH, CompareConst.SHAPE_UNMATCH, "Shape of NPU and bench Tensor do not match. Skipped."
     if n_value.dtype != b_value.dtype:
-        print_warn_log("Dtype of NPU and bench Tensor do not match:{}".format(op_name))
+        print_warn_log("Dtype of NPU and bench Tensor do not match: {}".format(op_name))
         err_msg = " Dtype of NPU and bench Tensor do not match."
     else:
         err_msg = ""
@@ -537,36 +573,38 @@ def compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=False,
 
 
 def parse(pkl_file, module_name_prefix):
-    pkl_handle = open(pkl_file, "r")
-    done = False
-    title_printed = False
-    while not done:
-        pkl_line = pkl_handle.readline()
-        if pkl_line == '\n':
-            continue
-        if len(pkl_line) == 0:
-            done = True
-            break
+    if not isinstance(module_name_prefix, str):
+        print_error_log("The parameter:module_name_prefix is not a string.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
+    with FileOpen(pkl_file, "r") as f:
+        done = False
+        title_printed = False
+        while not done:
+            pkl_line = f.readline()
+            if pkl_line == '\n':
+                continue
+            if len(pkl_line) == 0:
+                done = True
+                break
 
-        msg = json.loads(pkl_line)
-        info_prefix = msg[0]
-        if not info_prefix.startswith(module_name_prefix):
-            continue
+            msg = json.loads(pkl_line)
+            info_prefix = msg[0]
+            if not info_prefix.startswith(module_name_prefix):
+                continue
 
-        if info_prefix.find("stack_info") != -1:
-            print("\nTrace back({}):".format(msg[0]))
-            for item in reversed(msg[1]):
-                print("  File \"{}\", line {}, in {}".format(item[0], item[1], item[2]))
-                print("    {}".format(item[3]))
-            continue
-        if len(msg) > 5:
-            summery_info = "  [{}][dtype: {}][shape: {}][max: {}][min: {}][mean: {}]" \
-                .format(msg[0], msg[3], msg[4], msg[5][0], msg[5][1], msg[5][2])
-            if not title_printed:
-                print("\nStatistic Info:")
-                title_printed = True
-            print(summery_info)
-    pkl_handle.close()
+            if info_prefix.find("stack_info") != -1:
+                print("\nTrace back({}):".format(msg[0]))
+                for item in reversed(msg[1]):
+                    print("  File \"{}\", line {}, in {}".format(item[0], item[1], item[2]))
+                    print("    {}".format(item[3]))
+                continue
+            if len(msg) > 5:
+                summery_info = "  [{}][dtype: {}][shape: {}][max: {}][min: {}][mean: {}]" \
+                    .format(msg[0], msg[3], msg[4], msg[5][0], msg[5][1], msg[5][2])
+                if not title_printed:
+                    print("\nStatistic Info:")
+                    title_printed = True
+                print(summery_info)
 
 
 def compare_process(npu_pkl_handle, bench_pkl_handle, stack_mode, fuzzy_match):

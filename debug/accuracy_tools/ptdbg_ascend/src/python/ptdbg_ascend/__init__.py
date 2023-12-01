@@ -28,6 +28,7 @@ from .dump.utils import set_dump_path, set_dump_switch, set_backward_input
 from .hook_module.register_hook import register_hook
 from .common.utils import seed_all, torch_without_guard_version, print_info_log
 from .debugger.precision_debugger import PrecisionDebugger
+from .dump.dump_module import module_dump, module_dump_end
 seed_all()
 
 
@@ -43,4 +44,4 @@ if not torch_without_guard_version:
 
 __all__ = ["register_hook", "set_dump_path", "set_dump_switch", "set_overflow_check_switch", "seed_all",
            "acc_cmp_dump", "overflow_check", "compare", "parse", "compare_distributed", "set_backward_input",
-           "PrecisionDebugger"]
+           "PrecisionDebugger", "module_dump", "module_dump_end"]

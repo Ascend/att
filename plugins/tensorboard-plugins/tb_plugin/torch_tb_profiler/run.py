@@ -192,7 +192,7 @@ class RunProfile(object):
 
     def get_memory_stats(self, start_ts=None, end_ts=None, memory_metric='K'):
         cano = Canonicalizer(memory_metric=memory_metric)
-        rounder = DisplayRounder(ndigits=2)
+        rounder = DisplayRounder(ndigits=3)
 
         stats = self.memory_snapshot.get_memory_statistics(self.tid2tree, start_ts=start_ts, end_ts=end_ts)
 
@@ -281,9 +281,9 @@ class RunProfile(object):
                     continue
 
                 curves[dev].append([
-                    cano.convert_time(ts - self.profiler_start_ts),
-                    cano.convert_memory(ta),
-                    cano.convert_memory(tr),
+                    round(cano.convert_time(ts - self.profiler_start_ts), 3),
+                    round(cano.convert_memory(ta), 3),
+                    round(cano.convert_memory(tr), 3),
                 ])
                 peaks[dev] = max(peaks[dev], ta)
 
@@ -366,7 +366,7 @@ class RunProfile(object):
             return name
 
         cano = Canonicalizer(time_metric=time_metric, memory_metric=memory_metric)
-        rounder = DisplayRounder(ndigits=2)
+        rounder = DisplayRounder(ndigits=3)
 
         profiler_start_ts = self.profiler_start_ts
         memory_records = RunProfile._filtered_by_ts(self.memory_snapshot.memory_records, start_ts, end_ts)
@@ -380,7 +380,9 @@ class RunProfile(object):
                 # profile json data prior to pytorch 1.10 do not have addr
                 # we should ignore them
                 continue
-            assert prev_ts <= r.ts
+            if prev_ts > r.ts:
+                logger.error(f'Invalid value, prev_ts {prev_ts} is greater than end_ts {r.ts}')
+                return {}
             prev_ts = r.ts
             addr = r.addr
             size = r.bytes
