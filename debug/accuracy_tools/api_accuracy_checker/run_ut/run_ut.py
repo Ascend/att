@@ -116,6 +116,10 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     compare = Comparator(out_path)
     for api_full_name, api_info_dict in tqdm(forward_content.items()):
         try:
+            if msCheckerConfig.white_list:
+                [_, api_name, _] = api_full_name.split("*")
+                if api_name not in msCheckerConfig.white_list:
+                    continue
             data_info = run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict)
             is_fwd_success, is_bwd_success = compare.compare_output(api_full_name,
                                                                     data_info.bench_out,
