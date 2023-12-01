@@ -104,6 +104,7 @@ class FileChecker:
         注意：文件后缀的合法性，非通用操作，可使用其他独立接口实现
         """
         check_link(self.file_path)
+        self.file_path = os.path.realpath(self.file_path)
         check_path_length(self.file_path)
         check_path_exists(self.file_path)
         check_path_type(self.file_path, self.path_type)
@@ -112,7 +113,7 @@ class FileChecker:
         check_path_pattern_vaild(self.file_path)
         check_common_file_size(self.file_path)
         check_file_suffix(self.file_path, self.file_type)
-        return os.path.realpath(self.file_path)
+        return self.file_path
 
     def check_path_ability(self):
         if self.ability == FileCheckConst.WRITE_ABLE:
@@ -156,6 +157,7 @@ class FileOpen:
             print_error_log("File open not support %s mode" % self.mode)
             raise FileCheckException(FileCheckException.INVALID_PARAM_ERROR)
         check_link(self.file_path)
+        self.file_path = os.path.realpath(self.file_path)
         check_path_length(self.file_path)
         self.check_ability_and_owner()
         check_path_pattern_vaild(self.file_path)
@@ -184,29 +186,26 @@ def check_link(path):
 
 
 def check_path_length(path):
-    if len(os.path.realpath(path)) > FileCheckConst.DIRECTORY_LENGTH or \
+    if len(path) > FileCheckConst.DIRECTORY_LENGTH or \
             len(os.path.basename(path)) > FileCheckConst.FILE_NAME_LENGTH:
         print_error_log('The file path length exceeds limit.')
         raise FileCheckException(FileCheckException.INVALID_PATH_ERROR)
 
 
 def check_path_exists(path):
-    real_path = os.path.realpath(path)
-    if not os.path.exists(real_path):
+    if not os.path.exists(path):
         print_error_log('The file path %s does not exist.' % path)
         raise FileCheckException(FileCheckException.INVALID_PATH_ERROR)
 
 
 def check_path_readability(path):
-    real_path = os.path.realpath(path)
-    if not os.access(real_path, os.R_OK):
+    if not os.access(path, os.R_OK):
         print_error_log('The file path %s is not readable.' % path)
         raise FileCheckException(FileCheckException.INVALID_PERMISSION_ERROR)
 
 
 def check_path_writability(path):
-    real_path = os.path.realpath(path)
-    if not os.access(real_path, os.W_OK):
+    if not os.access(path, os.W_OK):
         print_error_log('The file path %s is not writable.' % path)
         raise FileCheckException(FileCheckException.INVALID_PERMISSION_ERROR)
 
@@ -224,22 +223,20 @@ def _user_interactive_confirm(message):
 
 
 def check_path_owner_consistent(path):
-    real_path = os.path.realpath(path)
-    file_owner = os.stat(real_path).st_uid
+    file_owner = os.stat(path).st_uid
     if file_owner != os.getuid():
         _user_interactive_confirm('The file path %s may be insecure because is does not belong to you.'
                                   'Do you want to continue?' % path)
 
 
 def check_path_pattern_vaild(path):
-    if not re.match(FileCheckConst.FILE_VALID_PATTERN, os.path.realpath(path)):
+    if not re.match(FileCheckConst.FILE_VALID_PATTERN, path):
         print_error_log('The file path {} contains special characters.'.format(path))
         raise FileCheckException(FileCheckException.INVALID_PATH_ERROR)
 
 
 def check_file_size(file_path, max_size):
-    real_path = os.path.realpath(file_path)
-    file_size = os.path.getsize(real_path)
+    file_size = os.path.getsize(file_path)
     if file_size >= max_size:
         _user_interactive_confirm(f'The size of file path {file_path} exceeds {max_size} bytes.'
                                   f'Do you want to continue?')
@@ -255,20 +252,18 @@ def check_common_file_size(file_path):
 
 def check_file_suffix(file_path, file_suffix):
     if file_suffix:
-        real_path = os.path.realpath(file_path)
-        if not real_path.endswith(file_suffix):
+        if not file_path.endswith(file_suffix):
             print_error_log(f"The {file_path} should be a {file_suffix} file!")
             raise FileCheckException(FileCheckException.INVALID_FILE_TYPE_ERROR)
 
 
 def check_path_type(file_path, file_type):
-    real_path = os.path.realpath(file_path)
     if file_type == FileCheckConst.FILE:
-        if not os.path.isfile(real_path):
+        if not os.path.isfile(file_path):
             print_error_log(f"The {file_path} should be a file!")
             raise FileCheckException(FileCheckException.INVALID_FILE_TYPE_ERROR)
     if file_type == FileCheckConst.DIR:
-        if not os.path.isdir(real_path):
+        if not os.path.isdir(file_path):
             print_error_log(f"The {file_path} should be a dictionary!")
             raise FileCheckException(FileCheckException.INVALID_FILE_TYPE_ERROR)
 

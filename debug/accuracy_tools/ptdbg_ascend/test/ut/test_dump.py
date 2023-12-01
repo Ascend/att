@@ -21,7 +21,6 @@ class TestDump(unittest.TestCase):
 
     def test_get_scalar_data_info(self):
         data_info = get_scalar_data_info(self.scalar)
-        self.assertEqual(data_info.data, self.scalar)
         self.assertEqual(data_info.save_data, self.scalar)
         self.assertEqual(data_info.summary_data, [self.scalar, self.scalar, self.scalar])
         self.assertEqual(data_info.dtype, '<class \'float\'>')

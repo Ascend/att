@@ -29,6 +29,7 @@ from api_accuracy_checker.common.config import msCheckerConfig
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen, FileCheckConst, FileChecker, \
     change_mode, check_file_suffix, check_link
 
+ut_error_data_dir = 'ut_error_data'
 
 
 def init_environment():
@@ -145,12 +146,12 @@ def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
     if not is_fwd_success or not is_bwd_success:
         api_full_name = api_full_name.replace("*", ".")
         for element in data_info.in_fwd_data_list:
-            UtAPIInfo(api_full_name + '.forward.input', element)
-        UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out)
-        UtAPIInfo(api_full_name + '.forward.output.device', data_info.device_out)
-        UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in)
-        UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out)
-        UtAPIInfo(api_full_name + '.backward.output.device', data_info.device_grad_out)
+            UtAPIInfo(api_full_name + '.forward.input', element, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.forward.output.device', data_info.device_out, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out, ut_error_data_dir)
+        UtAPIInfo(api_full_name + '.backward.output.device', data_info.device_grad_out, ut_error_data_dir)
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
@@ -225,7 +226,9 @@ def initialize_save_error_data():
     error_data_path_checker = FileChecker(msCheckerConfig.error_data_path, FileCheckConst.DIR,
                                           ability=FileCheckConst.WRITE_ABLE)
     error_data_path = error_data_path_checker.common_check()
-    initialize_save_path(error_data_path, 'ut_error_data' + time.strftime("%Y%m%d%H%M%S"))
+    global ut_error_data_dir
+    ut_error_data_dir = 'ut_error_data' + time.strftime("%Y%m%d%H%M%S")
+    initialize_save_path(error_data_path, ut_error_data_dir)
 
 
 def _run_ut_parser(parser):
