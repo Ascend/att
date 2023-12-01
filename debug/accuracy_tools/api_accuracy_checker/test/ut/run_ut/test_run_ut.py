@@ -25,16 +25,16 @@ class TestRunUtMethods(unittest.TestCase):
         self.assertEqual(out.requires_grad, True)
         self.assertEqual(out.shape, torch.Size([2, 2560, 24, 24]))
         
-    def test_generate_npu_params(self):
+    def test_generate_device_params(self):
         api_info = copy.deepcopy(api_info_dict)
         [api_type, api_name, _] = api_full_name.split("*")
         args, kwargs, need_grad = get_api_info(api_info, api_name)
-        npu_args, npu_kwargs = generate_npu_params(args, kwargs, True)
-        self.assertEqual(len(npu_args), 1)
-        self.assertEqual(npu_args[0].dtype, torch.float16)
-        self.assertEqual(npu_args[0].requires_grad, True)
-        self.assertEqual(npu_args[0].shape, torch.Size([2, 2560, 24, 24]))
-        self.assertEqual(npu_kwargs, {'inplace': False})
+        device_args, device_kwargs = generate_device_params(args, kwargs, True)
+        self.assertEqual(len(device_args), 1)
+        self.assertEqual(device_args[0].dtype, torch.float16)
+        self.assertEqual(device_args[0].requires_grad, True)
+        self.assertEqual(device_args[0].shape, torch.Size([2, 2560, 24, 24]))
+        self.assertEqual(device_kwargs, {'inplace': False})
         
     def test_generate_cpu_params(self):
         api_info = copy.deepcopy(api_info_dict)
@@ -50,8 +50,8 @@ class TestRunUtMethods(unittest.TestCase):
     def test_UtDataInfo(self):
         data_info = UtDataInfo(None, None, None, None, None, None)
         self.assertIsNone(data_info.bench_grad_out)
-        self.assertIsNone(data_info.npu_grad_out)
-        self.assertIsNone(data_info.npu_out)
+        self.assertIsNone(data_info.device_grad_out)
+        self.assertIsNone(data_info.device_out)
         self.assertIsNone(data_info.bench_out)
         self.assertIsNone(data_info.grad_in)
         self.assertIsNone(data_info.in_fwd_data_list)
