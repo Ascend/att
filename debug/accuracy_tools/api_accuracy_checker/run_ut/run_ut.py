@@ -6,6 +6,7 @@ import sys
 import time
 import yaml
 import torch
+import torch_npu
 from tqdm import tqdm
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
@@ -245,14 +246,13 @@ def validate_continue_run_ut_required_files_and_folders(result_csv_path, forward
         global UT_ERROR_DATA_DIR
         UT_ERROR_DATA_DIR = ut_error_data_dir_path
         initialize_save_error_data()
-    with open(result_csv_path, 'r') as file:
+    with FileOpen(result_csv_path, 'r') as file:
         reader = csv.reader(file)
         result_csv_rows = [row for row in reader]
     if not result_csv_rows:
         # If result csv is empty, details csv should also be empty
-        with open(details_csv_path, 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow([])
+        with FileOpen(details_csv_path, 'w'):
+            pass
         compare = Comparator(result_csv_path, details_csv_path, True)
         compare.write_csv_title()
     api_in_csv_num = len(result_csv_rows) - 1 if len(result_csv_rows) - 1 > 0 else 0
