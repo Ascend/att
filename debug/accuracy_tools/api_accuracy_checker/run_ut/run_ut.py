@@ -57,10 +57,10 @@ def exec_api(api_type, api_name, args, kwargs):
     return out
 
 
-def generate_npu_params(input_args, input_kwargs, need_backward):
-    def recursive_arg_to_npu(arg_in):
+def generate_device_params(input_args, input_kwargs, need_backward):
+    def recursive_arg_to_device(arg_in):
         if isinstance(arg_in, (list, tuple)):
-            return type(arg_in)(recursive_arg_to_npu(arg) for arg in arg_in)
+            return type(arg_in)(recursive_arg_to_device(arg) for arg in arg_in)
         elif isinstance(arg_in, torch.Tensor):
             if need_backward and arg_in.requires_grad:
                 arg_in = arg_in.clone().detach().to(current_device).requires_grad_()
@@ -73,9 +73,9 @@ def generate_npu_params(input_args, input_kwargs, need_backward):
         else:
             return arg_in
 
-    npu_args = recursive_arg_to_npu(input_args)
-    npu_kwargs = {key: recursive_arg_to_npu(value) for key, value in input_kwargs.items()}
-    return npu_args, npu_kwargs
+    device_args = recursive_arg_to_device(input_args)
+    device_kwargs = {key: recursive_arg_to_device(value) for key, value in input_kwargs.items()}
+    return device_args, device_kwargs
 
 
 def generate_cpu_params(input_args, input_kwargs, need_backward):
@@ -123,9 +123,9 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
             data_info = run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict)
             is_fwd_success, is_bwd_success = compare.compare_output(api_full_name,
                                                                     data_info.bench_out,
-                                                                    data_info.npu_out,
+                                                                    data_info.device_out,
                                                                     data_info.bench_grad_out,
-                                                                    data_info.npu_grad_out)
+                                                                    data_info.device_grad_out)
             if save_error_data:
                 do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         except Exception as err:
@@ -147,10 +147,10 @@ def do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         for element in data_info.in_fwd_data_list:
             UtAPIInfo(api_full_name + '.forward.input', element)
         UtAPIInfo(api_full_name + '.forward.output.bench', data_info.bench_out)
-        UtAPIInfo(api_full_name + '.forward.output.npu', data_info.npu_out)
+        UtAPIInfo(api_full_name + '.forward.output.device', data_info.device_out)
         UtAPIInfo(api_full_name + '.backward.input', data_info.grad_in)
         UtAPIInfo(api_full_name + '.backward.output.bench', data_info.bench_grad_out)
-        UtAPIInfo(api_full_name + '.backward.output.npu', data_info.npu_grad_out)
+        UtAPIInfo(api_full_name + '.backward.output.device', data_info.device_grad_out)
 
 
 def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict):
@@ -166,10 +166,10 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     if kwargs.get("device"):
         del kwargs["device"]
     cpu_args, cpu_kwargs = generate_cpu_params(args, kwargs, need_backward)
-    npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
-    grad_out, npu_grad_out = None, None
+    device_args, device_kwargs = generate_device_params(args, kwargs, need_backward)
+    grad_out, device_grad_out = None, None
     out = exec_api(api_type, api_name, cpu_args, cpu_kwargs)
-    npu_out = exec_api(api_type, api_name, npu_args, npu_kwargs)
+    device_out = exec_api(api_type, api_name, device_args, device_kwargs)
     grad_input_index = api_setting_dict.get(api_name)
     grad_index = None
     grad = None
@@ -177,11 +177,11 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
         grad_index = grad_input_index.get('grad_index')
 
     if need_backward:
-        grad_out, npu_grad_out, grad, npu_grad = run_backward(api_full_name, cpu_args, backward_content, grad_index, npu_args,
-                                                              npu_out, out)
+        grad_out, device_grad_out, grad, device_grad = run_backward(api_full_name, cpu_args, backward_content, grad_index, device_args,
+                                                              device_out, out)
     if grad_index is not None:
-        return UtDataInfo(grad_out, npu_grad_out, npu_out[grad_index], out[grad_index], grad, in_fwd_data_list)
-    return UtDataInfo(grad_out, npu_grad_out, npu_out, out, grad, in_fwd_data_list)
+        return UtDataInfo(grad_out, device_grad_out, device_out[grad_index], out[grad_index], grad, in_fwd_data_list)
+    return UtDataInfo(grad_out, device_grad_out, device_out, out, grad, in_fwd_data_list)
 
 
 def get_api_info(api_info_dict, api_name):
@@ -193,7 +193,7 @@ def get_api_info(api_info_dict, api_name):
     return args, kwargs, need_grad
 
 
-def run_backward(api_full_name, args, backward_content, grad_index, npu_args, npu_out, out):
+def run_backward(api_full_name, args, backward_content, grad_index, device_args, device_out, out):
     backward_args = backward_content[api_full_name]
     grad = gen_args(backward_args)[0]
     cpu_grad, _ = generate_cpu_params(grad, {}, False)
@@ -208,17 +208,17 @@ def run_backward(api_full_name, args, backward_content, grad_index, npu_args, np
         if isinstance(arg, torch.Tensor):
             args_grad.append(arg.grad)
     grad_out = args_grad
-    npu_grad = grad.clone().detach().to(current_device)
+    device_grad = grad.clone().detach().to(current_device)
     if grad_index is not None:
-        npu_out[grad_index].backward(npu_grad)
+        device_out[grad_index].backward(device_grad)
     else:
-        npu_out.backward(npu_grad)
-    npu_args_grad = []
-    for arg in npu_args:
+        device_out.backward(device_grad)
+    device_args_grad = []
+    for arg in device_args:
         if isinstance(arg, torch.Tensor):
-            npu_args_grad.append(arg.grad)
-    npu_grad_out = npu_args_grad
-    return grad_out, npu_grad_out, grad, npu_grad
+            device_args_grad.append(arg.grad)
+    device_grad_out = device_args_grad
+    return grad_out, device_grad_out, grad, device_grad
 
 
 def initialize_save_error_data():
@@ -244,7 +244,7 @@ def _run_ut_parser(parser):
                         help="<optional> Save compare failed api output.", required=False)
     parser.add_argument("-j", "--jit_compile", dest="jit_compile", action="store_true",
                         help="<optional> whether to turn on jit compile", required=False)
-    parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set NPU device id to run ut",
+    parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set device id to run ut",
                         default=0, required=False)
 
 
@@ -279,10 +279,10 @@ def _run_ut():
 
 
 class UtDataInfo:
-    def __init__(self, bench_grad_out, npu_grad_out, npu_out, bench_out, grad_in, in_fwd_data_list):
+    def __init__(self, bench_grad_out, device_grad_out, device_out, bench_out, grad_in, in_fwd_data_list):
         self.bench_grad_out = bench_grad_out
-        self.npu_grad_out = npu_grad_out
-        self.npu_out = npu_out
+        self.device_grad_out = device_grad_out
+        self.device_out = device_out
         self.bench_out = bench_out
         self.grad_in = grad_in
         self.in_fwd_data_list = in_fwd_data_list
