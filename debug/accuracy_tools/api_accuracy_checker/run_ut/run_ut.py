@@ -26,6 +26,8 @@ current_time = time.strftime("%Y%m%d%H%M%S")
 UT_ERROR_DATA_DIR = 'ut_error_data' + current_time
 RESULT_FILE_NAME = "accuracy_checking_result_" + current_time + ".csv"
 DETAILS_FILE_NAME = "accuracy_checking_details_" + current_time + ".csv"
+api_in_csv_num = -1
+test_result_cnt = None
 
 
 def init_environment():
@@ -109,7 +111,7 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
     return cpu_args, cpu_kwargs
 
 
-def run_ut(forward_content, backward_content, result_csv_path, details_csv_path, save_error_data, api_in_csv_num=-1, test_result_cnt=None):
+def run_ut(forward_content, backward_content, result_csv_path, details_csv_path, save_error_data):
     print_info_log("start UT test")
     api_setting_dict = get_json_contents("torch_ut_setting.json")
     is_continue_run_ut = True if api_in_csv_num != -1 else False
@@ -255,6 +257,7 @@ def validate_continue_run_ut_required_files_and_folders(result_csv_path, forward
             pass
         compare = Comparator(result_csv_path, details_csv_path, True)
         compare.write_csv_title()
+    global api_in_csv_num
     api_in_csv_num = len(result_csv_rows) - 1 if len(result_csv_rows) - 1 > 0 else 0
     if api_in_csv_num > 0:
         if api_in_csv_num > len(forward_content):
@@ -273,11 +276,12 @@ def validate_continue_run_ut_required_files_and_folders(result_csv_path, forward
             forward_json_api_list.append(item[0])
         if result_csv_api_list != forward_json_api_list:
             raise ValueError("The saved api data in % is not from forward_info json", result_csv_name)
-    test_result_cnt = get_statistics_from_result_csv(result_csv_rows[1:], result_csv_name)
-    return result_csv_path, details_csv_path, api_in_csv_num, test_result_cnt
+    get_statistics_from_result_csv(result_csv_rows[1:], result_csv_name)
+    return result_csv_path, details_csv_path
 
 
 def get_statistics_from_result_csv(result_csv_rows: list, result_csv_name: str):
+    global test_result_cnt
     test_result_cnt = {
         "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0,
         "total_num": 0, "forward_or_backward_fail_num": 0
@@ -352,13 +356,11 @@ def _run_ut():
     details_csv_path = os.path.join(out_path, DETAILS_FILE_NAME)
     if save_error_data and not args.continue_run_ut:
         initialize_save_error_data()
-    api_in_csv_num = -1
-    test_result_cnt = None
-    if args.continue_run_ut:
-        result_csv_path, details_csv_path, api_in_csv_num, test_result_cnt = \
-            validate_continue_run_ut_required_files_and_folders(args.continue_run_ut, forward_content, save_error_data)
-    run_ut(forward_content, backward_content, result_csv_path, details_csv_path, save_error_data, api_in_csv_num,
-           test_result_cnt)
+        if args.continue_run_ut:
+        result_csv_path, details_csv_path = validate_continue_run_ut_required_files_and_folders(args.continue_run_ut,
+                                                                                                forward_content,
+                                                                                                save_error_data)
+    run_ut(forward_content, backward_content, result_csv_path, details_csv_path, save_error_data)
 
 
 class UtDataInfo:
