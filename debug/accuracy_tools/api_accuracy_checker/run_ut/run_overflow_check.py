@@ -4,7 +4,7 @@ import sys
 import torch_npu
 import torch
 from tqdm import tqdm
-from api_accuracy_checker.run_ut.run_ut import exec_api, generate_npu_params, run_backward, init_environment, \
+from api_accuracy_checker.run_ut.run_ut import exec_api, generate_device_params, run_backward, init_environment, \
     get_api_info
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
     print_error_log
@@ -81,7 +81,7 @@ def run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_di
     need_backward = need_backward and need_grad
     if not need_grad:
         print_warn_log("%s function with out=... arguments don't support automatic differentiation, skip backward." % api_full_name)
-    npu_args, npu_kwargs = generate_npu_params(args, kwargs, need_backward)
+    npu_args, npu_kwargs = generate_device_params(args, kwargs, need_backward)
     if kwargs.get("device"):
         del kwargs["device"]
     out = exec_api(api_type, api_name, args, kwargs)
