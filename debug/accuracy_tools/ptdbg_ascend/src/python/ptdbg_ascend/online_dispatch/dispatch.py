@@ -218,18 +218,20 @@ class PtdbgDispatch(TorchDispatchMode):
         data_to_cpu(npu_out, 0, npu_out_cpu)
         npu_out_cpu = npu_out_cpu[0]
 
+        with TimeStatistics("CPU RUN", run_param):
+            cpu_out = func(*cpu_args, **cpu_kwargs)
+
         if self.process_num == 0:
             self.all_summery.append([])
-            run_param.process_flag = False
-            dispatch_workflow(run_param, cpu_args, cpu_kwargs, self.all_summery, func, npu_out_cpu, self.lock)
+            dispatch_workflow(run_param, cpu_args, cpu_kwargs, self.all_summery, func, npu_out_cpu, cpu_out, self.lock)
         else:
             self.lock.acquire()
             self.all_summery.append([])
             self.lock.release()
-            run_param.process_flag = True
             if self.check_fun(func, run_param):
                 self.pool.apply_async(func=dispatch_multiprocess,
-                                      args=(run_param, cpu_args, cpu_kwargs, self.all_summery, npu_out_cpu, self.lock),
+                                      args=(run_param, cpu_args, cpu_kwargs, self.all_summery, npu_out_cpu, cpu_out,
+                                            self.lock),
                                       error_callback=error_call)
             else:
                 logger_error("can not get correct function please set process_num=0")
