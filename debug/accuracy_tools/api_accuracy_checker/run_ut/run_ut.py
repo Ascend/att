@@ -270,20 +270,20 @@ def validate_result_csv_content_by_forward_json_content(validated_result_csv_pat
     if api_in_csv_num > 0:
         if api_in_csv_num > len(forward_content):
             raise ValueError(
-                "% data is abnormal, the number of rows is greater than the number of rows in forward_info json",
-                result_csv_name)
+                "%s data is abnormal, the number of rows is greater than the number of rows in forward_info json"
+                % result_csv_name)
         result_csv_api_list = []
         forward_json_api_list = []
         for item in result_csv_rows[1:]:
             if not item:
-                raise ValueError("% data is abnormal, the API name has a null value", result_csv_name)
+                raise ValueError("%s data is abnormal, the API name has a null value" % result_csv_name)
             result_csv_api_list.append(item[0])
         for item in list(forward_content.items())[:api_in_csv_num]:
             if not item:
                 raise ValueError("forward_info json data is abnormal, the API name has a null value")
             forward_json_api_list.append(item[0])
         if result_csv_api_list != forward_json_api_list:
-            raise ValueError("The saved api data in % is not from forward_info json", result_csv_name)
+            raise ValueError("The saved api data in %s is not from forward_info json" % result_csv_name)
     return result_csv_rows
 
 
@@ -316,10 +316,13 @@ def get_statistics_from_result_csv(result_csv_rows: list, result_csv_name: str):
     }
     for item in result_csv_rows:
         if not isinstance(item, list) or len(item) < 3:
-            raise ValueError("The number of columns in % is incorrect", result_csv_name)
-        if item[1] not in ['True', 'False', CompareConst.NA] or item[2] not in ['True', 'False', CompareConst.NA]:
-            raise ValueError("The value in the 2nd or 3rd column of % is wrong, it must be TRUE, FALSE or N/A",
-                             result_csv_name)
+            raise ValueError("The number of columns in %s is incorrect" % result_csv_name)
+        if item[1] not in ['True', 'False', CompareConst.NA, 'SKIP'] \
+                or item[2] not in ['True', 'False', CompareConst.NA, 'SKIP']:
+            raise ValueError("The value in the 2nd or 3rd column of %s is wrong, it must be TRUE, FALSE or N/A"
+                             % result_csv_name)
+        if item[1] == 'SKIP':
+            continue
         if item[1] == 'True' and item[2] in ['True', 'N/A']:
             test_result_cnt['success_num'] += 1
         elif item[1] == 'False' and item[2] == 'False':
@@ -352,21 +355,21 @@ def _run_ut_parser(parser):
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set device id to run ut",
                         default=0, required=False)
     parser.add_argument("-c", "--continue_run_ut", dest="continue_run_ut", default="", type=str,
-                        help="<optional> The path of accuracy_checking_result.csv, when run ut is interrupted, "
-                             "enter the file path to continue run ut.",
+                        help="<optional> The path of accuracy_checking_result_{timestamp}.csv, "
+                             "when run ut is interrupted, enter the file path to continue run ut.",
                         required=False)
 
 
 def _run_ut():
     parser = argparse.ArgumentParser()
     _run_ut_parser(parser)
-    args = parser.parse_args(sys.argv[1:])   
+    args = parser.parse_args(sys.argv[1:])
     if not is_gpu:
         torch.npu.set_compile_mode(jit_compile=args.jit_compile)
     used_device = current_device + ":" + str(args.device_id)
     try:
         if is_gpu:
-            torch.cuda.set_device(used_device) 
+            torch.cuda.set_device(used_device)
         else:
             torch.npu.set_device(used_device)
     except Exception as error:
