@@ -364,8 +364,7 @@ export const LineChart: React.FC<IProps> = (props) => {
   }, [graph, height, resizeEventDependency])
 
   React.useEffect(() => {
-    const compare_fn = (key: number, mid: Array<number>) =>
-      key - parseFloat(mid[0].toFixed(2))
+    const compare_fn = (key: number, mid: Array<number>) => key - mid[0]
     if (chartObj && tag === 'Operator') {
       if (record) {
         let startId = -1

@@ -1,13 +1,14 @@
 import unittest
 import numpy as np
+import torch
 from api_accuracy_checker.compare import algorithm as alg
 from api_accuracy_checker.compare.algorithm import CompareColumn
 
 class TestAlgorithmMethods(unittest.TestCase):
 
     def test_compare_torch_tensor(self):
-        cpu_output = np.array([1.0, 2.0, 3.0])
-        npu_output = np.array([1.0, 2.0, 3.0])
+        cpu_output = torch.Tensor([1.0, 2.0, 3.0])
+        npu_output = torch.Tensor([1.0, 2.0, 3.0])
         compare_column = CompareColumn()
         status, compare_column, message = alg.compare_torch_tensor(cpu_output, npu_output, compare_column)
         self.assertEqual(status, "pass")
