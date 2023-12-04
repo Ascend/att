@@ -92,15 +92,23 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    | -o或--out_path                   | 指指定run_ut执行结果存盘路径，默认“./”（相对于run_ut的路径）。 | 否       |
    | -j或--jit_compile                | 开启jit编译。                                                | 否       |
    | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。           | 否       |
+   | -c或--continue_run_ut            | 指定本次运行中断时生成的accuracy_checking_result_{timestamp}.csv文件路径，执行run_ut中断时，若想从中断处继续执行，配置此参数即可。           | 否       |
 
-   run_ut执行结果包括accuracy_checking_result.csv和accuracy_checking_details.csv两个文件。accuracy_checking_result.csv是API粒度的，标明每个API是否通过测试。建议用户先查看accuracy_checking_result.csv文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在accuracy_checking_details.csv中查询其各个输出的达标情况以及比较指标。API达标情况介绍请参考“**API预检指标**”。
+   run_ut执行结果包括accuracy_checking_result_{timestamp}.csv和accuracy_checking_details_{timestamp}.csv两个文件。accuracy_checking_result_{timestamp}.csv是API粒度的，标明每个API是否通过测试。建议用户先查看accuracy_checking_result_{timestamp}.csv文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在accuracy_checking_details_{timestamp}.csv中查询其各个输出的达标情况以及比较指标。API达标情况介绍请参考“**API预检指标**”。
 
 4. 如果需要保存比对不达标的输入和输出数据，可以在run_ut执行命令结尾添加-save_error_data，例如：
 
    ```bash
    python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -save_error_data
    ```
-   数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path
+   数据默认会存盘到'./ut_error_data{timestamp}'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path。
+
+5. 如果本次run_ut运行中断，需要从中断处继续执行，可以在run_ut执行命令结尾配置-c，例如：
+
+   ```bash
+   python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -c ./accuracy_checking_result_20231203211324.csv
+   ```
+   run_ut将会从中断处继续执行，执行结果将追加写入到-c配置的accuracy_checking_result_20231203211324.csv以及相同时间戳后缀的accuracy_checking_details_20231203211324.csv中，若配置了-save_error_data，error_data将会保存到相同时间戳后缀的ut_error_data20231203211324文件夹中。
 
 ## API预检白名单
 
@@ -110,7 +118,7 @@ support_wrap_ops.yaml文件当前记录所有PyTorch API名称，可以直接编
 
 ## API预检指标
 
-API预检通过测试，则在accuracy_checking_details.csv文件中的“pass”列标记“pass”，否则标记“error”或“warning”，详细规则如下：
+API预检通过测试，则在accuracy_checking_details_{timestamp}.csv文件中的“pass”列标记“pass”，否则标记“error”或“warning”，详细规则如下：
 
 1. 余弦相似度 > 0.99：≤ 0.99为不达标，标记“error”，> 0.99达标，进行下一步；
 2. 最大绝对误差 ＜ 0.001：＜ 0.001达标，标记“pass”，≥ 0.001为不达标，进行下一步；
@@ -118,7 +126,7 @@ API预检通过测试，则在accuracy_checking_details.csv文件中的“pass�
    - 对于float16和bfloat16数据：双百指标不通过，标记“error”；双百指标通过，双千指标不通过，标记“warning”；双百、双千指标均通过，标记“pass”。
    - 对于float32和float64数据：双千指标不通过，标记“error”；双千指标通过，双万指标不通过，标记“warning”；双千、双万指标均通过，标记“pass”。
 
-4. 在accuracy_checking_result.csv中以“Forward Test Success”和“Backward Test Success”字段统计该算子前向反向输出的测试结果，对于标记“pass”的算子，则在accuracy_checking_result.csv中标记“TRUE”表示测试通过，对于标记“error”或“warning”的算子，则在accuracy_checking_result.csv中标记“FALSE”表示测试不通过。由于一个算子可能有多个前向或反向的输入或输出，那么该类算子的输入或输出中必须全为“pass”，才能在accuracy_checking_result.csv中标记“TRUE”，只要有一个输入或输出标记“error”或“warning”，那么在accuracy_checking_result.csv中标记“FALSE”。
+4. 在accuracy_checking_result_{timestamp}.csv中以“Forward Test Success”和“Backward Test Success”字段统计该算子前向反向输出的测试结果，对于标记“pass”的算子，则在accuracy_checking_result_{timestamp}.csv中标记“TRUE”表示测试通过，对于标记“error”或“warning”的算子，则在accuracy_checking_result_{timestamp}.csv中标记“FALSE”表示测试不通过。由于一个算子可能有多个前向或反向的输入或输出，那么该类算子的输入或输出中必须全为“pass”，才能在accuracy_checking_result_{timestamp}.csv中标记“TRUE”，只要有一个输入或输出标记“error”或“warning”，那么在accuracy_checking_result_{timestamp}.csv中标记“FALSE”。
 
 双百、双千、双万精度指标是指NPU的Tensor中的元素逐个与对应的标杆数据对比，相对误差大于百分之一、千分之一、万分之一的比例占总元素个数的比例小于百分之一、千分之一、万分之一。
 
