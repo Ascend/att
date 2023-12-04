@@ -228,7 +228,7 @@ def initialize_save_error_data():
     initialize_save_path(error_data_path, UT_ERROR_DATA_DIR)
 
 
-def validate_continue_run_ut_required_files_and_folders(result_csv_path, forward_content, save_error_data):
+def validate_result_csv_path(result_csv_path):
     result_csv_path_checker = FileChecker(result_csv_path, FileCheckConst.FILE, ability=FileCheckConst.READ_WRITE_ABLE,
                                           file_type=FileCheckConst.CSV_SUFFIX)
     result_csv_path = result_csv_path_checker.common_check()
@@ -236,27 +236,24 @@ def validate_continue_run_ut_required_files_and_folders(result_csv_path, forward
     pattern = r"^accuracy_checking_result_\d{14}\.csv$"
     if not re.match(pattern, result_csv_name):
         raise ValueError("When continue run ut, please do not modify the result csv name.")
+    return result_csv_path, result_csv_name
+
+
+def validate_details_csv_path_by_validated_result_csv_path(validated_result_csv_path):
+    result_csv_name = os.path.basename(validated_result_csv_path)
     details_csv_name = result_csv_name.replace('result', 'details')
-    details_csv_path = os.path.join(os.path.dirname(result_csv_path), details_csv_name)
+    details_csv_path = os.path.join(os.path.dirname(validated_result_csv_path), details_csv_name)
     details_csv_path_checker = FileChecker(details_csv_path, FileCheckConst.FILE,
                                            ability=FileCheckConst.READ_WRITE_ABLE, file_type=FileCheckConst.CSV_SUFFIX)
     details_csv_path = details_csv_path_checker.common_check()
-    if save_error_data:
-        time_info = result_csv_path.split('.')[0].split('_')[-1]
-        ut_error_data_dir_name = 'ut_error_data' + time_info
-        ut_error_data_dir_path = os.path.join(os.path.dirname(result_csv_path), ut_error_data_dir_name)
-        global UT_ERROR_DATA_DIR
-        UT_ERROR_DATA_DIR = ut_error_data_dir_path
-        initialize_save_error_data()
-    with FileOpen(result_csv_path, 'r') as file:
+    return details_csv_path
+
+
+def validate_result_csv_content_by_forward_json_content(validated_result_csv_path, forward_content):
+    result_csv_name = os.path.basename(validated_result_csv_path)
+    with FileOpen(validated_result_csv_path, 'r') as file:
         reader = csv.reader(file)
         result_csv_rows = [row for row in reader]
-    if not result_csv_rows:
-        # If result csv is empty, details csv should also be empty
-        with FileOpen(details_csv_path, 'w'):
-            pass
-        compare = Comparator(result_csv_path, details_csv_path, True)
-        compare.write_csv_title()
     global api_in_csv_num
     api_in_csv_num = len(result_csv_rows) - 1 if len(result_csv_rows) - 1 > 0 else 0
     if api_in_csv_num > 0:
@@ -276,6 +273,26 @@ def validate_continue_run_ut_required_files_and_folders(result_csv_path, forward
             forward_json_api_list.append(item[0])
         if result_csv_api_list != forward_json_api_list:
             raise ValueError("The saved api data in % is not from forward_info json", result_csv_name)
+    return result_csv_rows
+
+
+def validate_continue_run_ut_required_files_and_folders(result_csv_path, forward_content, save_error_data):
+    result_csv_path, result_csv_name = validate_result_csv_path(result_csv_path)
+    details_csv_path = validate_details_csv_path_by_validated_result_csv_path(result_csv_path)
+    if save_error_data:
+        time_info = result_csv_path.split('.')[0].split('_')[-1]
+        ut_error_data_dir_name = 'ut_error_data' + time_info
+        ut_error_data_dir_path = os.path.join(os.path.dirname(result_csv_path), ut_error_data_dir_name)
+        global UT_ERROR_DATA_DIR
+        UT_ERROR_DATA_DIR = ut_error_data_dir_path
+        initialize_save_error_data()
+    result_csv_rows = validate_result_csv_content_by_forward_json_content(result_csv_path, forward_content)
+    if not result_csv_rows:
+        # If result csv is empty, details csv should also be empty
+        with FileOpen(details_csv_path, 'w'):
+            pass
+        compare = Comparator(result_csv_path, details_csv_path, True)
+        compare.write_csv_title()
     get_statistics_from_result_csv(result_csv_rows[1:], result_csv_name)
     return result_csv_path, details_csv_path
 
@@ -356,7 +373,7 @@ def _run_ut():
     details_csv_path = os.path.join(out_path, DETAILS_FILE_NAME)
     if save_error_data and not args.continue_run_ut:
         initialize_save_error_data()
-        if args.continue_run_ut:
+    if args.continue_run_ut:
         result_csv_path, details_csv_path = validate_continue_run_ut_required_files_and_folders(args.continue_run_ut,
                                                                                                 forward_content,
                                                                                                 save_error_data)
