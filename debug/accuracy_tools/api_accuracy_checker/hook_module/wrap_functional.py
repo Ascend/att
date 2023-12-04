@@ -23,12 +23,8 @@ import yaml
 from api_accuracy_checker.hook_module.hook_module import HOOKModule
 from api_accuracy_checker.common.utils import torch_device_guard
 from api_accuracy_checker.common.config import msCheckerConfig
+from api_accuracy_checker.hook_module.utils import WrapFunctionalOps
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
-
-cur_path = os.path.dirname(os.path.realpath(__file__))
-yaml_path = os.path.join(cur_path, "support_wrap_ops.yaml")
-with FileOpen(yaml_path, 'r') as f:
-    WrapFunctionalOps = yaml.safe_load(f).get('functional')
 
 for f in dir(torch.nn.functional):
     locals().update({f: getattr(torch.nn.functional, f)})
