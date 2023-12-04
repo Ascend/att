@@ -1,8 +1,10 @@
 import os
 import yaml
 from api_accuracy_checker.common.utils import check_file_or_directory_path
+from api_accuracy_checker.hook_module.utils import WrapTorchOps, WrapFunctionalOps, WrapTensorOps
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 
+WrapApi = set(WrapTorchOps) | set(WrapFunctionalOps) | set(WrapTensorOps)
 
 class Config:
     def __init__(self, yaml_file):
@@ -38,10 +40,11 @@ class Config:
         if key == 'white_list':
             if not isinstance(value, list):
                 raise ValueError("white_list must be a list type")
-            if any(isinstance(i, bool) for i in value):
-                raise ValueError("white_list cannot contain boolean values")
             if not all(isinstance(i, str) for i in value):
                 raise ValueError("All elements in white_list must be of str type")
+            invalid_api = [i for i in value if i not in WrapApi]
+            if invalid_api:
+                raise ValueError(f"{', '.join(invalid_api)} is not in support_wrap_ops.yaml, please check the white_list")
         return value
 
     def __getattr__(self, item):
@@ -50,13 +53,14 @@ class Config:
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
-    def update_config(self, dump_path, real_data=False, target_iter=None):
+    def update_config(self, dump_path, real_data=False, target_iter=None, white_list=None):
         if target_iter is None:
             target_iter = self.config.get('target_iter',[1])
         args = {
             "dump_path": dump_path,
             "real_data": real_data,
-            "target_iter": target_iter
+            "target_iter": target_iter if target_iter else self.config.get("target_iter", [1]),
+            "white_list": white_list if white_list else self.config.get("white_list", [])
         }
         for key, value in args.items():
             if key in self.config:
