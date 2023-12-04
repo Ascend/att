@@ -14,7 +14,7 @@
 
   2. 插件离线方式安装
      * 插件下载地址 \
-       https://mindstudio-sample.obs.cn-north-4.myhuaweicloud.com/torch-tb-profiler-ascend/v0.4.0.2/torch_tb_profiler_ascend-0.4.0.2-py3-none-any.whl
+       https://mindstudio-sample.obs.cn-north-4.myhuaweicloud.com/torch-tb-profiler-ascend/v0.4.0.3/torch_tb_profiler_ascend-0.4.0.3-py3-none-any.whl
 
      * 插件形式为whl包，使用指令安装（此处{version}为whl包实际版本）
 
