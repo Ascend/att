@@ -103,6 +103,9 @@ class Const:
     ASCEND_WORK_PATH = "ASCEND_WORK_PATH"
     DUMP_DIR = "dump_data"
 
+    ENV_ENABLE = "1"
+    ENV_DISABLE = "0"
+
     MAX_SEED_VALUE = 2**32 - 1
 
     INPLACE_LIST = ["broadcast", "all_reduce", "reduce", "all_gather", "gather", "scatter", "reduce_scatter",
@@ -206,6 +209,15 @@ class CompareException(Exception):
 
 class DumpException(CompareException):
     pass
+
+
+class OverflowConst:
+    """
+    Class for Overflow
+    """
+    OVERFLOW_DEBUG_MODE_ENABLE = "OVERFLOW_DEBUG_MODE_ENABLE"
+    OVERFLOW_ORIGINAL_MODE = 0
+    OVERFLOW_DEBUG_MODE = 1
 
 
 def make_dump_path_if_not_exists(dump_path):

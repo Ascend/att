@@ -130,7 +130,7 @@ class DisplayRounder:
     def __call__(self, v: float):
         _v = abs(v)
         if _v >= self.precision or v == 0:
-            return round(v, 2)
+            return round(v, 3)
         else:
             ndigit = abs(math.floor(math.log10(_v)))
             return round(v, ndigit)

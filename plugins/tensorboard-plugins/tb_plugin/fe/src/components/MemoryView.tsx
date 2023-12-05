@@ -450,7 +450,7 @@ export const MemoryView: React.FC<IProps> = React.memo((props) => {
                         </Grid>
                       }
                     </Grid>
-                    {showCurve() && lineChartData && (
+                    {showCurve() && lineChartData && lineChartData.columns.length > 0 && (
                       <Grid item>
                         <div>
                           <LineChart

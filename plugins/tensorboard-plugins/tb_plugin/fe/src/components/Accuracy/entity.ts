@@ -23,9 +23,7 @@ export interface FileInfo {
   fileContent: string
   checked: boolean
   lossTag: string
-  useLossRegex: boolean
   iterTag: string
-  useIterRegex: boolean
   iters: number[]
   losses: number[][]
   iterLosses: { [iter: number]: number }

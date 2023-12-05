@@ -67,6 +67,7 @@ class RunProfileData(object):
                 else:
                     event = trace.create_event(data, self.is_pytorch_lightning)
                     if event is not None:
+                        event.ts = float(event.ts)
                         self.profiler_start_ts = min(self.profiler_start_ts, event.ts)
                         self.events.append(event)
 
@@ -122,8 +123,8 @@ class RunProfileData(object):
 
         # npu memory data
         self.memory_operator_path: str = None
+        self.memory_curve_path: str = None
         self.memory_component_path: str = None
-        self.start_ts: float = 0.0
 
         # npu operator data
         self.operator_path: str = None
@@ -138,7 +139,7 @@ class RunProfileData(object):
 
     @staticmethod
     def parse_gpu(worker, span, path, cache_dir):
-        trace_path, trace_json, _ = RunProfileData._preprocess_file(path, cache_dir, 'GPU')
+        trace_path, trace_json = RunProfileData._preprocess_file(path, cache_dir, 'GPU')
 
         profile = RunProfileData.from_json(worker, span, trace_json)
         profile.trace_file_path = trace_path
@@ -148,7 +149,6 @@ class RunProfileData(object):
     def parse_npu(worker, span, path, cache_dir):
         trace_json = {}
         trace_path = path
-        start_ts = 0
         has_trace = False
         has_kernel = False
         has_memory_record = False
@@ -159,13 +159,14 @@ class RunProfileData(object):
             if utils.is_npu_trace_path(file):
                 has_trace = True
                 trace_file = io.join(path, file)
-                trace_path, trace_json, start_ts = RunProfileData._preprocess_file(trace_file, cache_dir, 'Ascend')
+                trace_path, trace_json = RunProfileData._preprocess_file(trace_file, cache_dir, 'Ascend')
                 break
 
-        profile = RunProfileData.from_json(worker, span, trace_json)
+        profile = RunProfileData(worker, span, trace_json)
         profile.trace_file_path = trace_path
         profile.has_trace = has_trace
-        profile.start_ts = 0 if math.isinf(start_ts) else start_ts
+        if math.isinf(profile.profiler_start_ts):
+            profile.profiler_start_ts = 0
 
         for file in io.listdir(path):
             if str(file) == 'kernel_details.csv':
@@ -173,10 +174,12 @@ class RunProfileData(object):
                 profile.kernel_file_path = io.join(path, file)
             if str(file) == 'memory_record.csv':
                 has_memory_record = True
-                profile.memory_component_path = io.join(path, file)
+                profile.memory_curve_path = io.join(path, file)
             if str(file) == 'operator_memory.csv':
                 has_memory_operator = True
                 profile.memory_operator_path = io.join(path, file)
+            if str(file) == 'npu_module_mem.csv':
+                profile.memory_component_path = io.join(path, file)
             if str(file) == 'operator_details.csv':
                 profile.has_operator_view = True
                 profile.operator_path = io.join(path, file)
@@ -190,6 +193,14 @@ class RunProfileData(object):
         profile.has_kernel = has_kernel
         profile.has_memory = has_memory_operator and has_memory_record
         profile.has_communication = has_communication_wait_ops and has_communication_overlap
+        if profile.has_communication:
+            with utils.timing('EventParser.parse'):
+                parser = EventParser()
+                with utils.timing('EventParser: parse steps times'):
+                    # Process steps
+                    parser.parse_steps(profile.events, parser.communication_data)
+
+            profile.steps_names = parser.steps_names
         return profile
 
     @staticmethod
@@ -232,10 +243,7 @@ class RunProfileData(object):
         event_list = trace_json['traceEvents']
         end_index = None
         start_index = None
-        start_ts = float('inf')
         for i in reversed(range(len(event_list))):
-            if event_list[i].get('ts') is not None:
-                start_ts = min(start_ts, float(event_list[i]['ts']))
             if device_target != 'Ascend':
                 if event_list[i]['name'] == 'Record Window End':
                     end_index = i
@@ -257,7 +265,7 @@ class RunProfileData(object):
                 fzip.write(json.dumps(trace_json))
             trace_path = fp.name
 
-        return trace_path, trace_json, start_ts
+        return trace_path, trace_json
 
     def process(self):
         with utils.timing('EventParser.parse'):

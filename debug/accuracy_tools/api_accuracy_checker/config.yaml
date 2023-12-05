@@ -3,6 +3,6 @@ jit_compile: True
 real_data: False
 dump_step: 1000
 error_data_path: './'
-target_iter: 1
+target_iter: [1]
 precision: 14
  

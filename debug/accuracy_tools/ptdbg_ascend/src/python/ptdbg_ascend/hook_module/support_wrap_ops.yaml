@@ -1029,8 +1029,6 @@ torch_npu:
   - npu_scatter
   - npu_layer_norm_eval
   - npu_alloc_float_status
-  - npu_get_float_status
-  - npu_clear_float_status
   - npu_confusion_transpose
   - npu_bmmV2
   - fast_gelu

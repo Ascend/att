@@ -33,13 +33,18 @@ import { RegexConfigModal } from './RegexConfigModal'
 import { FileInfo } from './entity'
 
 interface IProps {
-  onChangeFileList: (files: FileInfo[]) => void
+  onChangeCheckedFileList: (files: FileInfo[]) => void
+  onChangeUploadedCount: (count: number) => void
 }
 
 // 匹配数字包括科学计数法
 const LOSS_REG_EXP = /[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/
 // 匹配自然数
 const ITER_REG_EXP = /\d+/
+// 单个文件最大大小
+const FILE_MAX_SIZE = 50 * 1024 * 1024
+// 最大文件上传数量
+export const MAX_FILE_COUNT = 6
 
 const useStyles = makeStyles(() => ({
   root: {
@@ -105,10 +110,8 @@ const useStyles = makeStyles(() => ({
   }
 }))
 
-// 最大文件上传数量
-export const MAX_FILE_COUNT = 6
 export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
-  const { onChangeFileList } = props
+  const { onChangeCheckedFileList, onChangeUploadedCount } = props
   const classes = useStyles()
   const [configModalVis, setConfigModalVis] = useState<boolean>(false)
   const [deleteModalVis, setDeleteModalVis] = useState<boolean>(false)
@@ -119,12 +122,12 @@ export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
 
   const parseFile = (file: FileInfo): FileInfo => {
     file.losses = []
+    file.iterLosses = {}
+    file.iters = []
     const lines = file.fileContent.split(/\r\n|\n|\r/)
     for (let i = 0; i < lines.length; i++) {
-      const iter = file.useIterRegex ? parseByRegex(lines[i], file.iterTag, false)
-        : parseByTag(lines[i], file.iterTag, false)
-      const loss = file.useLossRegex ? parseByRegex(lines[i], file.lossTag, true)
-        : parseByTag(lines[i], file.lossTag, true)
+      const iter = parseByTag(lines[i], file.iterTag, false)
+      const loss = parseByTag(lines[i], file.lossTag, true)
       if (iter !== null && loss !== null) {
         file.iters.push(iter)
         file.losses.push([iter, loss])
@@ -132,19 +135,6 @@ export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
       }
     }
     return file
-  }
-
-  const parseByRegex = (line: string, regex: string, isLoss: boolean): number | null => {
-    let result: number | null = null
-    const res = new RegExp(regex).exec(line)
-    if (res !== null) {
-      if (isLoss) {
-        result = parseFloat(res[0])
-      } else {
-        result = parseInt(res[0])
-      }
-    }
-    return result
   }
 
   const parseByTag = (line: string, tag: string, isLoss: boolean): number | null => {
@@ -174,6 +164,13 @@ export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
     setImportSpin(true)
     const file = e.target.files?.[0]
     if (file) {
+      if (file.size > FILE_MAX_SIZE) {
+        message.warn('Sorry, the file size cannot be greater than 50MB.')
+        setImportSpin(false)
+        // 防止同名文件不触发事件
+        e.target.value = ''
+        return
+      }
       const reader = new FileReader()
       reader.onload = ((selectedFile) => {
         return (e) => {
@@ -209,11 +206,9 @@ export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
       id: fileList.length,
       fileName: fileName,
       fileContent,
-      checked: false,
+      checked: true,
       lossTag: 'loss:',
-      useLossRegex: false,
       iterTag: 'iteration',
-      useIterRegex: false,
       iters: [],
       losses: [],
       iterLosses: {}
@@ -297,7 +292,8 @@ export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
   }, [JSON.stringify(fileList)])
 
   useEffect(() => {
-    onChangeFileList(fileList)
+    onChangeCheckedFileList(fileList.filter(item => item.checked))
+    onChangeUploadedCount(fileList.length)
   }, [JSON.stringify(fileList)])
 
   return (

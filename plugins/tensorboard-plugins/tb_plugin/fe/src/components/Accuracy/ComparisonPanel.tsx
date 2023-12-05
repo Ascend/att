@@ -18,12 +18,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as React from 'react'
-import { useState, useLayoutEffect, useRef } from 'react'
+import { useState, useLayoutEffect, useRef, useEffect } from 'react'
 import { makeStyles } from '@material-ui/core/styles'
 import { FileInfo } from './entity'
-import { Empty, Radio, RadioChangeEvent, Select, Table } from 'antd'
+import { Empty, Popover, Radio, RadioChangeEvent, Select, Table } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import * as echarts from 'echarts'
+import { InfoCircleOutlined } from '@ant-design/icons'
 
 interface IProps {
   fileList: FileInfo[]
@@ -61,6 +62,9 @@ const useStyles = makeStyles(() => ({
     },
     '& .comparisonBtn': {
       marginLeft: 20
+    },
+    '& .infoLabel': {
+      fontSize: 20
     }
   },
   empty: {
@@ -220,6 +224,16 @@ export const ComparisonPanel: React.FC<IProps> = (props) => {
     }
   }, [compareWay, lineData])
 
+  useEffect(() => {
+    const tempValue = selectedFiles.filter(item => {
+      return !!fileList.find(file => file.fileName === item)
+    })
+    if (JSON.stringify(tempValue) === JSON.stringify(selectedFiles)) {
+      compareFile(tempValue)
+    }
+    setSelectedFiles(tempValue)
+  }, [fileList])
+
   return (
     <div className={classes.root}>
       <div className={classes.title}>Comparison Data</div>
@@ -250,6 +264,17 @@ export const ComparisonPanel: React.FC<IProps> = (props) => {
           <Radio value={1}>Comparison Absolute</Radio>
           <Radio value={2}>Comparison Relative</Radio>
         </Radio.Group>
+        <Popover
+          content={
+            <>
+              <div><b>Normal:</b> The real difference.</div>
+              <div><b>Absolute:</b> The absolute value of difference.</div>
+              <div><b>Relative:</b> The absolute value of difference divided by the loss value of the first file.</div>
+            </>
+          }
+        >
+          <InfoCircleOutlined className="infoLabel" />
+        </Popover>
       </div>
       {selectedFiles.length < 2 ?
         <Empty className={classes.empty} description='Select 2 comparison files in the drop-down list' />

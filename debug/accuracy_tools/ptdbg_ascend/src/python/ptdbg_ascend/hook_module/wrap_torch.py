@@ -48,7 +48,7 @@ class TorchOPTemplate(HOOKModule):
         super().__init__(hook)
 
     def input_param_need_adapt(self):
-        special_op_list = ["broadcast_tensors"]
+        special_op_list = ["broadcast_tensors", "block_diag"]
         for item in special_op_list:
             if item in self.op_name_:
                 return True

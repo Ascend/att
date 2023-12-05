@@ -1,40 +1,40 @@
 # PyTorch Profiler TensorBoard NPU Plugin
 
 ### 介绍
-此工具是PyTorch profiling数据以及可视化的TensorBoard的插件。
-它支持将Ascend平台采集、解析的Pytorch Profiling数据可视化呈现，也兼容GPU数据采集、解析可视化。同时集成了精度比对的功能，支持查看loss曲线和比对两个网络的loss收敛趋势。
+此工具是PyTorch profiling数据以及可视化的TensorBoard的插件。 \
+它支持将Ascend平台采集、解析的Pytorch Profiling数据可视化呈现，也兼容GPU数据采集、解析可视化，现已支持PyTorch 2.0GPU版本的profiling数据可视化。同时集成了精度比对的功能，支持查看loss曲线和比对两个网络的loss收敛趋势。
 
 ### 快速安装说明
-1. 插件方式安装
+* 相关依赖：
+  pandas >= 1.0.0 ，tensorboard >= 2.11.0，protobuf <= 3.20.3
+* 安装方式
+  1. pip安装（推荐） \
+    现本插件已经上传到pypi社区，用户可在python环境下直接通过以下pip指令进行安装：\
+    `pip install torch-tb-profiler-ascend`
 
-* 插件下载地址 \
-  正式版：https://mindstudio-sample.obs.cn-north-4.myhuaweicloud.com/torch-tb-profiler-ascend/v0.4.0/torch_tb_profiler_ascend-0.4.0-py3-none-any.whl \
-  离线版：https://mindstudio-sample.obs.cn-north-4.myhuaweicloud.com/torch-tb-profiler-ascend/v0.4.0/offline/torch_tb_profiler_ascend-0.4.0-py3-none-any.whl
+  2. 插件离线方式安装
+     * 插件下载地址 \
+       https://mindstudio-sample.obs.cn-north-4.myhuaweicloud.com/torch-tb-profiler-ascend/v0.4.0.3/torch_tb_profiler_ascend-0.4.0.3-py3-none-any.whl
 
-* 安装相关依赖：
-  pandas >= 1.0.0 ，tensorboard >= 2.11.0
+     * 插件形式为whl包，使用指令安装（此处{version}为whl包实际版本）
 
-* 插件形式为whl包，使用指令安装
+       `pip install torch-tb-profiler_ascend_{version}_py3_none_any.whl`
 
-  `pip install torch-tb-profiler_npu_0.4.0_py3_none_any.whl`
+  3. 从源代码安装
+     * 从仓库下载源码:
 
-2. 从源代码安装
+       `git clone https://gitee.com/ascend/att.git`
 
-* 从仓库下载源码:
+     *  进入目录 `/plugins/tensorboard_plugins/tb_plugin` 下.
 
-  `git clone https://gitee.com/ascend/att.git`
+     *  执行安装命令:
+       `pip install .`
+     * 构建whl包
+       - `python setup.py build_fe sdist bdist_wheel` \
+        注意: build_fe步骤需要安装yarn和Node.js环境
+       - `python setup.py sdist bdist_wheel`
 
-*  进入目录 `/plugins/tensorboard_plugins/tb_plugin` 下.
-
-*  执行安装命令:
-
-  `pip install .`
-* 构建whl包
-  - `python setup.py build_fe sdist bdist_wheel` \
-   注意: build_fe步骤需要安装yarn和Node.js环境
-  - `python setup.py sdist bdist_wheel`
-
-  在 `/tb_plugins/profiling/tb_plugin/dist` 目录下取出whl包，使用方式1进行安装
+       在 `/tb_plugins/profiling/tb_plugin/dist` 目录下取出whl包，使用方式2进行安装
 
 ### 解析数据说明
 
@@ -125,7 +125,7 @@
 
   ![Alt text](./docs/images/vscode_stack.PNG)
 
-  页面展示了四个饼图和两张表，通过界面的Group By切换表格和饼图。当切换为Operator时，表格已算子名称的维度进行展示，点击某个算子的View CallStack后，此算子会按照Call Stack分类展示算子信息。点击View call frames可以查看算子的调用信息。
+  页面展示了四个饼图和两张表，通过界面的Group By切换表格和饼图。当切换为Operator时，表格以算子名称的维度进行展示，点击某个算子的View CallStack后，此算子会按照Call Stack分类展示算子信息。点击View call frames可以查看算子的调用信息。
   当Group By切换为Operator + Input Shape时，算子以name和Input Shape为维度进行展示。
 
   ![Alt text](./docs/images/operator_view_group_by_inputshape.PNG)
@@ -176,20 +176,17 @@
 
 ##### Memory View
 
-  展示的是Pytorch Profiler执行过程中算子级内存申请和释放的信息。
-
-  ![Alt text](./docs/images/memory_view.PNG)
-  ![Alt text](./docs/images/memory_view_component.PNG)
-
+  展示的是Pytorch Profiler执行过程中内存申请和释放的信息。
   主要包括两张折线图和两张表。可以在 'Device' 下拉框下选择要展示的NPU卡的内存使用信息。Group By可以切换总的内存使用和各个组件内存使用图表。
 
   * Operator
 
-    整个推理过程中，内存使用情况汇总。
+    整个采集过程中，算子内存使用情况汇总。
 
+    ![Alt text](./docs/images/memory_view.PNG)
     表格数据代表含义:
 
-    * Name: 组件侧算子名称（PTA等）。
+    * Name: 算子名称。
 
     * Size: 申请的内存大小。
 
@@ -201,7 +198,16 @@
 
   * Component
 
-    图展示的是PTA和GE组件内存使用，表格为各个组件内存使用峰值。
+    折线图为算子级上报的PTA侧和GE侧的内存持有和实际使用信息，以及进程级内存申请的趋势变化。表格为组件级内存峰值信息表，展示各NPU组件的内存峰值以及达到峰值的时刻。
+    
+    ![Alt text](./docs/images/memory_view_component.PNG)
+    表格数据代表含义:
+
+    * Component: 组件名称。
+
+    * Peak Memory Reserved: 组件内存持有峰值。
+
+    * Time: 达到内存峰值的时刻（若存在多个相同峰值则取首次达到峰值时刻）。
 
 ##### Diff View
 
@@ -264,25 +270,35 @@
 
 ##### 文件配置
 ###### 文件导入
-  界面分为左侧边栏和右侧展示界面。点击左侧的Import Files或在左侧未勾选文件时点击右侧界面中心的Import Files字体，将会弹出系统文件资源管理窗，可以上传需要比对的.txt或.log格式的精度数据文件。
-  <font color='red'>注：当前最多支持上传6个文件。</font>
+  界面分为左侧边栏和右侧展示界面。点击左侧的Import Files或在左侧未勾选文件时点击右侧界面中心的Import Files字体，将会弹出系统文件资源管理窗，可以上传需要比对的.txt或.log格式的模型网络训练日志文件。
+
+  <font color='red'>注：当前最多支持上传6个文件，单个文件大小不能超过10MB。</font>
   ![Alt text](./docs/images/accuracy.PNG)
 
 ###### 已上传文件操作
   文件上传后，在左侧侧边栏出现文件列表。每个文件栏内都有配置数据匹配条件、导出CSV以及删除三种操作图标。
+
   ![Alt text](./docs/images/accuracy_file_operator.PNG)
 
-  * 点击配置数据匹配条件图标后，出现匹配条件配置弹框，需要设置Loss Tag和Iteration Tag两个配置项，弹框内每个Tag都包含一个输入框和勾选框。
+  * 点击配置数据匹配条件图标后，出现匹配条件配置弹框，需要设置Loss Tag和Iteration Tag两个配置项，弹框内每个Tag都包含一个输入框。
   ![Alt text](./docs/images/accuracy_config_modal.PNG) 
-    1. 在Regex勾选框未勾选时，匹配数据时将逐行读取文件，查找是否存在输入框内设定的文本，若找到该文本，若为Loss Tag则查找其后是否存在数字或以科学计数法表示的数字（忽略两者中间空格），若为Iteration Tag则查找其后是否存在整数（忽略两者中间空格）；并将找到的第一项作为匹配值。
-    2. 在Regex勾选框已勾选时，匹配数据时将逐行读取文件，并以输入框内的输入作为正则表达式去匹配数据，并将匹配到的第一项作为匹配值。
+  根据2个Tag的取值有如下3点匹配规则：
+    1. 匹配数据时将逐行读取文件，查找是否存在输入框内设定的文本，若找到该文本，若为Loss Tag则查找其后是否存在数字或以科学计数法表示的数字（忽略两者中间空格），若为Iteration Tag则查找其后是否存在整数（忽略两者中间空格）。
+    2. 若存在多个匹配项，将第一项作为匹配值。
     3. 只有当Loss Tag和Iteration都存在匹配值时，该行的Iteration和Loss才会为有效数据。
-    4. E.g.  
-    * Itertion Tag的Regex未勾选时，输入框内输入`iteration`可匹配`iteration  5/1000`数据，匹配值为`5`，但无法匹配`iteration: 5`的数据，因为中间多了非数字字符`:`。
-    * Loss Tag的Regex未勾选时，输入框内输入`loss:`可匹配`loss: 1.14514e-2`数据，匹配值为`1.14514e-2`。
-    * Loss Tag的Regex勾选时，输入框内输入`/[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/`可匹配数字和科学计数法。
+    
+    E.g.
 
-  * 点击导出CSV图标后，将导出找到的Iteration和Loss数据为csv文件。
+    ![Alt text](./docs/images/accuracy_file.PNG)
+
+    对于以上这份txt文件，当设定Loss Tag为`loss:`以及Iteration Tag为`iteration`时：
+       * 根据上方第1点规则，Iteration Tag可匹配图中区域1内的整数，但无法匹配区域3内的整数，因为`iteration`和整数中间多了非数字字符`:`。
+       * Loss Tag可匹配图中区域2和4内的数字，但区域2内为第一项匹配值，根据上方第2点规则，因此只取区域2内数字。
+       * Loss Tag在图中区域5内有匹配数据，Iteration Tag在图中区域6内有匹配数据，但由于Iteration Tag在区域5内没有匹配数据，Loss Tag在图中区域6内没有匹配数据，根据上方第3点规则，区域5和区域6内不存在有效数据。
+    
+    因此上方这张图中最终提取出的有效数据为区域1和区域2内的同一行数字的集合。
+
+  * 点击导出CSV图标后，将导出找到的Iteration和Loss数据为csv文件。 \
   ![Alt text](./docs/images/accuracy_csv.PNG)
 
   * 点击删除图标后，界面弹出确认删除框，确认后可移除该文件。

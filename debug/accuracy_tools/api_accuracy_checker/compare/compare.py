@@ -3,10 +3,9 @@ import os
 import time
 from rich.table import Table
 from rich.console import Console
-from api_accuracy_checker.compare.algorithm import compare_core, cosine_sim, cosine_standard, get_max_rel_err, get_max_abs_err, \
-    compare_builtin_type, get_rel_err_ratio_hundredth, get_rel_err_ratio_thousandth, get_rel_err_ratio_ten_thousandth
-from api_accuracy_checker.common.utils import get_json_contents, print_info_log, print_error_log, write_csv, CompareException
-from api_accuracy_checker.compare.compare_utils import CompareConst 
+from api_accuracy_checker.compare.algorithm import compare_core
+from api_accuracy_checker.common.utils import get_json_contents, write_csv
+from api_accuracy_checker.compare.compare_utils import CompareConst
 from api_accuracy_checker.common.config import msCheckerConfig
 
 
@@ -14,7 +13,7 @@ class Comparator:
     TEST_FILE_NAME = "accuracy_checking_result_" + time.strftime("%Y%m%d%H%M%S") + ".csv"
     DETAIL_TEST_FILE_NAME = "accuracy_checking_details_" + time.strftime("%Y%m%d%H%M%S") + ".csv"
 
-    # consts for result csv 
+    # consts for result csv
     COLUMN_API_NAME = "API name"
     COLUMN_FORWARD_SUCCESS = "Forward Test Success"
     COLUMN_BACKWARD_SUCCESS = "Backward Test Success"
@@ -31,14 +30,6 @@ class Comparator:
             self.stack_info = get_json_contents(stack_info_json_path)
         else:
             self.stack_info = None
-        self.compare_alg = {}
-        self.register_compare_algorithm("Cosine Similarity", cosine_sim, cosine_standard)
-        self.register_compare_algorithm("Max Relative Error", get_max_rel_err, None)
-        self.register_compare_algorithm("Max Absolute Error", get_max_abs_err, None)
-        self.register_compare_algorithm("Hundredth Relative Error Ratio", get_rel_err_ratio_hundredth, None)
-        self.register_compare_algorithm("Thousandth Relative Error Ratio", get_rel_err_ratio_thousandth, None)
-        self.register_compare_algorithm("Ten Thousandth Relative Error Ratio", get_rel_err_ratio_ten_thousandth, None)
-        self.register_compare_algorithm("Default: isEqual", compare_builtin_type, None)
 
         self.test_result_cnt = {
             "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0,
@@ -83,15 +74,15 @@ class Comparator:
 
         detail_test_rows = [[
             "Npu Name", "Bench Dtype", "NPU Dtype", "Shape",
-            "Cosine Similarity", "Cosine Similarity Message",
-            "Max Rel Error", "Max Rel Err Message",
-            "Max Abs Error", "Max Abs Err Message",
-            "Relative Error (hundredth)", "Relative Error (dual hundredth) Message",
-            "Relative Error (dual thousandth)", "Relative Error (dual thousandth) Message",
-            "Relative Error (dual ten thousandth)", "Relative Error (dual ten thousandth) Message",
-            "Compare Builtin Type", "Builtin Type Message",
-            "Pass"
-        ]]  
+            "Cosine Similarity",
+            "Max Abs Error",
+            "Relative Error (hundredth)",
+            "Relative Error (dual thousandth)",
+            "Relative Error (dual ten thousandth)",
+            "Error Rate",
+            "Status",
+            "Message"
+        ]]
         write_csv(detail_test_rows, self.detail_save_path)
 
     def write_summary_csv(self, test_result):
@@ -132,14 +123,10 @@ class Comparator:
         self.write_summary_csv(args)
         self.write_detail_csv(args)
 
-
-    def register_compare_algorithm(self, name, compare_func, standard):
-        self.compare_alg.update({name: (compare_func, standard)})
-
     def compare_output(self, api_name, bench_out, npu_out, bench_grad=None, npu_grad=None):
         self.test_result_cnt["total_num"] += 1
         if "dropout" in api_name:
-            is_fwd_success, fwd_compare_alg_results = self._compare_dropout(bench_out, npu_out)    
+            is_fwd_success, fwd_compare_alg_results = self._compare_dropout(bench_out, npu_out)
         else:
             is_fwd_success, fwd_compare_alg_results = self._compare_core_wrapper(bench_out, npu_out)
         if bench_grad and npu_grad:
@@ -167,60 +154,22 @@ class Comparator:
             self.test_result_cnt['forward_or_backward_fail_num'] += 1
         return is_fwd_success, is_bwd_success
 
-
-    def _compare_core_wrapper(self, bench_out, npu_out):
+    @staticmethod
+    def _compare_core_wrapper(bench_out, npu_out):
         detailed_result_total = []
-        bench_dtype_total = []
-        npu_dtype_total = []
-        shape_total = []
-        test_success_total = []
-        max_abs_error_success = []
-        cosine_success = []
-        for name in self.compare_alg.keys():
-            alg = self.compare_alg[name][0]
-            detailed_result, test_success, bench_dtype, npu_dtype, shape = compare_core(bench_out, npu_out, alg)
-            bench_dtype_total = bench_dtype
-            npu_dtype_total = npu_dtype
-            shape_total = shape
-            if name not in ["Cosine Similarity", "Max Relative Error", "Max Absolute Error"]:
-                test_success_total.append(test_success)
-            if name == "Cosine Similarity":
-                cosine_success = test_success
-            if name == "Max Absolute Error":
-                max_abs_error_success = test_success
-            if detailed_result_total:
-                for i, detailed_result_item in enumerate(detailed_result):
-                    detailed_result_total[i] += detailed_result_item
-            else:
-                detailed_result_total = detailed_result
-        test_all_result = [CompareConst.PASS for _ in range(len(detailed_result_total))]
-        for i, _ in enumerate(test_all_result):
-            if not cosine_success[i] or CompareConst.ERROR == cosine_success[i]:
-                test_all_result[i] = CompareConst.ERROR
-            elif max_abs_error_success[i] or CompareConst.PASS == max_abs_error_success[i]:
-                test_all_result[i] = CompareConst.PASS
-            else:
-                test_success_column = [test_success_single[i] for test_success_single in test_success_total]
-                if CompareConst.ERROR in test_success_column or False in test_success_column:
-                    test_all_result[i] = CompareConst.ERROR
-                elif CompareConst.WARNING in test_success_column:
-                    test_all_result[i] = CompareConst.WARNING
-        # dtype加到所有指标的前面, 是否pass放到所有指标的后面
-        try:
-            for i, detailed_tuple in enumerate(detailed_result_total):
-                detailed_result = list(detailed_tuple)
-                detailed_result.insert(0, bench_dtype_total[i])
-                detailed_result.insert(1, npu_dtype_total[i])
-                detailed_result.insert(2, shape_total[i])
-                detailed_result.append(test_all_result[i])
-                detailed_result_total[i] = tuple(detailed_result)
-        except IndexError as error:
-            print_error_log(f"There is index error.\n{str(error)}")
-            raise CompareException(CompareException.INVALID_DATA_ERROR) from error
-        test_final_success = False if CompareConst.ERROR in test_all_result or CompareConst.WARNING in test_all_result \
-            else True
+        test_final_success = True
+        status, compare_result, message = compare_core(bench_out, npu_out)
+        if not isinstance(status, list):
+            detailed_result_total.append(compare_result.to_column_value(status, message))
+            if status in [CompareConst.ERROR, CompareConst.WARNING]:
+                test_final_success = False
+        else:
+            for item, item_status in enumerate(status):
+                detailed_result_total.append(compare_result[item].to_column_value(item_status, message[item]))
+                if item_status in [CompareConst.ERROR, CompareConst.WARNING]:
+                    test_final_success = False
         return test_final_success, detailed_result_total
-    
+
     @staticmethod
     def _compare_dropout(bench_out, npu_out):
         tensor_num = bench_out.numel()

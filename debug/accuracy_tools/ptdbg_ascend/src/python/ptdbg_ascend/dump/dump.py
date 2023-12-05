@@ -51,8 +51,7 @@ module_count = defaultdict(int)
 
 
 class DataInfo(object):
-    def __init__(self, data, save_data, summary_data, dtype, shape):
-        self.data = data
+    def __init__(self, save_data, summary_data, dtype, shape):
         self.save_data = save_data
         self.summary_data = summary_data
         self.dtype = dtype
@@ -77,7 +76,7 @@ def get_not_float_tensor_info(data):
 
 def get_scalar_data_info(data):
     summary_data = [data, data, data]
-    return DataInfo(data, data, summary_data, str(type(data)), str([]))
+    return DataInfo(data, summary_data, str(type(data)), str([]))
 
 
 def get_float_tensor_info(data):
@@ -89,13 +88,15 @@ def get_float_tensor_info(data):
 
 def get_tensor_data_info(data, tensor_max, tensor_min, tensor_mean):
     summary_data = []
-    saved_tensor = data.contiguous().cpu().detach()
-    if data.dtype == torch.bfloat16:
-        saved_numpy = saved_tensor.to(torch.float32).numpy()
-    else:
-        saved_numpy = saved_tensor.numpy()
     summary_data.extend([tensor_max, tensor_min, tensor_mean])
-    return DataInfo(data, saved_numpy, summary_data, str(data.dtype), tuple(data.shape))
+    if not DumpUtil.summary_only:
+        saved_tensor = data.contiguous().cpu().detach()
+        if data.dtype == torch.bfloat16:
+            saved_numpy = saved_tensor.to(torch.float32).numpy()
+        else:
+            saved_numpy = saved_tensor.numpy()
+        return DataInfo(saved_numpy, summary_data, str(data.dtype), tuple(data.shape))
+    return DataInfo([], summary_data, str(data.dtype), tuple(data.shape))
 
 
 def json_dump_condition(prefix):

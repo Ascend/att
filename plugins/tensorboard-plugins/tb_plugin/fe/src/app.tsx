@@ -210,11 +210,14 @@ export const App = () => {
 
   const [topTab, setTopTab] = React.useState<number>(0)
   const [fileList, setFileList] = React.useState<FileInfo[]>([])
+  const [uploadedCount, setUploadedCount] = React.useState<number>(0)
 
   // #endregion
 
   React.useEffect(() => {
-    setup().then(() => {
+    setup().catch(() => {
+      console.log('google chart is not supported offline')
+    }).finally(() => {
       setLoaded(true)
     })
   }, [])
@@ -407,6 +410,10 @@ export const App = () => {
     if (JSON.stringify(files) !== JSON.stringify(fileList)) {
       setFileList(files)
     }
+  }
+
+  const _changeUploadCount = (count: number) => {
+    setUploadedCount(count)
   }
 
   // #endregion
@@ -644,7 +651,8 @@ export const App = () => {
           </>
         ) :
           <AccuracyLeftPanel
-            onChangeFileList={_changeFileList}
+            onChangeCheckedFileList={_changeFileList}
+            onChangeUploadedCount={_changeUploadCount}
           />
         }
       </Drawer>
@@ -660,7 +668,7 @@ export const App = () => {
         </Fab>
       )}
       <main className={classes.content}>
-        {topTab === 0 ? renderContent() : <LossComparison fileList={fileList} />}
+        {topTab === 0 ? renderContent() : <LossComparison fileList={fileList} fileCount={uploadedCount} />}
       </main>
     </div >
   )
