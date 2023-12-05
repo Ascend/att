@@ -11,19 +11,6 @@ from api_accuracy_checker.common.utils import print_info_log, print_warn_log, ge
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, check_file_suffix, check_link
 
 
-# def init_environment():
-#     cur_path = os.path.dirname(os.path.realpath(__file__))
-#     yaml_path = os.path.join(cur_path, "../hook_module/support_wrap_ops.yaml")
-#     with FileOpen(yaml_path, 'r') as f:
-#         WrapFunctionalOps = yaml.safe_load(f).get('functional')
-#     for f in dir(torch.nn.functional):
-#         if f != "__name__":
-#             locals().update({f: getattr(torch.nn.functional, f)})
-
-
-# init_environment()
-
-
 def check_tensor_overflow(x):
     if isinstance(x, torch.Tensor) and x.numel() != 0 and x.dtype != torch.bool:
         if len(x.shape) == 0:
