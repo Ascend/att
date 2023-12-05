@@ -9,12 +9,12 @@
   pandas >= 1.0.0 ，tensorboard >= 2.11.0，protobuf <= 3.20.3
 * 安装方式
   1. pip安装（推荐） \
-    现本插件已经上传到pypi社区，用户可在python环境下直接通过以下pip指令进行安装：
+    现本插件已经上传到pypi社区，用户可在python环境下直接通过以下pip指令进行安装：\
     `pip install torch-tb-profiler-ascend`
 
   2. 插件离线方式安装
      * 插件下载地址 \
-       https://mindstudio-sample.obs.cn-north-4.myhuaweicloud.com/torch-tb-profiler-ascend/v0.4.0.2/torch_tb_profiler_ascend-0.4.0.2-py3-none-any.whl
+       https://mindstudio-sample.obs.cn-north-4.myhuaweicloud.com/torch-tb-profiler-ascend/v0.4.0.3/torch_tb_profiler_ascend-0.4.0.3-py3-none-any.whl
 
      * 插件形式为whl包，使用指令安装（此处{version}为whl包实际版本）
 
@@ -125,7 +125,7 @@
 
   ![Alt text](./docs/images/vscode_stack.PNG)
 
-  页面展示了四个饼图和两张表，通过界面的Group By切换表格和饼图。当切换为Operator时，表格已算子名称的维度进行展示，点击某个算子的View CallStack后，此算子会按照Call Stack分类展示算子信息。点击View call frames可以查看算子的调用信息。
+  页面展示了四个饼图和两张表，通过界面的Group By切换表格和饼图。当切换为Operator时，表格以算子名称的维度进行展示，点击某个算子的View CallStack后，此算子会按照Call Stack分类展示算子信息。点击View call frames可以查看算子的调用信息。
   当Group By切换为Operator + Input Shape时，算子以name和Input Shape为维度进行展示。
 
   ![Alt text](./docs/images/operator_view_group_by_inputshape.PNG)
@@ -176,20 +176,17 @@
 
 ##### Memory View
 
-  展示的是Pytorch Profiler执行过程中算子级内存申请和释放的信息。
-
-  ![Alt text](./docs/images/memory_view.PNG)
-  ![Alt text](./docs/images/memory_view_component.PNG)
-
+  展示的是Pytorch Profiler执行过程中内存申请和释放的信息。
   主要包括两张折线图和两张表。可以在 'Device' 下拉框下选择要展示的NPU卡的内存使用信息。Group By可以切换总的内存使用和各个组件内存使用图表。
 
   * Operator
 
-    整个推理过程中，内存使用情况汇总。
+    整个采集过程中，算子内存使用情况汇总。
 
+    ![Alt text](./docs/images/memory_view.PNG)
     表格数据代表含义:
 
-    * Name: 组件侧算子名称（PTA等）。
+    * Name: 算子名称。
 
     * Size: 申请的内存大小。
 
@@ -201,7 +198,16 @@
 
   * Component
 
-    图展示的是PTA和GE组件内存使用，表格为各个组件内存使用峰值。
+    折线图为算子级上报的PTA侧和GE侧的内存持有和实际使用信息，以及进程级内存申请的趋势变化。表格为组件级内存峰值信息表，展示各NPU组件的内存峰值以及达到峰值的时刻。
+    
+    ![Alt text](./docs/images/memory_view_component.PNG)
+    表格数据代表含义:
+
+    * Component: 组件名称。
+
+    * Peak Memory Reserved: 组件内存持有峰值。
+
+    * Time: 达到内存峰值的时刻（若存在多个相同峰值则取首次达到峰值时刻）。
 
 ##### Diff View
 

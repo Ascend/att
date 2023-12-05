@@ -11,23 +11,23 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 3. 支持随机生成模式和真实数据模式
 4. 单API测试，排除整网中的累计误差问题
 
-## 使用方式
+## 工具安装
 
-1. 安装预检工具
-
-   将att仓代码下载到本地，并配置环境变量。假设下载后att仓路径为 $ATT_HOME，环境变量应配置为：
+1. 将att仓代码下载到本地，并配置环境变量。假设下载后att仓路径为 $ATT_HOME，环境变量应配置为：
 
    ```bash
    export PYTHONPATH=$PYTHONPATH:$ATT_HOME/debug/accuracy_tools/
    ```
 
-   安装依赖tqdm、rich、pyyaml
+2. 安装依赖tqdm、rich、pyyaml
 
    ```bash
    pip3 install tqdm rich pyyaml
    ```
 
-2. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
+## 使用方式
+
+1. 在训练脚本（如main.py）中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
 
    - 如果训练脚本是通过torch.utils.data.dataloader方式加载数据，就可以在训练脚本中加入以下代码导入工具dump模块，启动训练即可自动抓取网络所有API信息
 
@@ -68,14 +68,14 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    ```Python
    	from api_accuracy_checker.dump import msCheckerConfig
-   	msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True, target_iter=1)
+   	msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True, target_iter=[1])
    ```
 
-   | 参数名称          | 说明                                                         | 是否必选 |
-   | ----------------- | ------------------------------------------------------------ | -------- |
-   | dump_path         | 设置dump路径，须为已存在目录，默认为当前目录。               | 否       |
-   | real_data         | 真实数据模式，可取值True或False，默认为False，配置为True后开启真实数据模式，dump信息增加forward_real_data和backward_real_data目录，目录下保存每个API输入的具体数值。开启真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。 | 否       |
-   | target_iter       | 指定dump某个step的数据，默认为1，仅支持dump1个step，须指定为训练脚本中存在的step。 | 否       |
+   | 参数名称    | 说明                                                         | 是否必选 |
+   | ----------- | ------------------------------------------------------------ | -------- |
+   | dump_path   | 设置dump路径，须为已存在目录，默认为当前目录。               | 否       |
+   | real_data   | 真实数据模式，可取值True或False，默认为False，配置为True后开启真实数据模式，dump信息增加forward_real_data和backward_real_data目录，目录下保存每个API输入的具体数值。开启真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。 | 否       |
+   | target_iter | 指定dump某个step的数据，默认为[1]，须指定为训练脚本中存在的step。target_iter为list格式，可配置逐个step，例如：target_iter=[0,1,2]；也可以配置step范围，例如：target_iter=list(range(0,9))，表示dump第0到第8个step。 | 否       |
 
 3. 将API信息输入给run_ut模块运行精度检测并比对，运行如下命令：
 
@@ -101,6 +101,12 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -save_error_data
    ```
    数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path
+
+## API预检白名单
+
+精度预检工具可以对指定API进行预检操作，只需要修改att\debug\accuracy_tools\api_accuracy_checker\hook_module目录下的support_wrap_ops.yaml文件。
+
+support_wrap_ops.yaml文件当前记录所有PyTorch API名称，可以直接编辑该文件，删除不需要的API，保留需要预检的API。
 
 ## API预检指标
 
