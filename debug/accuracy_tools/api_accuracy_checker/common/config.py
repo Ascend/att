@@ -6,6 +6,7 @@ from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 
 WrapApi = set(WrapFunctionalOps) | set(WrapTensorOps) | set(WrapTorchOps)
 
+
 class Config:
     def __init__(self, yaml_file):
         check_file_or_directory_path(yaml_file, False)
