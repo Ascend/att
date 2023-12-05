@@ -23,23 +23,6 @@ from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 ut_error_data_dir = 'ut_error_data'
 
 
-def init_environment():
-    cur_path = os.path.dirname(os.path.realpath(__file__))
-    yaml_path = os.path.join(cur_path, "../hook_module/support_wrap_ops.yaml")
-    with FileOpen(yaml_path, 'r') as f:
-        WrapFunctionalOps = yaml.safe_load(f).get('functional')
-    if msCheckerConfig.white_list:
-        functional_dict = set(dir(torch.nn.functional)) & set(msCheckerConfig.white_list)
-    else:
-        functional_dict = dir(torch.nn.functional)
-    for f in functional_dict:
-        if f != "__name__":
-            locals().update({f: getattr(torch.nn.functional, f)})
-
-
-init_environment()
-
-
 def exec_api(api_type, api_name, args, kwargs):
     if api_type == "Functional":
         functional_api = FunctionalOPTemplate(api_name, str, False)
