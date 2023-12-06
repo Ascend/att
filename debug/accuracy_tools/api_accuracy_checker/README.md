@@ -35,11 +35,15 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
       import api_accuracy_checker.dump
       ```
 
-      工具默认抓取训练的**第二个迭代**并且在第二个迭代后会报错退出训练进程，可通过target_iter参数配置。报错信息如下，这个报错仅用于停止训练，属于正常现象：
+      工具默认抓取训练的**第二个迭代**并且在第二个迭代后会报错退出训练进程，可通过target_iter参数配置。
+
+      **报错信息如下，这个报错仅用于停止训练，属于正常现象**：
 
       ```bash
       Exception: Model pretest: exit after iteration 1.
       ```
+
+   - 若报错信息不一致，可能是由于服务器的其他错误信息覆盖导致，可以尝试查找报错信息中的Exception。
 
    - 若训练脚本中的代码不是通过torch.utils.data.dataloader来加载数据或在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，导致多卡训练dump结果只有一组json，那么需要在训练代码中添加打开工具开关的调用：
 
@@ -82,7 +86,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    | -j或--jit_compile                | 开启jit编译。                                                | 否       |
    | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。           | 否       |
 
-   run_ut执行结果包括accuracy_checking_result.csv和accuracy_checking_details.csv两个文件。accuracy_checking_result.csv是API粒度的，标明每个API是否通过测试。建议用户先查看accuracy_checking_result.csv文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在accuracy_checking_details.csv中查询其各个输出的达标情况以及比较指标。API达标情况介绍请参考“**API预检指标**”。
+   run_ut执行结果包括`accuracy_checking_result_{timestamp}.csv`和`accuracy_checking_details_{timestamp}.csv`两个文件。`accuracy_checking_result_{timestamp}.csv`是API粒度的，标明每个API是否通过测试。建议用户先查看`accuracy_checking_result_{timestamp}.csv`文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在`accuracy_checking_details_{timestamp}.csv`中查询其各个输出的达标情况以及比较指标。API达标情况介绍请参考“**API预检指标**”。
 
 4. 如果需要保存比对不达标的输入和输出数据，可以在run_ut执行命令结尾添加-save_error_data，例如：
 
@@ -146,17 +150,17 @@ seed_all函数的随机数种子，取默认值即可，无须配置；第二个
 
   ```python
   from api_accuracy_checker.dump import msCheckerConfig
-  msCheckerConfig.update_config(white_list=[conv1d, conv2d])
+  msCheckerConfig.update_config(white_list=["conv1d", "conv2d"])
   ```
 
 说明：
 
 - 配置的API名称须存在于att\debug\accuracy_tools\api_accuracy_checker\hook_module目录下的support_wrap_ops.yaml文件下。
-- 方式一时建议先完成全量API dump操作后，再配置config.yaml文件指定需要预检的API。
+- 方式一和方式二都可以在dump时设置并控制dump对应的API，默认情况下dump所有API数据，若在dump操作时没有配置白名单，那么可以在执行run_ut模块前使用方式一配置白名单。
 
 ## API预检指标
 
-API预检通过测试，则在accuracy_checking_details.csv文件中的“pass”列标记“pass”，否则标记“error”或“warning”，详细规则如下：
+API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件中的“pass”列标记“pass”，否则标记“error”或“warning”，详细规则如下：
 
 1. 余弦相似度 > 0.99：≤ 0.99为不达标，标记“error”，> 0.99达标，进行下一步；
 2. 最大绝对误差 ＜ 0.001：＜ 0.001达标，标记“pass”，≥ 0.001为不达标，进行下一步；
@@ -164,11 +168,11 @@ API预检通过测试，则在accuracy_checking_details.csv文件中的“pass�
    - 对于float16和bfloat16数据：双百指标不通过，标记“error”；双百指标通过，双千指标不通过，标记“warning”；双百、双千指标均通过，标记“pass”。
    - 对于float32和float64数据：双千指标不通过，标记“error”；双千指标通过，双万指标不通过，标记“warning”；双千、双万指标均通过，标记“pass”。
 
-4. 在accuracy_checking_result.csv中以“Forward Test Success”和“Backward Test Success”字段统计该算子前向反向输出的测试结果，对于标记“pass”的算子，则在accuracy_checking_result.csv中标记“TRUE”表示测试通过，对于标记“error”或“warning”的算子，则在accuracy_checking_result.csv中标记“FALSE”表示测试不通过。由于一个算子可能有多个前向或反向的输入或输出，那么该类算子的输入或输出中必须全为“pass”，才能在accuracy_checking_result.csv中标记“TRUE”，只要有一个输入或输出标记“error”或“warning”，那么在accuracy_checking_result.csv中标记“FALSE”。
+4. 在`accuracy_checking_result_{timestamp}.csv`中以“Forward Test Success”和“Backward Test Success”字段统计该算子前向反向输出的测试结果，对于标记“pass”的算子，则在`accuracy_checking_result_{timestamp}.csv`中标记“TRUE”表示测试通过，对于标记“error”或“warning”的算子，则在`accuracy_checking_result_{timestamp}.csv`中标记“FALSE”表示测试不通过。由于一个算子可能有多个前向或反向的输入或输出，那么该类算子的输入或输出中必须全为“pass”，才能在`accuracy_checking_result_{timestamp}.csv`中标记“TRUE”，只要有一个输入或输出标记“error”或“warning”，那么在`accuracy_checking_result_{timestamp}.csv`中标记“FALSE”。
 
 双百、双千、双万精度指标是指NPU的Tensor中的元素逐个与对应的标杆数据对比，相对误差大于百分之一、千分之一、万分之一的比例占总元素个数的比例小于百分之一、千分之一、万分之一。
 
-# 解析工具
+# 溢出解析工具
 
 针对训练过程中的溢出检测场景，对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，前向过程溢出的API可通过该工具对`forward_info_{pid}.json`进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
 
