@@ -4,6 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 import torch
+import torch.distributed as dist
 
 from ..dump import dump
 from ..common.utils import print_error_log, CompareException, DumpException, Const, get_time, print_info_log, \
@@ -156,6 +157,8 @@ def set_dump_path(fpath=None, dump_tag='ptdbg_dump'):
 
 
 def get_tensor_rank(in_feat, out_feat):
+    if dist.is_initialized():
+        return dist.get_rank()
     def get_tensor_rank_single(x):
         if isinstance(x, (list, tuple)):
             if len(x) > 0:
