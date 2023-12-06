@@ -518,9 +518,14 @@ def get_process_rank(model):
 
 def get_json_contents(file_path):
     ops = get_file_content_bytes(file_path)
-    json_obj = json.loads(ops)
+    try:
+        json_obj = json.loads(ops)
+    except ValueError as error:
+        print_error_log('Failed to load "%s". %s' % (file_path, str(error)))
+        raise CompareException(CompareException.INVALID_FILE_ERROR) from error
     if not isinstance(json_obj, dict):
-        raise ValueError('Json file %s, content is not a dictionary!' % file_path)
+        print_error_log('Json file %s, content is not a dictionary!' % file_path)
+        raise CompareException(CompareException.INVALID_FILE_ERROR)
     return json_obj
 
 
