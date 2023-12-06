@@ -38,19 +38,6 @@ RunUTConfig = namedtuple('RunUTConfig', ['forward_content', 'backward_content', 
                                          'save_error_data', 'is_continue_run_ut', 'test_result_cnt'])
 
 
-def init_environment():
-    cur_path = os.path.dirname(os.path.realpath(__file__))
-    yaml_path = os.path.join(cur_path, "../hook_module/support_wrap_ops.yaml")
-    with FileOpen(yaml_path, 'r') as f:
-        WrapFunctionalOps = yaml.safe_load(f).get('functional')
-    for f in dir(torch.nn.functional):
-        if f != "__name__":
-            locals().update({f: getattr(torch.nn.functional, f)})
-
-
-init_environment()
-
-
 def exec_api(api_type, api_name, args, kwargs):
     if api_type == "Functional":
         functional_api = FunctionalOPTemplate(api_name, str, False)
@@ -136,6 +123,10 @@ def run_ut(config):
         if api_full_name in api_name_set:
             continue
         try:
+            if msCheckerConfig.white_list:
+                [_, api_name, _] = api_full_name.split("*")
+                if api_name not in set(msCheckerConfig.white_list):
+                    continue
             data_info = run_torch_api(api_full_name, api_setting_dict, config.backward_content, api_info_dict)
             is_fwd_success, is_bwd_success = compare.compare_output(api_full_name,
                                                                     data_info.bench_out,
