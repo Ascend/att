@@ -28,7 +28,7 @@ from .match import graph_mapping
 from ..advisor.advisor import Advisor
 from ..common.utils import check_compare_param, add_time_as_suffix, \
     print_warn_log, print_error_log, CompareException, Const,\
-    CompareConst, format_value, check_file_not_exists
+    CompareConst, format_value, check_file_not_exists, check_configuration_param
 from ..common.file_check_util import FileChecker, FileCheckConst, change_mode, FileOpen
 
 
@@ -280,7 +280,7 @@ def match_op(npu_queue, bench_queue, fuzzy_match):
     return -1, -1
 
 
-def get_accuracy(result, n_dict, b_dict):
+def get_accuracy(result, n_dict, b_dict, summary_compare=False):
     def get_accuracy_core(n_start, n_len, b_start, b_len, key):
         min_len = min(n_len, b_len)
         npu_stack_info = n_dict.get("stack_info", None)
@@ -294,10 +294,15 @@ def get_accuracy(result, n_dict, b_dict):
             err_msg = ""
             result_item = [n_name, b_name, n_struct[0], b_struct[0], n_struct[1], b_struct[1], " ", " ", " "]
 
-            summery_data = n_dict.get("summery")[n_start + index]
-            result_item.extend(summery_data)
-            summery_data = b_dict.get("summery")[b_start + index]
-            result_item.extend(summery_data)
+            npu_summery_data = n_dict.get("summery")[n_start + index]
+            result_item.extend(npu_summery_data)
+            bench_summery_data = b_dict.get("summery")[b_start + index]
+            result_item.extend(bench_summery_data)
+
+            if summary_compare:
+                start_idx = CompareConst.SUMMARY_COMPARE_RESULT_HEADER.index(CompareConst.MAX_DIFF)
+                end_idx = CompareConst.SUMMARY_COMPARE_RESULT_HEADER.index(CompareConst.MEAN_DIFF) + 1
+                result_item[start_idx:end_idx] = [val[0] - val[1] for val in zip(npu_summery_data, bench_summery_data)]
 
             result_item.append(CompareConst.ACCURACY_CHECK_YES)
             result_item.append(err_msg)
@@ -532,38 +537,30 @@ def handle_inf_nan(n_value, b_value):
 
 
 def compare(input_parma, output_path, stack_mode=False, auto_analyze=True,
-            fuzzy_match=False):
+            fuzzy_match=False, summary_compare=False):
     try:
-        npu_pkl, bench_pkl = check_compare_param(input_parma, output_path, stack_mode,
-                                                 auto_analyze, fuzzy_match)
+        check_compare_param(input_parma, output_path, stack_mode, summary_compare)
+        check_configuration_param(stack_mode, auto_analyze, fuzzy_match, summary_compare)
     except CompareException as error:
         print_error_log('Compare failed. Please check the arguments and do it again!')
         sys.exit(error.code)
-    compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=stack_mode,
-                 auto_analyze=auto_analyze, fuzzy_match=fuzzy_match)
+    compare_core(input_parma, output_path, stack_mode=stack_mode,
+                 auto_analyze=auto_analyze, fuzzy_match=fuzzy_match, summary_compare=summary_compare)
 
 
-def compare_core(input_parma, output_path, npu_pkl, bench_pkl, stack_mode=False, auto_analyze=True,
-                 suffix='', fuzzy_match=False):
-    result = compare_process(npu_pkl, bench_pkl, stack_mode, fuzzy_match)
-    npu_pkl.close()
-    bench_pkl.close()
-
-    columns = [CompareConst.NPU_NAME, CompareConst.BENCH_NAME, CompareConst.NPU_DTYPE, CompareConst.BENCH_DTYPE,
-                CompareConst.NPU_SHAPE, CompareConst.BENCH_SHAPE, CompareConst.COSINE, CompareConst.MAX_ABS_ERR,
-                   CompareConst.MAX_RELATIVE_ERR]
-    columns.extend([CompareConst.NPU_MAX, CompareConst.NPU_MIN, CompareConst.NPU_MEAN])
-    columns.extend([CompareConst.BENCH_MAX, CompareConst.BENCH_MIN, CompareConst.BENCH_MEAN])
-    columns.extend([CompareConst.ACCURACY, CompareConst.ERROR_MESSAGE])
-    if stack_mode:
-        columns.extend([CompareConst.STACK])
-    result_df = pd.DataFrame(result, columns=columns)
-
+def compare_core(input_parma, output_path, stack_mode=False, auto_analyze=True,
+                 suffix='', fuzzy_match=False, summary_compare=False):
     file_name = add_time_as_suffix("compare_result" + suffix)
     file_path = os.path.join(os.path.realpath(output_path), file_name)
     check_file_not_exists(file_path)
-    with os.fdopen(os.open(file_path, os.O_RDWR | os.O_CREAT, stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP), 'w+') as fout:
-        result_df.to_csv(fout, index=False)
+
+    with FileOpen(input_parma.get("npu_pkl_path"), "r") as npu_pkl, \
+         FileOpen(input_parma.get("bench_pkl_path"), "r") as bench_pkl, \
+         os.fdopen(os.open(file_path, os.O_RDWR | os.O_CREAT, stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP), 'w+') \
+         as fout:
+        compare_process([npu_pkl, bench_pkl, fout], stack_mode, fuzzy_match, summary_compare)
+        if summary_compare:
+            return
 
     _do_multi_process(input_parma, file_path)
     change_mode(file_path, FileCheckConst.DATA_FILE_AUTHORITY)
@@ -607,7 +604,8 @@ def parse(pkl_file, module_name_prefix):
                 print(summery_info)
 
 
-def compare_process(npu_pkl_handle, bench_pkl_handle, stack_mode, fuzzy_match):
+def compare_process(file_handles, stack_mode, fuzzy_match, summary_compare=False):
+    npu_pkl_handle, bench_pkl_handle, output_csv_handle = file_handles
     if fuzzy_match:
         print_warn_log("This task uses fuzzy matching, which may affect the accuracy of the comparison.")
     npu_ops_queue = []
@@ -633,7 +631,17 @@ def compare_process(npu_pkl_handle, bench_pkl_handle, stack_mode, fuzzy_match):
     if npu_ops_queue:
         for npu_data in npu_ops_queue:
             get_un_match_accuracy(result, npu_data)
-    return result
+
+    header = CompareConst.COMPARE_RESULT_HEADER[:] \
+        if not summary_compare else CompareConst.SUMMARY_COMPARE_RESULT_HEADER[:]
+    if stack_mode:
+        header.append(CompareConst.STACK)
+    result_df = pd.DataFrame(result, columns=header)
+    if summary_compare:
+        header.remove(CompareConst.ACCURACY)
+        header.remove(CompareConst.ERROR_MESSAGE)
+        result_df = result_df[header]
+    result_df.to_csv(output_csv_handle, index=False)
 
 
 def get_un_match_accuracy(result, n_dict):
@@ -649,10 +657,11 @@ def get_un_match_accuracy(result, n_dict):
         err_msg = CompareConst.NO_BENCH
         accuracy_check_res = CompareConst.NAN
 
-        result_item = [n_name, bench_name, n_struct[0], bench_type, n_struct[1], bench_shape, " ", " ", " "]
+        result_item = [n_name, bench_name, n_struct[0], bench_type, n_struct[1], bench_shape]
+        result_item.extend([CompareConst.NAN] * 3)
         summery_data = n_dict.get("summery")[index]
         result_item.extend(summery_data)
-        summery_data = [CompareConst.NAN]*3
+        summery_data = [CompareConst.NAN] * 3
         result_item.extend(summery_data)
         result_item.append(accuracy_check_res)
         result_item.append(err_msg)
