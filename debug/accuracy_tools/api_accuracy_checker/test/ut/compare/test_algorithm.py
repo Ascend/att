@@ -66,9 +66,11 @@ class TestAlgorithmMethods(unittest.TestCase):
         self.assertEqual(alg.compare_uint8_data(b_value, n_value), (1, True))
 
     def test_compare_builtin_type(self):
+        compare_column = CompareColumn()
         bench_out = 1
         npu_out = 1
-        self.assertEqual(alg.compare_builtin_type(bench_out, npu_out), (True, 'pass', ''))
+        status, compare_result, message = alg.compare_builtin_type(bench_out, npu_out, compare_column)
+        self.assertEqual((status, compare_result.error_rate, message), ('pass', 0, ''))
 
     def test_flatten_compare_result(self):
         result = [[1, 2], [3, 4]]
