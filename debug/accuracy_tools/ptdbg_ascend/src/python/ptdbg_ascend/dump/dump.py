@@ -224,6 +224,8 @@ def dump_acc_cmp(name, in_feat, out_feat, dump_step, module):
     dump_file = modify_dump_path(dump_file, DumpUtil.dump_switch_mode)
     if DumpUtil.dump_switch_mode == Const.API_LIST and not check_if_in_api_list(name):
         return
+    if DumpUtil.dump_switch_mode in [Const.LIST, Const.ACL, Const.RANGE, Const.STACK] and not DumpUtil.check_switch_scope(name):
+        return
     if DumpUtil.get_dump_switch():
         global rank
         dump_dir, dump_filename = os.path.split(dump_file)
@@ -269,7 +271,7 @@ def dump_acc_cmp(name, in_feat, out_feat, dump_step, module):
         elif DumpUtil.dump_switch_mode == Const.API_STACK:
             dump_api_tensor(dump_step, in_feat, name_template, out_feat)
             dump_stack_info(name_template)
-        elif DumpUtil.check_switch_scope(name_prefix):
+        else:
             if DumpUtil.dump_switch_mode == Const.ACL:
                 acl_dump(module, name, name_prefix)
             elif DumpUtil.dump_switch_mode != Const.STACK:
