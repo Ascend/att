@@ -1213,7 +1213,7 @@ import os
 import torch
 import torch.nn as nn
 import torch_npu
-import torch.nnnfunctional as F
+import torch.nnfunctional as F
 from ptdbg_ascend import *
 
 torch.npu.set_device("npu:0")
@@ -1230,7 +1230,7 @@ class ModuleOP(nn.Module):
         return r1
     
 if __name__ == "__main__":
-    module = ModuleOP
+    module = ModuleOP()
     
     # 注册工具
     set_dump_path("./dump_data/npu")
@@ -1243,7 +1243,7 @@ if __name__ == "__main__":
     out = module(x)
     module_dump_end()    # 结束模块级精度数据dump
     loss = out.sum()
-    loss.bachward()
+    loss.backward()
     set_dump_switch("OFF")
 ```
 
