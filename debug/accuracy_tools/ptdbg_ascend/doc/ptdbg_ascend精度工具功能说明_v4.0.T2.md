@@ -1211,7 +1211,7 @@ import os
 import torch
 import torch.nn as nn
 import torch_npu
-import torch.nnfunctional as F
+import torch.nn.functional as F
 from ptdbg_ascend import *
 
 torch.npu.set_device("npu:0")
