@@ -92,7 +92,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    | -o或--out_path                   | 指指定run_ut执行结果存盘路径，默认“./”（相对于run_ut的路径）。 | 否       |
    | -j或--jit_compile                | 开启jit编译。                                                | 否       |
    | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。           | 否       |
-   | -c或--continue_run_ut            | 指定本次运行中断时生成的accuracy_checking_result_{timestamp}.csv文件路径，执行run_ut中断时，若想从中断处继续执行，配置此参数即可。           | 否       |
+   | -csv_path或--result_csv_path            | 指定本次运行中断时生成的accuracy_checking_result_{timestamp}.csv文件路径，执行run_ut中断时，若想从中断处继续执行，配置此参数即可。           | 否       |
 
    run_ut执行结果包括accuracy_checking_result_{timestamp}.csv和accuracy_checking_details_{timestamp}.csv两个文件。accuracy_checking_result_{timestamp}.csv是API粒度的，标明每个API是否通过测试。建议用户先查看accuracy_checking_result_{timestamp}.csv文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在accuracy_checking_details_{timestamp}.csv中查询其各个输出的达标情况以及比较指标。API达标情况介绍请参考“**API预检指标**”。
 
@@ -103,12 +103,12 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    ```
    数据默认会存盘到'./ut_error_data{timestamp}'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path。
 
-5. 如果本次run_ut运行中断，需要从中断处继续执行，可以在run_ut执行命令结尾配置-c，例如：
+5. 如果本次run_ut运行中断，需要从中断处继续执行，可以在run_ut执行命令结尾配置-csv_path，例如：
 
    ```bash
-   python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -c ./accuracy_checking_result_20231203211324.csv
+   python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -csv_path ./accuracy_checking_result_20231203211324.csv
    ```
-   run_ut将会从中断处继续执行，执行结果将追加写入到-c配置的accuracy_checking_result_20231203211324.csv以及相同时间戳后缀的accuracy_checking_details_20231203211324.csv中，若配置了-save_error_data，error_data将会保存到相同时间戳后缀的ut_error_data20231203211324文件夹中。
+   run_ut将会从中断处继续执行，执行结果将追加写入到-csv_path配置的accuracy_checking_result_20231203211324.csv以及相同时间戳后缀的accuracy_checking_details_20231203211324.csv中，若配置了-save_error_data，error_data将会保存到相同时间戳后缀的ut_error_data20231203211324文件夹中。
 
 ## API预检白名单
 
