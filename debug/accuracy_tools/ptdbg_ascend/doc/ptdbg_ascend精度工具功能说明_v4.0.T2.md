@@ -1211,6 +1211,7 @@ import os
 import torch
 import torch.nn as nn
 import torch_npu
+import torch.nnnfunctional as F
 from ptdbg_ascend import *
 
 torch.npu.set_device("npu:0")
@@ -1218,13 +1219,12 @@ torch.npu.set_device("npu:0")
 class ModuleOP(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.linear_1 = nnLinear(in_features=2, out_features=2)
-        self.linear_2 = nnLinear(in_features=2, out_features=1)
-        self.relu = nn.Relu()
+        self.linear_1 = nn.Linear(in_features=2, out_features=2)
+        self.linear_2 = nn.Linear(in_features=2, out_features=1)
     def forward(self, x):
         x1 = self.linear_1(x)
-        x1 = self.linear_2(x1)
-        r1 = self.relu(x2)
+        x2 = self.linear_2(x1)
+        r1 = F.relu(x2)
         return r1
     
 if __name__ == "__main__":
