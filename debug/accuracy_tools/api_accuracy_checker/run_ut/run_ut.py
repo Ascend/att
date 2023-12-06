@@ -15,6 +15,7 @@ else:
 import yaml
 import torch
 from tqdm import tqdm
+from collections import namedtuple
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
     print_error_log, check_file_or_directory_path, initialize_save_path, Const
@@ -33,8 +34,8 @@ current_time = time.strftime("%Y%m%d%H%M%S")
 UT_ERROR_DATA_DIR = 'ut_error_data' + current_time
 RESULT_FILE_NAME = "accuracy_checking_result_" + current_time + ".csv"
 DETAILS_FILE_NAME = "accuracy_checking_details_" + current_time + ".csv"
-api_in_csv_num = -1
-test_result_cnt = None
+RunUTConfig = namedtuple('RunUTConfig', ['forward_content', 'backward_content', 'result_csv_path', 'details_csv_path',
+                                         'save_error_data', 'is_continue_run_ut', 'test_result_cnt'])
 
 
 def init_environment():
@@ -122,22 +123,26 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
     return cpu_args, cpu_kwargs
 
 
-def run_ut(forward_content, backward_content, result_csv_path, details_csv_path, save_error_data):
+def run_ut(config):
     print_info_log("start UT test")
     api_setting_dict = get_json_contents("torch_ut_setting.json")
-    is_continue_run_ut = True if api_in_csv_num != -1 else False
-    compare = Comparator(result_csv_path, details_csv_path, is_continue_run_ut, test_result_cnt)
-    for i, (api_full_name, api_info_dict) in enumerate(tqdm(forward_content.items())):
-        if i < api_in_csv_num:
+    compare = Comparator(config.result_csv_path, config.details_csv_path, config.is_continue_run_ut,
+                         config.test_result_cnt)
+    with FileOpen(config.result_csv_path, 'r') as file:
+        csv_reader = csv.reader(file)
+        next(csv_reader)
+        api_name_set = {row[0] for row in csv_reader}
+    for i, (api_full_name, api_info_dict) in enumerate(tqdm(config.forward_content.items())):
+        if api_full_name in api_name_set:
             continue
         try:
-            data_info = run_torch_api(api_full_name, api_setting_dict, backward_content, api_info_dict)
+            data_info = run_torch_api(api_full_name, api_setting_dict, config.backward_content, api_info_dict)
             is_fwd_success, is_bwd_success = compare.compare_output(api_full_name,
                                                                     data_info.bench_out,
                                                                     data_info.device_out,
                                                                     data_info.bench_grad_out,
                                                                     data_info.device_grad_out)
-            if save_error_data:
+            if config.save_error_data:
                 do_save_error_data(api_full_name, data_info, is_fwd_success, is_bwd_success)
         except Exception as err:
             [_, api_name, _] = api_full_name.split("*")
@@ -260,57 +265,7 @@ def get_validated_details_csv_path(validated_result_csv_path):
     return validated_details_csv_path
 
 
-def validate_csv_content_by_forward_json_content(validated_result_csv_path, validated_details_csv_path,
-                                                 forward_content):
-    result_csv_name = os.path.basename(validated_result_csv_path)
-    with FileOpen(validated_result_csv_path, 'r') as file:
-        reader = csv.reader(file)
-        result_csv_rows = [row for row in reader]
-    if not result_csv_rows:
-        # If result csv is empty, details csv should also be empty
-        with FileOpen(validated_details_csv_path, 'w'):
-            pass
-        compare = Comparator(validated_result_csv_path, validated_details_csv_path, True)
-        compare.write_csv_title()
-    global api_in_csv_num
-    api_in_csv_num = len(result_csv_rows) - 1 if len(result_csv_rows) - 1 > 0 else 0
-    if api_in_csv_num > 0:
-        if api_in_csv_num > len(forward_content):
-            raise ValueError(
-                "%s data is abnormal, the number of rows is greater than the number of rows in forward_info json"
-                % result_csv_name)
-        result_csv_api_list = []
-        forward_json_api_list = []
-        for item in result_csv_rows[1:]:
-            if not item:
-                raise ValueError("%s data is abnormal, the API name has a null value" % result_csv_name)
-            result_csv_api_list.append(item[0])
-        for item in list(forward_content.items())[:api_in_csv_num]:
-            if not item:
-                raise ValueError("forward_info json data is abnormal, the API name has a null value")
-            forward_json_api_list.append(item[0])
-        if result_csv_api_list != forward_json_api_list:
-            raise ValueError("The saved api data in %s is not from forward_info json" % result_csv_name)
-
-
-def validate_continue_run_ut_required_files_and_folders(result_csv_path, forward_content, save_error_data):
-    validated_result_csv_path = get_validated_result_csv_path(result_csv_path)
-    validated_details_csv_path = get_validated_details_csv_path(validated_result_csv_path)
-    if save_error_data:
-        time_info = validated_result_csv_path.split('.')[0].split('_')[-1]
-        ut_error_data_dir_name = 'ut_error_data' + time_info
-        ut_error_data_dir_path = os.path.join(os.path.dirname(validated_result_csv_path), ut_error_data_dir_name)
-        global UT_ERROR_DATA_DIR
-        UT_ERROR_DATA_DIR = ut_error_data_dir_path
-        initialize_save_error_data()
-    validate_csv_content_by_forward_json_content(validated_result_csv_path, validated_details_csv_path,
-                                                 forward_content)
-    get_statistics_from_result_csv(validated_result_csv_path)
-    return validated_result_csv_path, validated_details_csv_path
-
-
 def get_statistics_from_result_csv(validated_result_csv_path):
-    global test_result_cnt
     test_result_cnt = {
         "forward_fail_num": 0, "backward_fail_num": 0, "forward_and_backward_fail_num": 0, "success_num": 0,
         "total_num": 0, "forward_or_backward_fail_num": 0
@@ -328,6 +283,7 @@ def get_statistics_from_result_csv(validated_result_csv_path):
                              % result_csv_name)
         if item[1] == 'SKIP':
             continue
+        test_result_cnt["total_num"] += 1
         if item[1] == 'True' and item[2] in ['True', 'N/A']:
             test_result_cnt['success_num'] += 1
         elif item[1] == 'False' and item[2] == 'False':
@@ -338,6 +294,7 @@ def get_statistics_from_result_csv(validated_result_csv_path):
         else:
             test_result_cnt['backward_fail_num'] += 1
             test_result_cnt['forward_or_backward_fail_num'] += 1
+    return test_result_cnt
 
 
 def _run_ut_parser(parser):
@@ -358,7 +315,7 @@ def _run_ut_parser(parser):
                         help="<optional> whether to turn on jit compile", required=False)
     parser.add_argument("-d", "--device", dest="device_id", type=int, help="<optional> set device id to run ut",
                         default=0, required=False)
-    parser.add_argument("-c", "--continue_run_ut", dest="continue_run_ut", default="", type=str,
+    parser.add_argument("-csv_path", "--result_csv_path", dest="result_csv_path", default="", type=str,
                         help="<optional> The path of accuracy_checking_result_{timestamp}.csv, "
                              "when run ut is interrupted, enter the file path to continue run ut.",
                         required=False)
@@ -393,13 +350,22 @@ def _run_ut():
     backward_content = get_json_contents(backward_file)
     result_csv_path = os.path.join(out_path, RESULT_FILE_NAME)
     details_csv_path = os.path.join(out_path, DETAILS_FILE_NAME)
-    if save_error_data and not args.continue_run_ut:
+    test_result_cnt = None
+    if args.result_csv_path:
+        result_csv_path = get_validated_result_csv_path(args.result_csv_path)
+        details_csv_path = get_validated_details_csv_path(result_csv_path)
+        test_result_cnt = get_statistics_from_result_csv(result_csv_path)
+    if save_error_data:
+        if args.result_csv_path:
+            time_info = result_csv_path.split('.')[0].split('_')[-1]
+            ut_error_data_dir_name = 'ut_error_data' + time_info
+            ut_error_data_dir_path = os.path.join(os.path.dirname(result_csv_path), ut_error_data_dir_name)
+            global UT_ERROR_DATA_DIR
+            UT_ERROR_DATA_DIR = ut_error_data_dir_path
         initialize_save_error_data()
-    if args.continue_run_ut:
-        result_csv_path, details_csv_path = validate_continue_run_ut_required_files_and_folders(args.continue_run_ut,
-                                                                                                forward_content,
-                                                                                                save_error_data)
-    run_ut(forward_content, backward_content, result_csv_path, details_csv_path, save_error_data)
+    run_ut_config = RunUTConfig(forward_content, backward_content, result_csv_path, details_csv_path, save_error_data,
+                                args.result_csv_path, test_result_cnt)
+    run_ut(run_ut_config)
 
 
 class UtDataInfo:
