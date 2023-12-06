@@ -116,7 +116,7 @@ msCheckerConfig.update_config(dump_path="./", real_data=False, target_iter=[1], 
 | dump_path   | 设置dump路径，须为已存在目录，默认为当前目录。               | 否       |
 | real_data   | 真实数据模式，可取值True或False，默认为False，表示随机数据模式，配置为True后开启真实数据模式，dump信息增加forward_real_data和backward_real_data目录，目录下保存每个API输入的具体数值。开启真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。 | 否       |
 | target_iter | 指定dump某个step的数据，默认为[1]，须指定为训练脚本中存在的step。target_iter为list格式，可配置逐个step，例如：target_iter=[0,1,2]；也可以配置step范围，例如：target_iter=list(range(0,9))，表示dump第0到第8个step。 | 否       |
-| white_list  | API dump白名单，指定dump具体API数据，也可以直接配置预检的API白名单，详细请参见“**API预检白名单**”。参数示例：white_list=["conv1d", "conv2d"]。默认未配置白名单，即dump全量API数据并进行全量API预检。 | 否       |
+| white_list  | API dump白名单，指定dump具体API数据，也可以直接配置预检的API白名单，详细请参见“**API预检白名单**”。参数示例：white_list=["conv1d", "conv2d"]。默认未配置白名单，即dump全量API数据。 | 否       |
 
 **函数示例**
 
@@ -156,7 +156,7 @@ seed_all函数的随机数种子，取默认值即可，无须配置；第二个
 说明：
 
 - 配置的API名称须存在于att\debug\accuracy_tools\api_accuracy_checker\hook_module目录下的support_wrap_ops.yaml文件下。
-- 方式一和方式二都可以在dump时设置并控制dump对应的API，默认情况下dump所有API数据，若在dump操作时没有配置白名单，那么可以在执行run_ut模块前使用方式一配置白名单。
+- 方式一和方式二都可以在dump时设置并控制dump对应的API，默认情况下没有配置白名单，dump所有API数据，若在dump操作时没有配置白名单，那么可以在执行run_ut模块前使用方式一配置白名单。
 
 ## API预检指标
 
