@@ -64,18 +64,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    forward_info与stack_info中的key值一一对应，用户可根据forward_info中API的key在stack_info中查询到其调用栈及代码行位置。
 
-   若有需要，用户可以通过msCheckerConfig.update_config来配置dump路径以及开启真实数据模式，在训练脚本中加入如下示例代码：
-
-   ```Python
-   	from api_accuracy_checker.dump import msCheckerConfig
-   	msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True, target_iter=[1])
-   ```
-
-   | 参数名称    | 说明                                                         | 是否必选 |
-   | ----------- | ------------------------------------------------------------ | -------- |
-   | dump_path   | 设置dump路径，须为已存在目录，默认为当前目录。               | 否       |
-   | real_data   | 真实数据模式，可取值True或False，默认为False，配置为True后开启真实数据模式，dump信息增加forward_real_data和backward_real_data目录，目录下保存每个API输入的具体数值。开启真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。 | 否       |
-   | target_iter | 指定dump某个step的数据，默认为[1]，须指定为训练脚本中存在的step。target_iter为list格式，可配置逐个step，例如：target_iter=[0,1,2]；也可以配置step范围，例如：target_iter=list(range(0,9))，表示dump第0到第8个step。 | 否       |
+   若有需要，用户可以通过msCheckerConfig.update_config来配置dump路径以及开启真实数据模式、指定dump某个step或配置API dump白名单，详细请参见“**msCheckerConfig.update_config**”。
 
 3. 将API信息输入给run_ut模块运行精度检测并比对，运行如下命令：
 
@@ -102,11 +91,68 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    ```
    数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path
 
+## msCheckerConfig.update_config
+
+**功能说明**
+
+配置精度预检dump时的属性。
+
+可选配置。
+
+**函数原型**
+
+```python
+msCheckerConfig.update_config(dump_path="./", real_data=False, target_iter=[1], white_list=[])
+```
+
+**参数说明**
+
+| 参数名称    | 说明                                                         | 是否必选 |
+| ----------- | ------------------------------------------------------------ | -------- |
+| dump_path   | 设置dump路径，须为已存在目录，默认为当前目录。               | 否       |
+| real_data   | 真实数据模式，可取值True或False，默认为False，表示随机数据模式，配置为True后开启真实数据模式，dump信息增加forward_real_data和backward_real_data目录，目录下保存每个API输入的具体数值。开启真实数据模式目前仅支持单卡，且会存盘较多数据，可能对磁盘空间有较大冲击。 | 否       |
+| target_iter | 指定dump某个step的数据，默认为[1]，须指定为训练脚本中存在的step。target_iter为list格式，可配置逐个step，例如：target_iter=[0,1,2]；也可以配置step范围，例如：target_iter=list(range(0,9))，表示dump第0到第8个step。 | 否       |
+| white_list  | API dump白名单，指定dump具体API数据，也可以直接配置预检的API白名单，详细请参见“**API预检白名单**”。参数示例：white_list=["conv1d", "conv2d"]。 | 否       |
+
+**函数示例**
+
+seed_all函数的随机数种子，取默认值即可，无须配置；第二个参数默认关闭，不开启确定性计算时也无须配置。
+
+- 示例1：配置dump路径以及开启真实数据模式
+
+  ```python
+  from api_accuracy_checker.dump import msCheckerConfig
+  msCheckerConfig.update_config(dump_path="my/dump/path", real_data=True)
+  ```
+
+- 示例2：指定dump某个step
+
+  ```python
+  from api_accuracy_checker.dump import msCheckerConfig
+  msCheckerConfig.update_config(target_iter=[0,1,2])
+  ```
+
 ## API预检白名单
 
-精度预检工具可以对指定API进行预检操作，只需要修改att\debug\accuracy_tools\api_accuracy_checker\hook_module目录下的support_wrap_ops.yaml文件。
+精度预检工具可以对指定API进行预检操作，可以使用如下方式：
 
-support_wrap_ops.yaml文件当前记录所有PyTorch API名称，可以直接编辑该文件，删除不需要的API，保留需要预检的API。
+- 方式一：
+
+  修改att/debug/accuracy_tools/api_accuracy_checker目录下config.yaml文件的white_list参数，配置需要预检的API名称。
+
+- 方式二：
+
+  在dump时的训练脚本中直接添加白名单参数，只dump指定的API数据，示例代码如下：
+
+  ```python
+  from api_accuracy_checker.dump import msCheckerConfig
+  msCheckerConfig.update_config(white_list=[conv1d, conv2d])
+  ```
+
+说明：
+
+- 配置的API名称须存在于att\debug\accuracy_tools\api_accuracy_checker\hook_module目录下的support_wrap_ops.yaml文件下。
+- 方式一时建议先完成全量API dump操作后，再配置config.yaml文件指定需要预检的API。
 
 ## API预检指标
 
