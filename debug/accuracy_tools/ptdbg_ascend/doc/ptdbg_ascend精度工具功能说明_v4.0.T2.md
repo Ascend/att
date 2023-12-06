@@ -1228,7 +1228,7 @@ class ModuleOP(nn.Module):
         return r1
     
 if __name__ == "__main__":
-    module = ModeleOP
+    module = ModuleOP
     
     # 注册工具
     set_dump_path("./dump_data/npu")
