@@ -159,6 +159,7 @@ def set_dump_path(fpath=None, dump_tag='ptdbg_dump'):
 def get_tensor_rank(in_feat, out_feat):
     if dist.is_initialized():
         return dist.get_rank()
+        
     def get_tensor_rank_single(x):
         if isinstance(x, (list, tuple)):
             if len(x) > 0:
