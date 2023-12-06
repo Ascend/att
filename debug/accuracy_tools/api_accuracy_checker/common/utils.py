@@ -518,7 +518,10 @@ def get_process_rank(model):
 
 def get_json_contents(file_path):
     ops = get_file_content_bytes(file_path)
-    return json.loads(ops)
+    json_obj = json.loads(ops)
+    if not isinstance(json_obj, dict):
+        raise ValueError('Json file %s, content is not a dictionary!' % file_path)
+    return json_obj
 
 
 def get_file_content_bytes(file):
