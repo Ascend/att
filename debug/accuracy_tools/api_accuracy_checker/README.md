@@ -120,8 +120,6 @@ msCheckerConfig.update_config(dump_path="./", real_data=False, target_iter=[1], 
 
 **函数示例**
 
-seed_all函数的随机数种子，取默认值即可，无须配置；第二个参数默认关闭，不开启确定性计算时也无须配置。
-
 - 示例1：配置dump路径以及开启真实数据模式
 
   ```python
