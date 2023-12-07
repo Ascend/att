@@ -1376,19 +1376,18 @@ compare_distributed('./npu_dump/ptdbg_dump_v2.0', './gpu_dump/ptdbg_dump_v2.0', 
 **函数原型**
 
 ```python
-compare(input_param, output_path, stack_mode=False, auto_analyze=True, fuzzy_match=False, summary_compare=False)
+compare(input_param, output_path, stack_mode=False, auto_analyze=True, fuzzy_match=False)
 ```
 
 **参数说明**
 
-| 参数名          | 说明                                                         | 是否必选 |
-| --------------- | ------------------------------------------------------------ | -------- |
-| input_param     | 配置dump数据文件及目录。配置参数包括：<br/>- "npu_pkl_path"：指定NPU dump目录下的.pkl文件。参数示例："npu_pkl_path": "./npu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump.pkl"。必选。<br/>- "bench_pkl_path"：指定CPU、GPU或NPU dump目录下的.pkl文件。参数示例："bench_pkl_path": "./gpu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump.pkl"。必选。<br/>- "npu_dump_data_dir"："指定NPU dump目录下的dump数据目录。参数示例："npu_dump_data_dir": "./npu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump"。必选。<br/>- "bench_dump_data_dir"："指定CPU、GPU或NPU dump目录下的dump数据目录。参数示例："npu_dump_data_dir": "./gpu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump"。必选。<br/>- "is_print_compare_log"：配置是否开启日志打屏。可取值True或False。可选。 | 是       |
-| output_path     | 配置比对结果csv文件存盘目录。参数示例：'./output'。文件名称基于时间戳自动生成，格式为：`compare_result_{timestamp}.csv`。 | 是       |
-| stack_mode      | 配置stack_mode的开关。仅当dump数据时配置set_dump_switch的mode="api_stack"时需要开启。参数示例：stack_mode=True，默认为False。 | 否       |
-| auto_analyze    | 自动精度分析，开启后工具自动针对比对结果进行分析，识别到第一个精度不达标节点（在比对结果文件中的“Accuracy Reached or Not”列显示为No），并给出问题可能产生的原因（打屏展示并生成advisor_{timestamp}.txt文件）。可取值True或False，参数示例：auto_analyze=False，默认为True。 | 否       |
-| fuzzy_match     | 模糊匹配。开启后，对于网络中同一层级且命名仅调用次数不同的API，可匹配并进行比对。可取值True或False，参数示例：fuzzy_match=True，默认为False。 | 否       |
-| summary_compare | 比对dump.pkl文件中的统计值，开启后的比对结果文件生成Max diff、Min diff和Mean diff，表示NPU dump数据中API的输入或输出与标杆数据输入或输出的最大最小平均值的差。可以通过该值判断API是否存在精度问题：当某个API的输入和输出的Max diff、Min diff和Mean diff均为0或无限趋于0，那么可以判断该API无精度问题，反之则可能存在精度问题。可取值True或False，参数示例：summary_compare=True，默认为False。 | 否       |
+| 参数名       | 说明                                                         | 是否必选 |
+| ------------ | ------------------------------------------------------------ | -------- |
+| input_param  | 配置dump数据文件及目录。配置参数包括：<br/>- "npu_pkl_path"：指定NPU dump目录下的.pkl文件。参数示例："npu_pkl_path": "./npu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump.pkl"。必选。<br/>- "bench_pkl_path"：指定CPU、GPU或NPU dump目录下的.pkl文件。参数示例："bench_pkl_path": "./gpu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump.pkl"。必选。<br/>- "npu_dump_data_dir"："指定NPU dump目录下的dump数据目录。参数示例："npu_dump_data_dir": "./npu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump"。必选。<br/>- "bench_dump_data_dir"："指定CPU、GPU或NPU dump目录下的dump数据目录。参数示例："npu_dump_data_dir": "./gpu_dump/ptdbg_dump_v2.0/rank0/api_stack_dump"。必选。<br/>- "is_print_compare_log"：配置是否开启日志打屏。可取值True或False。可选。 | 是       |
+| output_path  | 配置比对结果csv文件存盘目录。参数示例：'./output'。文件名称基于时间戳自动生成，格式为：`compare_result_{timestamp}.csv`。 | 是       |
+| stack_mode   | 配置stack_mode的开关。仅当dump数据时配置set_dump_switch的mode="api_stack"时需要开启。参数示例：stack_mode=True，默认为False。 | 否       |
+| auto_analyze | 自动精度分析，开启后工具自动针对比对结果进行分析，识别到第一个精度不达标节点（在比对结果文件中的“Accuracy Reached or Not”列显示为No），并给出问题可能产生的原因（打屏展示并生成advisor_{timestamp}.txt文件）。可取值True或False，参数示例：auto_analyze=False，默认为True。 | 否       |
+| fuzzy_match  | 模糊匹配。开启后，对于网络中同一层级且命名仅调用次数不同的API，可匹配并进行比对。可取值True或False，参数示例：fuzzy_match=True，默认为False。 | 否       |
 
 **函数示例**
 
@@ -1405,6 +1404,10 @@ dump_result_param={
 }
 compare(dump_result_param, "./output", stack_mode=True)
 ```
+
+### pkl文件比对
+
+若使用**compare**或**compare_distributed**函数创建的比对脚本中，input_param参数只配置了npu_pkl_path和bench_pkl_path，那么可以进行pkl文件的比对，此时比对dump.pkl文件中的统计值，开启后的比对结果文件生成Max diff、Min diff和Mean diff，表示NPU dump数据中API的输入或输出与标杆数据输入或输出的最大最小平均值的差。可以通过该值判断API是否存在精度问题：当某个API的输入和输出的Max diff、Min diff和Mean diff均为0或无限趋于0，那么可以判断该API无精度问题，反之则可能存在精度问题。
 
 ### parse
 
