@@ -358,9 +358,24 @@ def check_compare_param(input_parma, output_path, stack_mode=False, summary_comp
         check_pkl_file(input_parma, npu_pkl, bench_pkl, stack_mode)
 
 
-def check_configuration_param(stack_mode=False, auto_analyze=True, fuzzy_match=False, summary_compare=False):
-    if not (isinstance(stack_mode, bool) and isinstance(auto_analyze, bool) and isinstance(fuzzy_match, bool) and
-            isinstance(summary_compare, bool)):
+def is_summary_compare(input_param):
+    npu_pkl_path = input_param.get("npu_pkl_path", None)
+    bench_pkl_path = input_param.get("bench_pkl_path", None)
+    npu_dump_data_dir = input_param.get("npu_dump_data_dir", None)
+    bench_dump_data_dir = input_param.get("bench_dump_data_dir", None)
+    if not npu_pkl_path or not bench_pkl_path:
+        print_error_log(f"Please check the pkl path is valid.")
+        raise CompareException(CompareException.INVALID_PATH_ERROR)
+    if not (npu_dump_data_dir and bench_dump_data_dir):
+        return True
+    if npu_dump_data_dir and bench_dump_data_dir:
+        return False
+    print_error_log(f"Please check the dump data dir is valid.")
+    raise CompareException(CompareException.INVALID_PATH_ERROR)
+
+
+def check_configuration_param(stack_mode=False, auto_analyze=True, fuzzy_match=False):
+    if not (isinstance(stack_mode, bool) and isinstance(auto_analyze, bool) and isinstance(fuzzy_match, bool)):
         print_error_log("Invalid input parameters which should be only bool type.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
 

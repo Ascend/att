@@ -28,7 +28,8 @@ from .match import graph_mapping
 from ..advisor.advisor import Advisor
 from ..common.utils import check_compare_param, add_time_as_suffix, \
     print_warn_log, print_error_log, CompareException, Const,\
-    CompareConst, format_value, check_file_not_exists, check_configuration_param
+    CompareConst, format_value, check_file_not_exists, check_configuration_param, \
+    is_summary_compare
 from ..common.file_check_util import FileChecker, FileCheckConst, change_mode, FileOpen
 
 
@@ -559,10 +560,11 @@ def handle_inf_nan(n_value, b_value):
 
 
 def compare(input_parma, output_path, stack_mode=False, auto_analyze=True,
-            fuzzy_match=False, summary_compare=False):
+            fuzzy_match=False):
     try:
+        summary_compare = is_summary_compare(input_parma)
         check_compare_param(input_parma, output_path, stack_mode, summary_compare)
-        check_configuration_param(stack_mode, auto_analyze, fuzzy_match, summary_compare)
+        check_configuration_param(stack_mode, auto_analyze, fuzzy_match)
     except CompareException as error:
         print_error_log('Compare failed. Please check the arguments and do it again!')
         sys.exit(error.code)
@@ -647,7 +649,7 @@ def compare_process(file_handles, stack_mode, fuzzy_match, summary_compare=False
         un_match_data = npu_ops_queue[0: n_match_point]
         for npu_data in un_match_data:
             get_un_match_accuracy(result, npu_data)
-        get_accuracy(result, n_match_data, b_match_data)
+        get_accuracy(result, n_match_data, b_match_data, summary_compare)
         del npu_ops_queue[0: n_match_point + 1]
         del bench_ops_queue[0: b_match_point + 1]
     if npu_ops_queue:
