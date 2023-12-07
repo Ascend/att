@@ -32,9 +32,8 @@ from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 ut_error_data_dir = 'ut_error_data'
 
 tqdm_params = {
-    'smoothing': 0.1,  # 平滑进度条的预计剩余时间
+    'smoothing': 0.5,  # 平滑进度条的预计剩余时间，取值范围0到1
     'desc': 'Processing',  # 进度条前的描述文字
-    'total': len(forward_content),  # 设置预期的迭代总次数
     'leave': True,  # 迭代完成后保留进度条的显示
     'ncols': 75,  # 进度条的固定宽度
     'mininterval': 0.1,  # 更新进度条的最小间隔秒数
@@ -44,8 +43,9 @@ tqdm_params = {
     'unit': 'it',  # 迭代单位
     'unit_scale': True,  # 自动根据单位缩放
     'dynamic_ncols': True,  # 动态调整进度条宽度以适应控制台
-    'bar_format': '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'  # 自定义进度条输出格式
+    'bar_format': '{l_bar}{bar}| {n}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'  # 自定义进度条输出格式
 }
+
 
 def exec_api(api_type, api_name, args, kwargs):
     if api_type == "Functional":
