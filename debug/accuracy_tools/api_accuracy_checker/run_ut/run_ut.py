@@ -4,6 +4,7 @@ import csv
 import re
 import sys
 import time
+from collections import namedtuple
 try:
     import torch_npu
 except ImportError:
@@ -15,7 +16,6 @@ else:
 import yaml
 import torch
 from tqdm import tqdm
-from collections import namedtuple
 from api_accuracy_checker.run_ut.data_generate import gen_api_params, gen_args
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
     print_error_log, check_file_or_directory_path, initialize_save_path, Const
