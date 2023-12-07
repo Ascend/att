@@ -31,6 +31,21 @@ from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 
 ut_error_data_dir = 'ut_error_data'
 
+tqdm_params = {
+    'smoothing': 0.1,  # 平滑进度条的预计剩余时间
+    'desc': 'Processing',  # 进度条前的描述文字
+    'total': len(forward_content),  # 设置预期的迭代总次数
+    'leave': True,  # 迭代完成后保留进度条的显示
+    'ncols': 75,  # 进度条的固定宽度
+    'mininterval': 0.1,  # 更新进度条的最小间隔秒数
+    'maxinterval': 1.0,  # 更新进度条的最大间隔秒数
+    'miniters': 1,  # 更新进度条之间的最小迭代次数
+    'ascii': None,  # 根据环境自动使用ASCII或Unicode字符
+    'unit': 'it',  # 迭代单位
+    'unit_scale': True,  # 自动根据单位缩放
+    'dynamic_ncols': True,  # 动态调整进度条宽度以适应控制台
+    'bar_format': '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'  # 自定义进度条输出格式
+}
 
 def exec_api(api_type, api_name, args, kwargs):
     if api_type == "Functional":
@@ -110,7 +125,7 @@ def run_ut(forward_file, backward_file, out_path, save_error_data):
     backward_content = get_json_contents(backward_file)
     api_setting_dict = get_json_contents("torch_ut_setting.json")
     compare = Comparator(out_path)
-    for api_full_name, api_info_dict in tqdm(forward_content.items()):
+    for api_full_name, api_info_dict in tqdm(forward_content.items(), **tqdm_params):
         try:
             if msCheckerConfig.white_list:
                 [_, api_name, _] = api_full_name.split("*")
