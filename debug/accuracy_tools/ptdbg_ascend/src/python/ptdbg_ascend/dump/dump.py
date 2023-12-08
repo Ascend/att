@@ -261,7 +261,10 @@ def dump_acc_cmp(name, in_feat, out_feat, dump_step, module):
                 if DumpUtil.dump_switch_mode not in [Const.STACK, Const.ACL] and not DumpUtil.summary_only else ""
             if os.path.exists(dump_file) and not os.path.isdir(dump_file):
                 check_writable(dump_file)
-                os.remove(dump_file)
+                try:
+                    os.remove(dump_file)
+                except FileNotFoundError as e:
+                    print_warn_log("The file does not exist, error: {}".format(e))
 
         name_prefix = name
         name_template = f"{name_prefix}" + "_{}"
