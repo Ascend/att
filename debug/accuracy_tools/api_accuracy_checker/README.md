@@ -172,13 +172,11 @@ API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件�
 
 # 溢出解析工具
 
-针对训练过程中的溢出检测场景，对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，前向过程溢出的API可通过该工具对`forward_info_{pid}.json`进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
+针对训练过程中的溢出检测场景（参见[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)中的"溢出检测场景"进行溢出检测dump），对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，前向过程溢出的API可通过该工具对`forward_info_{pid}.json`进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
 
 工具支持PyTorch版本：1.8.1/1.11.0/2.0/2.1。
 
-参见[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)中的"溢出检测场景"进行溢出检测dump。
-
-若dump结果生成`forward_info_{pid}.json`和`backward_info_{pid}.json`文件，则使用本工具进行解析。操作步骤如下：
+若溢出检测场景dump结果生成`forward_info_{pid}.json`和`backward_info_{pid}.json`文件，则使用本工具进行解析。操作步骤如下：
 
 1. 安装预检工具
 
@@ -217,12 +215,12 @@ API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件�
 
 1. run ut过程中出现报错：ERROR:Got unsupported ScalarType BFloat16
 
-   答：请使用最新版本的工具
+   答：请使用最新版本的工具。
 
 2. Dropout算子，CPU和NPU的随机应该不一样，为什么结果比对是一致的？
 
-   答：这个结果是正常的，工具对该算子有特殊处理，只判定位置为0的位置比例大约和设定p值相当
+   答：这个结果是正常的，工具对该算子有特殊处理，只判定位置为0的位置比例大约和设定p值相当。
 
 3. 为什么浮点型数据bench和npu的dtype不一致？
 
-   答：对于fp16的数据，cpu会上升一个精度fp32去计算，这是和算子那边对齐的精度结论，cpu用更高精度去计算会更接近真实值
+   答：对于fp16的数据，cpu会上升一个精度fp32去计算，这是和算子那边对齐的精度结论，cpu用更高精度去计算会更接近真实值。
