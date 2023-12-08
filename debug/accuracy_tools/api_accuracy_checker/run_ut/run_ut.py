@@ -296,7 +296,7 @@ def _run_ut_parser(parser):
     parser.add_argument("-backward", "--backward_input_file", dest="backward_input_file", default="", type=str,
                         help="<Required> The api param tool backward result file: generate from api param tool, "
                              "a json file.",
-                        required=True)
+                        required=False)
     parser.add_argument("-o", "--out_path", dest="out_path", default="", type=str,
                         help="<optional> The ut task result out path.",
                         required=False)
@@ -328,17 +328,19 @@ def _run_ut():
         print_error_log(f"Set device id failed. device id is: {args.device_id}")
         raise NotImplementedError from error
     check_link(args.forward_input_file)
-    check_link(args.backward_input_file)
     forward_file = os.path.realpath(args.forward_input_file)
-    backward_file = os.path.realpath(args.backward_input_file)
     check_file_suffix(forward_file, FileCheckConst.JSON_SUFFIX)
-    check_file_suffix(backward_file, FileCheckConst.JSON_SUFFIX)
     out_path = os.path.realpath(args.out_path) if args.out_path else "./"
     out_path_checker = FileChecker(out_path, FileCheckConst.DIR, ability=FileCheckConst.WRITE_ABLE)
     out_path = out_path_checker.common_check()
     save_error_data = args.save_error_data
     forward_content = get_json_contents(forward_file)
-    backward_content = get_json_contents(backward_file)
+    backward_content = {}
+    if args.backward_input_file:
+        check_link(args.backward_input_file)
+        backward_file = os.path.realpath(args.backward_input_file)
+        check_file_suffix(backward_file, FileCheckConst.JSON_SUFFIX)
+        backward_content = get_json_contents(backward_file)
     result_csv_path = os.path.join(out_path, RESULT_FILE_NAME)
     details_csv_path = os.path.join(out_path, DETAILS_FILE_NAME)
     test_result_cnt = None
