@@ -85,6 +85,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    | -o或--out_path                   | 指指定run_ut执行结果存盘路径，默认“./”（相对于run_ut的路径）。 | 否       |
    | -j或--jit_compile                | 开启jit编译。                                                | 否       |
    | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。           | 否       |
+   | -csv_path或--result_csv_path            | 指定本次运行中断时生成的accuracy_checking_result_{timestamp}.csv文件路径，执行run_ut中断时，若想从中断处继续执行，配置此参数即可。           | 否       |
 
    run_ut执行结果包括`accuracy_checking_result_{timestamp}.csv`和`accuracy_checking_details_{timestamp}.csv`两个文件。`accuracy_checking_result_{timestamp}.csv`是API粒度的，标明每个API是否通过测试。建议用户先查看`accuracy_checking_result_{timestamp}.csv`文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在`accuracy_checking_details_{timestamp}.csv`中查询其各个输出的达标情况以及比较指标。API达标情况介绍请参考“**API预检指标**”。
 
