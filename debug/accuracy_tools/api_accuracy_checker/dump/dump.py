@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-# Copyright (C) 2019-2020. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2023-2023. Huawei Technologies Co., Ltd. All rights reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -49,7 +49,7 @@ class DumpUtil(object):
         if DumpUtil.call_num in msCheckerConfig.target_iter:
             set_dump_switch("ON")
         elif DumpUtil.call_num > max(msCheckerConfig.target_iter):
-            raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.call_num))
+            raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.call_num - 1))
         else:
             set_dump_switch("OFF")
         DumpUtil.call_num += 1

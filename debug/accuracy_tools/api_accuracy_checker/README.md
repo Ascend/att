@@ -70,7 +70,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    若有需要，用户可以通过msCheckerConfig.update_config来配置dump路径以及开启真实数据模式、指定dump某个step或配置API dump白名单，详细请参见“**msCheckerConfig.update_config**”。
 
-3. 将API信息输入给run_ut模块运行精度检测并比对，运行如下命令：
+3. 将API信息输入给run_ut模块运行精度检测并比对，运行如下命令： 
 
    ```bash
    cd $ATT_HOME/debug/accuracy_tools/api_accuracy_checker/run_ut
@@ -261,3 +261,4 @@ API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件�
    | `__sub__`       | -                |
    | `__truediv__`   | 同`__div__`      |
    | `__xor__`       | ^                |
+

@@ -33,7 +33,7 @@ else:
     is_gpu = False
 
 from .utils import DumpUtil, check_if_in_api_list, make_dump_data_dir, get_tensor_rank, create_dirs_if_not_exist
-from ..common.utils import print_warn_log, Const, print_info_log, modify_dump_path, check_inplace_op
+from ..common.utils import print_warn_log, Const, print_info_log, modify_dump_path, check_inplace_op, CompareConst
 from ..dump.utils import check_writable
 from ..common.file_check_util import FileOpen, change_mode, FileCheckConst, check_path_pattern_vaild, check_path_length
 
@@ -71,11 +71,11 @@ def get_not_float_tensor_info(data):
         tensor_max = torch._C._VariableFunctionsClass.max(data).cpu().detach().float().numpy().tolist()
         tensor_min = torch._C._VariableFunctionsClass.min(data).cpu().detach().float().numpy().tolist()
         tensor_mean = torch._C._VariableFunctionsClass.mean(data.float()).cpu().detach().float().numpy().tolist()
-    return get_tensor_data_info(data, tensor_max, tensor_min, tensor_mean)
+    return get_tensor_data_info(data, tensor_max, tensor_min, tensor_mean, CompareConst.NAN)
 
 
 def get_scalar_data_info(data):
-    summary_data = [data, data, data]
+    summary_data = [data, data, data, data]
     return DataInfo(data, summary_data, str(type(data)), str([]))
 
 
@@ -83,12 +83,13 @@ def get_float_tensor_info(data):
     tensor_max = torch._C._VariableFunctionsClass.max(data).cpu().detach().float().numpy().tolist()
     tensor_min = torch._C._VariableFunctionsClass.min(data).cpu().detach().float().numpy().tolist()
     tensor_mean = torch._C._VariableFunctionsClass.mean(data).cpu().detach().float().numpy().tolist()
-    return get_tensor_data_info(data, tensor_max, tensor_min, tensor_mean)
+    tensor_norm = torch._C._VariableFunctionsClass.norm(data).cpu().detach().float().numpy().tolist()
+    return get_tensor_data_info(data, tensor_max, tensor_min, tensor_mean, tensor_norm)
 
 
-def get_tensor_data_info(data, tensor_max, tensor_min, tensor_mean):
+def get_tensor_data_info(data, *tensor_args):
     summary_data = []
-    summary_data.extend([tensor_max, tensor_min, tensor_mean])
+    summary_data.extend([*tensor_args])
     if not DumpUtil.summary_only:
         saved_tensor = data.contiguous().cpu().detach()
         if data.dtype == torch.bfloat16:

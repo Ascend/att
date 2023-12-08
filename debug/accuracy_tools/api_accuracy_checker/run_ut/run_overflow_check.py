@@ -4,15 +4,11 @@ import sys
 import torch_npu
 import torch
 from tqdm import tqdm
-from api_accuracy_checker.run_ut.run_ut import exec_api, generate_device_params, run_backward, init_environment, \
-    get_api_info
+from api_accuracy_checker.run_ut.run_ut import exec_api, generate_device_params, run_backward, get_api_info
 from api_accuracy_checker.common.utils import print_info_log, print_warn_log, get_json_contents, api_info_preprocess, \
     print_error_log
 
 from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, check_file_suffix, check_link
-
-
-init_environment()
 
 
 def check_tensor_overflow(x):
