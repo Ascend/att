@@ -32,7 +32,7 @@ from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileOpen
 ut_error_data_dir = 'ut_error_data'
 
 tqdm_params = {
-    'smoothing': 0.5,  # 平滑进度条的预计剩余时间，取值范围0到1
+    'smoothing': 0,  # 平滑进度条的预计剩余时间，取值范围0到1
     'desc': 'Processing',  # 进度条前的描述文字
     'leave': True,  # 迭代完成后保留进度条的显示
     'ncols': 75,  # 进度条的固定宽度
