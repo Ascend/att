@@ -60,7 +60,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
       上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
 
-   dump信息默认会存盘到“./”路径下（相对于启动训练的路径），包括：
+   dump信息默认会存盘到“./step1”路径下（相对于启动训练的路径），包括：
 
    - forward_info_{pid}.json：前向API信息文件。
    - backward_info_{pid}.json：反向API信息文件。
@@ -93,7 +93,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    ```bash
    python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -save_error_data
    ```
-   数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path
+   数据默认会存盘到'./ut_error_data'路径下（相对于启动run_ut的路径），有需要的话，用户可以通过msCheckerConfig.update_config来配置保存路径，参数为error_data_path。
 
 ## msCheckerConfig.update_config
 
