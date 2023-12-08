@@ -55,15 +55,15 @@ class TestDataGenerateMethods(unittest.TestCase):
         self.assertEqual(kwargs_params, {'inplace': False})
         
     def test_gen_kwargs_device(self):
-        k_dict = {"kwargs": {"device": "cpu"}}
+        k_dict = {"kwargs": {"device": {"type": "torch.device", "value": "cpu"}}}
         kwargs_params = gen_kwargs(k_dict, None)
-        self.assertEqual(str(kwargs_params), "{'device': 'cpu'}")
-
+        self.assertEqual(str(kwargs_params), "{'device': device(type='cpu')}")
+    
     def test_gen_kwargs_1(self):
-        k_dict = {"device": "cpu"}
+        k_dict = {"device": {"type": "torch.device", "value": "cpu"}}
         for key, value in k_dict.items():
             gen_torch_kwargs(k_dict, key, value)
-        self.assertEqual(str(k_dict), "{'device': 'cpu'}")
+        self.assertEqual(str(k_dict), "{'device': device(type='cpu')}")
         
     def test_gen_kwargs_2(self):
         k_dict = {"inplace": {"type": "bool", "value": "False"}}
