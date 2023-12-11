@@ -8,8 +8,8 @@ import torch.nn.functional
 from api_accuracy_checker.compare.compare import Comparator
 
 current_time = time.strftime("%Y%m%d%H%M%S")
-RESULT_FILE_NAME = ""
-DETAILS_FILE_NAME = ""
+RESULT_FILE_NAME = "accuracy_checking_result_" + current_time + ".csv"
+DETAILS_FILE_NAME = "accuracy_checking_details_" + current_time + '.csv'
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -37,16 +37,16 @@ class TestCompare(unittest.TestCase):
         bench_out, npu_out = dummy_input, dummy_input
         test_final_success, detailed_result_total = self.compare._compare_core_wrapper(bench_out, npu_out)
         self.assertTrue(test_final_success)
-        self.assertEqual(detailed_result_total, [['torch.float32', 'torch.float32', (100, 100), 1.0, 1.0, 'N/A', 'N/A',
+        self.assertEqual(detailed_result_total, [['torch.float32', 'torch.float32', (100, 100), 1.0, 0.0, 'N/A', 'N/A',
                                                   'N/A', 'N/A', 'pass', '\n']])
 
         bench_out, npu_out = [dummy_input, dummy_input], [dummy_input, dummy_input]
         test_final_success, detailed_result_total = self.compare._compare_core_wrapper(bench_out, npu_out)
         self.assertTrue(test_final_success)
-        self.assertEqual(detailed_result_total, [['torch.float32', 'torch.float32', (100, 100), 1.0, 1.0, 'N/A', 'N/A',
+        self.assertEqual(detailed_result_total, [['torch.float32', 'torch.float32', (100, 100), 1.0, 0.0, 'N/A', 'N/A',
                                                   'N/A', 'N/A', 'pass', '\n'], ['torch.float32', 'torch.float32',
                                                                                 (100, 100), 1.0, 0.0, 'N/A', 'N/A',
-                                                                                'N/A', 'N/A', 'PASS', '\n']])
+                                                                                'N/A', 'N/A', 'pass', '\n']])
 
     def test_compare_output(self):
         bench_out, npu_out = torch.randn(100, 100), torch.randn(100, 100)
