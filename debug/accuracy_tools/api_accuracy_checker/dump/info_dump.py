@@ -18,8 +18,9 @@ def write_api_info_json(api_info):
     from api_accuracy_checker.dump.dump import DumpUtil
     dump_path = msCheckerConfig.dump_path
     dump_path = os.path.join(msCheckerConfig.dump_path, "step" + str(DumpUtil.call_num))
-    check_path_before_create(dump_path)
-    create_directory(dump_path)
+    if not os.path.exists(dump_path):    
+        check_path_before_create(dump_path)
+        create_directory(dump_path)
     rank = api_info.rank
     if isinstance(api_info, ForwardAPIInfo):
         file_path = os.path.join(dump_path, f'forward_info_{rank}.json')

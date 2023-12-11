@@ -32,6 +32,18 @@ def set_dump_switch(switch):
     DumpUtil.set_dump_switch(switch)
 
 
+def start():
+    DumpUtil.incr_iter_num_maybe_exit()
+
+
+def stop():
+    DumpUtil.set_dump_switch("OFF")
+
+
+def step():
+    DumpUtil.call_num += 1
+
+
 class DumpUtil(object):
     dump_switch = None
     call_num = 0
@@ -52,11 +64,6 @@ class DumpUtil(object):
             raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.call_num))
         else:
             set_dump_switch("OFF")
-        DumpUtil.call_num += 1
-    
-    @staticmethod
-    def step():
-        DumpUtil.call_num += 1
 
 
 class DumpConst:

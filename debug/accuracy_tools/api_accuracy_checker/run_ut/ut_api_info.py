@@ -15,8 +15,9 @@ class UtAPIInfo(BaseAPIInfo):
         single_arg = {}
         api_args = self.api_name + '.' + str(self.args_num)
         ut_error_data_path = os.path.join(self.save_path, self.ut_error_data_dir)
-        check_path_before_create(ut_error_data_path)
-        create_directory(ut_error_data_path)
+        if not os.path.exists(ut_error_data_path): 
+            check_path_before_create(ut_error_data_path)
+            create_directory(ut_error_data_path)
         file_path = os.path.join(ut_error_data_path, f'{api_args}.pt')
         self.args_num += 1
         pt_path = write_pt(file_path, arg.contiguous().cpu().detach())
