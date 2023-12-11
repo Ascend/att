@@ -14,5 +14,5 @@ def iter_tracer(func):
     return func_wrapper
 
 if msCheckerConfig.enable_dataloader:
-    DumpUtil.iter_num -= 1
+    DumpUtil.call_num -= 1
     _BaseDataLoaderIter.__next__ = iter_tracer(torch.utils.data.dataloader._BaseDataLoaderIter.__next__)
