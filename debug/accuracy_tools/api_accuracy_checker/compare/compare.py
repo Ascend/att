@@ -73,7 +73,7 @@ class Comparator:
             "Npu Name", "Bench Dtype", "NPU Dtype", "Shape",
             "Cosine Similarity",
             "Max Abs Error",
-            "Relative Error (hundredth)",
+            "Relative Error (dual hundredth)",
             "Relative Error (dual thousandth)",
             "Relative Error (dual ten thousandth)",
             "Error Rate",
