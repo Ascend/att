@@ -53,14 +53,14 @@ class TestCompare(unittest.TestCase):
         bench_grad, npu_grad = [torch.randn(100, 100)], [torch.randn(100, 100)]
         api_name = 'Functional*conv2d*0'
         is_fwd_success, is_bwd_success = self.compare.compare_output(api_name, bench_out, npu_out, bench_grad, npu_grad)
-        self.assertEqual(is_fwd_success, False)
-        self.assertEqual(is_bwd_success, False)
+        self.assertFalse(is_fwd_success)
+        self.assertFalse(is_bwd_success)
 
         dummy_input = torch.randn(100, 100)
         bench_out, npu_out = dummy_input, dummy_input
         is_fwd_success, is_bwd_success = self.compare.compare_output(api_name, bench_out, npu_out)
-        self.assertEqual(is_fwd_success, True)
-        self.assertEqual(is_bwd_success, True)
+        self.assertTrue(is_fwd_success)
+        self.assertTrue(is_bwd_success)
 
     def test_record_results(self):
         args = ('Functional*conv2d*0', False, 'N/A', [['torch.float64', 'torch.float32', (32, 64, 112, 112), 1.0,
