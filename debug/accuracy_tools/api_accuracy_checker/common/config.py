@@ -55,13 +55,12 @@ class Config:
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
-    def update_config(self, dump_path=None, real_data=False, target_iter=None, white_list=None, enable_dataloader=None):
+    def update_config(self, dump_path=None, real_data=False, target_iter=None, white_list=None):
         args = {
             "dump_path": dump_path if dump_path else self.config.get("dump_path", './'),
             "real_data": real_data,
             "target_iter": target_iter if target_iter else self.config.get("target_iter", [1]),
-            "white_list": white_list if white_list else self.config.get("white_list", []),
-            "enable_dataloader": enable_dataloader if enable_dataloader else self.config.get("enable_dataloader", True)
+            "white_list": white_list if white_list else self.config.get("white_list", [])
         }
         for key, value in args.items():
             if key in self.config:
