@@ -53,6 +53,10 @@ class DumpUtil(object):
         else:
             set_dump_switch("OFF")
         DumpUtil.call_num += 1
+    
+    @staticmethod
+    def step():
+        DumpUtil.call_num += 1
 
 
 class DumpConst:

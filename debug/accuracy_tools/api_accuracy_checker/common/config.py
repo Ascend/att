@@ -23,7 +23,8 @@ class Config:
             'error_data_path': str,
             'target_iter': list,
             'precision': int,
-            'white_list': list
+            'white_list': list,
+            'enable_dataloader': bool
         }
         if not isinstance(value, validators.get(key)):
             raise ValueError(f"{key} must be {validators[key].__name__} type")
@@ -54,14 +55,13 @@ class Config:
     def __str__(self):
         return '\n'.join(f"{key}={value}" for key, value in self.config.items())
 
-    def update_config(self, dump_path=None, real_data=False, target_iter=None, white_list=None):
-        if target_iter is None:
-            target_iter = self.config.get('target_iter',[1])
+    def update_config(self, dump_path=None, real_data=False, target_iter=None, white_list=None, enable_dataloader=None):
         args = {
             "dump_path": dump_path if dump_path else self.config.get("dump_path", './'),
             "real_data": real_data,
             "target_iter": target_iter if target_iter else self.config.get("target_iter", [1]),
-            "white_list": white_list if white_list else self.config.get("white_list", [])
+            "white_list": white_list if white_list else self.config.get("white_list", []),
+            "enable_dataloader": enable_dataloader if enable_dataloader else self.config.get("enable_dataloader", True)
         }
         for key, value in args.items():
             if key in self.config:
