@@ -26,7 +26,7 @@ class TestRunUtMethods(unittest.TestCase):
         self.assertEqual(out.shape, torch.Size([2, 2560, 24, 24]))
 
     def test_generate_device_params(self):
-        mock_tensor = torch.rand([2, 2560, 24, 24], dtype=torch.float16, requires_grad=True)
+        mock_tensor = torch.rand([2, 2560, 24, 24], dtype=torch.float32, requires_grad=True)
         
         with patch.multiple('torch.Tensor', 
                            to=DEFAULT, 
@@ -44,7 +44,7 @@ class TestRunUtMethods(unittest.TestCase):
             
             device_args, device_kwargs = generate_device_params([mock_tensor], {'inplace': False}, True)
             self.assertEqual(len(device_args), 1)
-            self.assertEqual(device_args[0].dtype, torch.float16)
+            self.assertEqual(device_args[0].dtype, torch.float32)
             self.assertEqual(device_args[0].requires_grad, True)
             self.assertEqual(device_args[0].shape, torch.Size([2, 2560, 24, 24]))
             self.assertEqual(device_kwargs, {'inplace': False})
