@@ -24,7 +24,7 @@ class TestCompare(unittest.TestCase):
 
     def tearDown(self) -> None:
         if os.path.exists(self.output_path):
-           shutil.rmtree(self.output_path)
+            shutil.rmtree(self.output_path)
 
     def test_compare_dropout(self):
         dummmy_input = torch.randn(100, 100)
