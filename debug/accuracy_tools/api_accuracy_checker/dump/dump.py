@@ -33,7 +33,8 @@ def set_dump_switch(switch):
 
 
 def start():
-    DumpUtil.incr_iter_num_maybe_exit()
+    if not DumpUtil.get_dump_switch() and not msCheckerConfig.enable_dataloader:
+        DumpUtil.incr_iter_num_maybe_exit()
 
 
 def stop():
@@ -41,7 +42,10 @@ def stop():
 
 
 def step():
-    DumpUtil.call_num += 1
+    if not msCheckerConfig.enable_dataloader:
+        DumpUtil.call_num += 1
+    else:
+        print_error_log("The step() is not supported in dataloader mode.")
 
 
 class DumpUtil(object):
@@ -61,7 +65,7 @@ class DumpUtil(object):
         if DumpUtil.call_num in msCheckerConfig.target_iter:
             set_dump_switch("ON")
         elif DumpUtil.call_num > max(msCheckerConfig.target_iter):
-            raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.call_num))
+            raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.call_num - 1))
         else:
             set_dump_switch("OFF")
 
