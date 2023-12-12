@@ -96,7 +96,7 @@ class PrecisionDebugger:
         dump_path_str = generate_dump_path_str()
         set_dump_switch_print_info("OFF", DumpUtil.dump_switch_mode, dump_path_str)
         write_to_disk()
-        if check_is_npu() and DumpUtil.dump_switch_mode in [Const.ALL, Const.API_STACK, Const.LIST, Const.RANGE]:
+        if check_is_npu() and DumpUtil.dump_switch_mode in [Const.ALL, Const.API_STACK, Const.LIST, Const.RANGE, Const.API_LIST]:
             generate_compare_script(DumpUtil.dump_data_dir, get_pkl_file_path(), DumpUtil.dump_switch_mode)
 
     @classmethod

@@ -1270,6 +1270,8 @@ dump结果目录结构示例如下：
 |       └── rank7
 ```
 
+dump过程中，npy文件在对应算子或者模块被执行后就会落盘，而pkl文件则需要在正常执行PrecisionDebugger.stop()或set_dump_switch("OFF")后才会被落盘保存，异常的程序终止会保存终止前被执行算子的相关npy文件，但是不会生成pkl文件。
+
 其中ptdbg_dump_{version}为未设置set_dump_path的dump_tag参数时的默认命名；rank为设备上各卡的ID，每张卡上dump的数据会生成对应dump目录。
 
 当使用debugger方式dump数据时，配置了PrecisionDebugger模块的step=[]参数，dump结果目录则以step为父目录，例如配置step=[0,1,2]时，dump结果目录为：
