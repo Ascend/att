@@ -172,8 +172,8 @@ msCheckerConfig.update_config(dump_path="./", real_data=False, target_iter=[1], 
 | 字段                  | 含义                                                         |
 | --------------------- | ------------------------------------------------------------ |
 | API name              | API名称。                                                    |
-| Forward Test Success  | 前向API是否通过测试，TRUE为通过，FALSE为不通过，N/A表示该行非前向API。 |
-| Backward Test Success | 反向API是否通过测试，TRUE为通过，FALSE为不通过，N/A表示该行非反向API。 |
+| Forward Test Success  | 前向API是否通过测试，TRUE为通过，FALSE为不通过。             |
+| Backward Test Success | 反向API是否通过测试，TRUE为通过，FALSE为不通过，N/A表示该API没有反向。 |
 | Message               | 备注信息。                                                   |
 
 `accuracy_checking_details_{timestamp}.csv`

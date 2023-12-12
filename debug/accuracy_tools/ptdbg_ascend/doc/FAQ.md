@@ -60,7 +60,7 @@ echo $PYTHONPATH
 若配置了精度预检工具的环境变量，则执行如下命令取消该环境变量。
 
 ```bash
-unset $PYTHONPATH
+unset PYTHONPATH
 ```
 
 ### 2. 单机多卡场景dump目录下只生成一个rank目录或pkl文件格式损坏
