@@ -43,7 +43,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
       Exception: Model pretest: exit after iteration 1.
       ```
 
-   - 若报错信息不一致，可能是由于服务器的其他错误信息覆盖导致，可以尝试查找报错信息中的Exception。
+      若报错信息不一致，可能是由于服务器的其他错误信息覆盖导致，可以尝试查找报错信息中的Exception。
 
    - 若训练脚本中的代码不是通过torch.utils.data.dataloader来加载数据或在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，导致多卡训练dump结果只有一组json，那么需要在训练代码中添加打开工具开关的调用：
 
