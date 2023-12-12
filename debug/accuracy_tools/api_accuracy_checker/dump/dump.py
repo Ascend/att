@@ -44,8 +44,6 @@ def stop():
 def step():
     if not msCheckerConfig.enable_dataloader:
         DumpUtil.call_num += 1
-    else:
-        print_error_log("The step() is not supported in dataloader mode.")
 
 
 class DumpUtil(object):
