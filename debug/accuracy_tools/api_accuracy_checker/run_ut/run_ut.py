@@ -56,7 +56,7 @@ def deal_detach(arg, to_detach=True):
 
 
 def deal_dtype(arg, raise_dtype=None):
-    if not Const.RAISE_PRECISION.get(arg.dtype) or raise_dtype is None or raise_dtype == arg.dtype:
+    if raise_dtype is None or not Const.RAISE_PRECISION.get(arg.dtype) or raise_dtype == arg.dtype:
         return arg
     return arg.type(raise_dtype)
 
@@ -100,7 +100,11 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
             return arg_in
 
     raise_dtype = None
-    need_raise_dtypes = set(input_arg.dtype for input_arg in input_args if input_arg.dtype in Const.RAISE_PRECISION)
+    need_raise_dtypes = set(
+        input_arg.dtype
+        for input_arg in input_args
+        if isinstance(input_arg, torch.Tensor) and input_arg.dtype in Const.RAISE_PRECISION
+    )
     if len(need_raise_dtypes) == 1:
         raise_dtype = Const.RAISE_PRECISION.get(need_raise_dtypes.pop())
     elif len(need_raise_dtypes) >= 2:
