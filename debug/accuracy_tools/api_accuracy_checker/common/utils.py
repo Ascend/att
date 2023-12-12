@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-# Copyright (C) 2019-2020. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2023-2023. Huawei Technologies Co., Ltd. All rights reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -518,7 +518,15 @@ def get_process_rank(model):
 
 def get_json_contents(file_path):
     ops = get_file_content_bytes(file_path)
-    return json.loads(ops)
+    try:
+        json_obj = json.loads(ops)
+    except ValueError as error:
+        print_error_log('Failed to load "%s". %s' % (file_path, str(error)))
+        raise CompareException(CompareException.INVALID_FILE_ERROR) from error
+    if not isinstance(json_obj, dict):
+        print_error_log('Json file %s, content is not a dictionary!' % file_path)
+        raise CompareException(CompareException.INVALID_FILE_ERROR)
+    return json_obj
 
 
 def get_file_content_bytes(file):

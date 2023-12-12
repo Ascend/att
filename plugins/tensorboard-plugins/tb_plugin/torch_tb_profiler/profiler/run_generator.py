@@ -57,6 +57,7 @@ class RunGenerator(object):
         profile_run.has_communication = self.profile_data.has_communication
         profile_run.has_memcpy_or_memset = self.profile_data.has_memcpy_or_memset
         profile_run.profiler_start_ts = self.profile_data.profiler_start_ts
+        profile_run.device_target = self.device_target
 
         if self.device_target != 'Ascend':
             profile_run.views.append(consts.OVERALL_VIEW)
@@ -81,6 +82,25 @@ class RunGenerator(object):
             if self.profile_data.memory_snapshot:
                 profile_run.views.append(consts.MEMORY_VIEW)
                 profile_run.memory_snapshot = self.profile_data.memory_snapshot
+
+            profile_run.gpu_metrics = self.profile_data.gpu_metrics_parser.get_gpu_metrics()
+
+            gpu_infos = {gpu_id: RunGenerator._get_gpu_info(self.profile_data.device_props, gpu_id)
+                         for gpu_id in self.profile_data.gpu_metrics_parser.gpu_ids}
+            gpu_infos = {gpu_id: gpu_info for gpu_id, gpu_info in gpu_infos.items() if gpu_info is not None}
+
+            profile_run.gpu_summary, profile_run.gpu_tooltip = \
+                self.profile_data.gpu_metrics_parser.get_gpu_metrics_data_tooltip(
+                    gpu_infos, self.profile_data.tc_ratio)
+
+            profile_run.pl_tid2tree = self.profile_data.pl_tid2tree
+
+            profile_run.module_stats = aggegate_module_view(self.profile_data.tid2tree, self.profile_data.events)
+            profile_run.pl_module_stats = aggegate_pl_module_view(self.profile_data.tid2tree, self.profile_data.events)
+            if profile_run.is_pytorch_lightning and profile_run.pl_module_stats:
+                profile_run.views.append(consts.LIGHTNING_VIEW)
+            elif profile_run.module_stats:
+                profile_run.views.append(consts.MODULE_VIEW)
         else:
             if self.profile_data.has_operator_view:
                 profile_run.views.append(consts.OP_VIEW)
@@ -110,30 +130,10 @@ class RunGenerator(object):
                 profile_run.step_to_overlap = self._npu_get_overlap()
                 profile_run.step_to_wait, profile_run.comm_op = self._npu_get_wait_table()
 
+        profile_run.tid2tree = self.profile_data.tid2tree
         if self.profile_data.has_trace:
             profile_run.views.append(consts.TRACE_VIEW)
             profile_run.trace_file_path = self.profile_data.trace_file_path
-
-        profile_run.gpu_metrics = self.profile_data.gpu_metrics_parser.get_gpu_metrics()
-
-        gpu_infos = {gpu_id: RunGenerator._get_gpu_info(self.profile_data.device_props, gpu_id)
-                     for gpu_id in self.profile_data.gpu_metrics_parser.gpu_ids}
-        gpu_infos = {gpu_id: gpu_info for gpu_id, gpu_info in gpu_infos.items() if gpu_info is not None}
-
-        profile_run.gpu_summary, profile_run.gpu_tooltip = \
-            self.profile_data.gpu_metrics_parser.get_gpu_metrics_data_tooltip(
-                gpu_infos, self.profile_data.tc_ratio)
-
-        profile_run.tid2tree = self.profile_data.tid2tree
-        profile_run.pl_tid2tree = self.profile_data.pl_tid2tree
-        profile_run.device_target = self.device_target
-
-        profile_run.module_stats = aggegate_module_view(self.profile_data.tid2tree, self.profile_data.events)
-        profile_run.pl_module_stats = aggegate_pl_module_view(self.profile_data.tid2tree, self.profile_data.events)
-        if profile_run.is_pytorch_lightning and profile_run.pl_module_stats:
-            profile_run.views.append(consts.LIGHTNING_VIEW)
-        elif profile_run.module_stats:
-            profile_run.views.append(consts.MODULE_VIEW)
 
         return profile_run
 
@@ -436,9 +436,9 @@ class RunGenerator(object):
             # convert time metric 'us' to 'ms'
             # some operators may not have the following columns
             nums = [ls[0] if ls[0] else '<unknown>', abs(float(ls[1])),
-                    round((float(ls[2]) - self.profile_data.profiler_start_ts) / 1000, 2) if ls[2] else None,
-                    round((float(ls[3]) - self.profile_data.profiler_start_ts) / 1000, 2) if ls[3] else None,
-                    round(float(ls[4]) / 1000, 2) if ls[4] else None]
+                    round((float(ls[2]) - self.profile_data.profiler_start_ts) / 1000, 3) if ls[2] else None,
+                    round((float(ls[3]) - self.profile_data.profiler_start_ts) / 1000, 3) if ls[3] else None,
+                    round(float(ls[4]) / 1000, 3) if ls[4] else None]
             display_datas[device_type].append(nums)
         table['rows'] = display_datas
         for name in display_datas:
@@ -580,7 +580,7 @@ class RunGenerator(object):
             logger.error('Required column is missing in file "memory_record.csv"')
         else:
             for ls in datas[1:]:
-                time_column = round((float(ls[time_idx]) - self.profile_data.profiler_start_ts) / 1000, 2)
+                time_column = round((float(ls[time_idx]) - self.profile_data.profiler_start_ts) / 1000, 3)
                 device_type = ls[device_type_idx]
                 if ls[tag_type_idx] == 'PTA+GE':
                     process_data.setdefault(device_type, {}).setdefault('Allocated', []).append(
@@ -639,7 +639,7 @@ class RunGenerator(object):
         reserved_idx = memory_curve_id_dict.get('reserved_idx')
         tag_type_idx = memory_curve_id_dict.get('tag_type_idx')
         time_idx = memory_curve_id_dict.get('time_idx')
-        time_column = round((float(ls[time_idx]) - self.profile_data.profiler_start_ts) / 1000, 2)
+        time_column = round((float(ls[time_idx]) - self.profile_data.profiler_start_ts) / 1000, 3)
         for item in peak_memory_rows[ls[device_type_idx]]:
             if item[0] == ls[tag_type_idx]:
                 if item[1] < ls[reserved_idx]:
@@ -1166,7 +1166,7 @@ class DistributedRunGenerator(object):
             else:
                 DistributedRunGenerator._get_npu_overlap_data(data, steps_to_overlap)
 
-            steps_to_overlap['all'][data.worker] = [x / step_number for x in steps_to_overlap['all'][data.worker]]
+            steps_to_overlap['all'][data.worker] = [int(x / step_number) for x in steps_to_overlap['all'][data.worker]]
         for k, v in steps_to_overlap.items():
             steps_to_overlap[k] = OrderedDict(sorted(v.items()))
         result['data'] = steps_to_overlap
@@ -1226,7 +1226,7 @@ class DistributedRunGenerator(object):
             ]
             steps_to_wait['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[step][data.worker])]
-        steps_to_wait['all'][data.worker] = [x / step_number for x in steps_to_wait['all'][data.worker]]
+        steps_to_wait['all'][data.worker] = [int(x / step_number) for x in steps_to_wait['all'][data.worker]]
 
     def _generate_wait_graph(self):
         result = dict()

@@ -20,7 +20,7 @@ class DispatchRunParam:
         self.root_npu_path = root_npu_path
         self.root_cpu_path = root_cpu_path
         self.process_num = process_num
-        self.process_flag = None
+        self.process_flag = False
         self.func_name = None
         self.func_namespace = None
         self.aten_api = None
@@ -209,10 +209,7 @@ def save_temp_summery(api_index, single_api_summery, path, lock):
     lock.release()
 
 
-def dispatch_workflow(run_param, cpu_args, cpu_kwargs, all_summery, func, npu_out_cpu, lock):
-    with TimeStatistics("CPU RUN", run_param):
-        cpu_out = func(*cpu_args, **cpu_kwargs)
-
+def dispatch_workflow(run_param, cpu_args, cpu_kwargs, all_summery, func, npu_out_cpu, cpu_out, lock):
     single_api_summery = []
 
     prefix_input = f'{run_param.aten_api}_{run_param.single_api_index}_input'
@@ -260,12 +257,12 @@ def get_torch_func(run_param):
     return None
 
 
-def dispatch_multiprocess(run_param, cpu_args, cpu_kwargs, all_summery, npu_out_cpu, lock):
+def dispatch_multiprocess(run_param, cpu_args, cpu_kwargs, all_summery, npu_out_cpu, cpu_out, lock):
     torch_func = get_torch_func(run_param)
     if torch_func is None:
         logger_error(f'can not find suitable call api:{run_param.aten_api}')
     else:
-        dispatch_workflow(run_param, cpu_args, cpu_kwargs, all_summery, torch_func, npu_out_cpu, lock)
+        dispatch_workflow(run_param, cpu_args, cpu_kwargs, all_summery, torch_func, npu_out_cpu, cpu_out, lock)
 
 
 def error_call(err):
@@ -283,12 +280,6 @@ def save_csv(all_summery, call_stack_list, csv_path):
                             CompareConst.BENCH_DTYPE: data[CompareConst.BENCH_DTYPE],
                             CompareConst.NPU_SHAPE: data[CompareConst.NPU_SHAPE],
                             CompareConst.BENCH_SHAPE: data[CompareConst.BENCH_SHAPE],
-                            CompareConst.NPU_MAX: data[CompareConst.NPU_MAX],
-                            CompareConst.NPU_MIN: data[CompareConst.NPU_MIN],
-                            CompareConst.NPU_MEAN: data[CompareConst.NPU_MEAN],
-                            CompareConst.BENCH_MAX: data[CompareConst.BENCH_MAX],
-                            CompareConst.BENCH_MIN: data[CompareConst.BENCH_MIN],
-                            CompareConst.BENCH_MEAN: data[CompareConst.BENCH_MEAN],
                             CompareConst.COSINE: data[CompareConst.COSINE],
                             CompareConst.MAX_ABS_ERR: data[CompareConst.MAX_ABS_ERR],
                             CompareConst.MAX_RELATIVE_ERR: data[CompareConst.MAX_RELATIVE_ERR],

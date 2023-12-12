@@ -42,7 +42,7 @@ const LOSS_REG_EXP = /[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/
 // 匹配自然数
 const ITER_REG_EXP = /\d+/
 // 单个文件最大大小
-const FILE_MAX_SIZE = 10 * 1024 * 1024
+const FILE_MAX_SIZE = 50 * 1024 * 1024
 // 最大文件上传数量
 export const MAX_FILE_COUNT = 6
 
@@ -122,6 +122,8 @@ export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
 
   const parseFile = (file: FileInfo): FileInfo => {
     file.losses = []
+    file.iterLosses = {}
+    file.iters = []
     const lines = file.fileContent.split(/\r\n|\n|\r/)
     for (let i = 0; i < lines.length; i++) {
       const iter = parseByTag(lines[i], file.iterTag, false)
@@ -163,7 +165,7 @@ export const AccuracyLeftPanel: React.FC<IProps> = (props) => {
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > FILE_MAX_SIZE) {
-        message.warn('Sorry, the file size cannot be greater than 10MB.')
+        message.warn('Sorry, the file size cannot be greater than 50MB.')
         setImportSpin(false)
         // 防止同名文件不触发事件
         e.target.value = ''

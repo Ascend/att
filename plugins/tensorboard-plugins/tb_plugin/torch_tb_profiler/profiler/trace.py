@@ -10,6 +10,9 @@ __all__ = ['EventTypes', 'create_event']
 
 logger = utils.get_logger()
 
+NcclOpNameSet = ['nccl:broadcast', 'nccl:reduce', 'nccl:all_reduce', 'nccl:all_gather', 'nccl:reduce_scatter']
+GlooOpNameSet = ['gloo:broadcast', 'gloo:reduce', 'gloo:all_reduce', 'gloo:all_gather', 'gloo:reduce_scatter']
+
 
 class DeviceType(IntEnum):
     CPU = 0
@@ -30,6 +33,7 @@ class EventTypes(object):
     MODULE = 'Module'
     PL_PROFILE = 'pl_profile'
     PL_MODULE = 'pl_module'
+    USER_ANNOTATION = 'user_annotation'
 
 
 EventTypeMap = {
@@ -44,7 +48,9 @@ EventTypeMap = {
     'gpu_memset': EventTypes.MEMSET,
     'python': EventTypes.PYTHON,
     'memory': EventTypes.MEMORY,
-    'python_function': EventTypes.PYTHON_FUNCTION
+    'python_function': EventTypes.PYTHON_FUNCTION,
+    'user_annotation': EventTypes.USER_ANNOTATION,
+    'gpu_user_annotation': EventTypes.USER_ANNOTATION
 }
 
 
@@ -179,7 +185,13 @@ def create_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
 def create_trace_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
     category = event.get('cat')
     event_type = EventTypeMap.get(category.lower()) if category else None
-    if event_type == EventTypes.OPERATOR:
+    if event_type == EventTypes.USER_ANNOTATION:
+        name = event.get('name')
+        if name and name.startswith('ProfilerStep#'):
+            return ProfilerStepEvent(event)
+        if name in GlooOpNameSet or name in NcclOpNameSet:
+            return OperatorEvent(event_type, event)
+    elif event_type == EventTypes.OPERATOR:
         name = event.get('name')
         if name and name.startswith('ProfilerStep#'):
             return ProfilerStepEvent(event)
@@ -203,8 +215,7 @@ def create_trace_event(event, is_pytorch_lightning) -> Optional[BaseEvent]:
             return PythonFunctionEvent(event_type, event)
     elif event_type is not None:
         return DurationEvent(event_type, event)
-    else:
-        return None
+    return None
 
 
 def create_association_events(events) -> Dict[int, int]:
