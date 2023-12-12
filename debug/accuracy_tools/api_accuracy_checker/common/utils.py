@@ -91,9 +91,10 @@ class Const:
     WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
 
     RAISE_PRECISION = {
-        "torch.float16" : "torch.float32",
-        "torch.bfloat16" : "torch.float32",
-        "torch.float32" : "torch.float64"
+        torch.float16: torch.float32,
+        torch.bfloat16: torch.float32,
+        torch.float32: torch.float64,
+        torch.float64: torch.float64
     }
     CONVERT = {
         "int32_to_int64": ["torch.int32", "torch.int64"],
