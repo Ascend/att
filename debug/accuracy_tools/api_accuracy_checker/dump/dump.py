@@ -61,7 +61,7 @@ class DumpUtil(object):
         if DumpUtil.call_num in msCheckerConfig.target_iter:
             set_dump_switch("ON")
         elif DumpUtil.call_num > max(msCheckerConfig.target_iter):
-            raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.call_num - 1))
+            raise Exception("Model pretest: exit after iteration {}".format(DumpUtil.call_num))
         else:
             set_dump_switch("OFF")
 
