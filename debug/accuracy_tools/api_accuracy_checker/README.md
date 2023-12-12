@@ -43,7 +43,7 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
       Exception: Model pretest: exit after iteration 1.
       ```
 
-   - 若报错信息不一致，可能是由于服务器的其他错误信息覆盖导致，可以尝试查找报错信息中的Exception。
+      若报错信息不一致，可能是由于服务器的其他错误信息覆盖导致，可以尝试查找报错信息中的Exception。
 
    - 若训练脚本中的代码不是通过torch.utils.data.dataloader来加载数据或在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，导致多卡训练dump结果只有一组json，那么需要在训练代码中添加打开工具开关的调用：
 
@@ -70,26 +70,28 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
 
    若有需要，用户可以通过msCheckerConfig.update_config来配置dump路径以及开启真实数据模式、指定dump某个step或配置API dump白名单，详细请参见“**msCheckerConfig.update_config**”。
 
-3. 将API信息输入给run_ut模块运行精度检测并比对，运行如下命令： 
+2. 将API信息输入给run_ut模块运行精度检测并比对，运行如下命令： 
 
    ```bash
    cd $ATT_HOME/debug/accuracy_tools/api_accuracy_checker/run_ut
    python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json
    ```
 
+   某些场景下（如推理），可以不指定backward_info_0.json，不影响预检功能。
+
    | 参数名称                         | 说明                                                         | 是否必选 |
    | -------------------------------- | ------------------------------------------------------------ | -------- |
    | -forward或--forward_input_file   | 指定前向API信息文件forward_info_{pid}.json。                 | 是       |
-   | -backward或--backward_input_file | 指定反向API信息文件backward_info_{pid}.json。                | 是       |
+   | -backward或--backward_input_file | 指定反向API信息文件backward_info_{pid}.json。                | 否       |
    | -save_error_data                 | 保存精度未达标的API输入输出数据。                            | 否       |
    | -o或--out_path                   | 指指定run_ut执行结果存盘路径，默认“./”（相对于run_ut的路径）。 | 否       |
    | -j或--jit_compile                | 开启jit编译。                                                | 否       |
    | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。           | 否       |
-   | -csv_path或--result_csv_path            | 指定本次运行中断时生成的accuracy_checking_result_{timestamp}.csv文件路径，执行run_ut中断时，若想从中断处继续执行，配置此参数即可。           | 否       |
+   | -csv_path或--result_csv_path     | 指定本次运行中断时生成的`accuracy_checking_result_{timestamp}.csv`文件路径，执行run_ut中断时，若想从中断处继续执行，配置此参数即可。 | 否       |
 
-   run_ut执行结果包括`accuracy_checking_result_{timestamp}.csv`和`accuracy_checking_details_{timestamp}.csv`两个文件。`accuracy_checking_result_{timestamp}.csv`是API粒度的，标明每个API是否通过测试。建议用户先查看`accuracy_checking_result_{timestamp}.csv`文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在`accuracy_checking_details_{timestamp}.csv`中查询其各个输出的达标情况以及比较指标。API达标情况介绍请参考“**API预检指标**”。
+   run_ut执行结果包括`accuracy_checking_result_{timestamp}.csv`和`accuracy_checking_details_{timestamp}.csv`两个文件。`accuracy_checking_result_{timestamp}.csv`是API粒度的，标明每个API是否通过测试。建议用户先查看`accuracy_checking_result_{timestamp}.csv`文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在`accuracy_checking_details_{timestamp}.csv`中查询其各个输出的达标情况以及比较指标。详细介绍请参见“**预检结果**”。
 
-4. 如果需要保存比对不达标的输入和输出数据，可以在run_ut执行命令结尾添加-save_error_data，例如：
+3. 如果需要保存比对不达标的输入和输出数据，可以在run_ut执行命令结尾添加-save_error_data，例如：
 
    ```bash
    python run_ut.py -forward ./forward_info_0.json -backward ./backward_info_0.json -save_error_data
@@ -157,6 +159,41 @@ msCheckerConfig.update_config(dump_path="./", real_data=False, target_iter=[1], 
 - 配置的API名称须存在于att\debug\accuracy_tools\api_accuracy_checker\hook_module目录下的support_wrap_ops.yaml文件下。
 - 方式一和方式二都可以在dump时设置并控制dump对应的API，默认情况下没有配置白名单，dump所有API数据，若在dump操作时没有配置白名单，那么可以在执行run_ut模块前使用方式一配置白名单。
 
+## 预检结果
+
+精度预检生成的`accuracy_checking_result_{timestamp}.csv`和`accuracy_checking_details_{timestamp}.csv`文件示例如下：
+
+可以通过先查看`accuracy_checking_result_{timestamp}.csv`文件的Forward Test Success和Backward Test Success，判断是否存在未通过测试的API，再查看`accuracy_checking_details_{timestamp}.csv`文件的API详细达标情况，API达标情况介绍请参见“**API预检指标**”。
+
+`accuracy_checking_result_{timestamp}.csv`
+
+![891a3bd8_12631423](img/accuracy_checking_result.png)
+
+| 字段                  | 含义                                                         |
+| --------------------- | ------------------------------------------------------------ |
+| API name              | API名称。                                                    |
+| Forward Test Success  | 前向API是否通过测试，TRUE为通过，FALSE为不通过。             |
+| Backward Test Success | 反向API是否通过测试，TRUE为通过，FALSE为不通过，N/A表示该API没有反向。 |
+| Message               | 备注信息。                                                   |
+
+`accuracy_checking_details_{timestamp}.csv`
+
+![f07237b1_12631423](img/accuracy_checking_details.png)
+
+| 字段                                  | 含义                                                         |
+| ------------------------------------- | ------------------------------------------------------------ |
+| Npu Name                              | NPU下的API名称。                                             |
+| Bench Dtype                           | 标杆数据的数据类型。                                         |
+| NPU Dtype                             | NPU数据的数据类型。                                          |
+| Shape                                 | API的Shape信息。                                             |
+| Cosine Similarity                     | 余弦相似度。                                                 |
+| Max Abs Error                         | 最大绝对误差。                                               |
+| Relative  Error (dual hundredth)      | 双百精度指标。                                               |
+| Relative  Error (dual thousandth)     | 双千精度指标。                                               |
+| Relative  Error (dual ten thousandth) | 双万精度指标。                                               |
+| Error Rate                            | 误差率。                                                     |
+| Status                                | 通过状态，pass表示通过测试，error表示未通过，warning表示存在双千或双万精度指标未通过测试。 |
+
 ## API预检指标
 
 API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件中的“pass”列标记“pass”，否则标记“error”或“warning”，详细规则如下：
@@ -173,11 +210,11 @@ API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件�
 
 # 溢出解析工具
 
-针对训练过程中的溢出检测场景（参见[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)中的"溢出检测场景"进行溢出检测dump），对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`和`backward_info_{pid}.json`，前向过程溢出的API可通过该工具对`forward_info_{pid}.json`进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
+针对训练过程中的溢出检测场景（参见[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)中的"溢出检测场景"进行溢出检测dump），对于输入正常但输出存在溢出的API，会在训练执行目录下将溢出的API信息按照前向和反向分类，dump并保存为`forward_info_{pid}.json`，前向过程溢出的API可通过该工具对`forward_info_{pid}.json`进行解析，输出溢出API为正常溢出还是非正常溢出，从而帮助用户快速判断。
 
 工具支持PyTorch版本：1.8.1/1.11.0/2.0/2.1。
 
-若溢出检测场景dump结果生成`forward_info_{pid}.json`和`backward_info_{pid}.json`文件，则使用本工具进行解析。操作步骤如下：
+若溢出检测场景dump结果生成`forward_info_{pid}.json`文件，则使用本工具进行解析。操作步骤如下：
 
 1. 安装预检工具
 
@@ -200,12 +237,11 @@ API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件�
    python run_overflow_check.py -forward ./forward_info_0.json
    ```
 
-   | 参数名称                         | 说明                                               | 是否必选 |
-   | -------------------------------- | -------------------------------------------------- | -------- |
-   | -forward或--forward_input_file   | 指定前向API信息文件forward_info_{pid}.json。       | 是       |
-   | -backward或--backward_input_file | 指定反向API信息文件backward_info_{pid}.json。      | 是       |
-   | -j或--jit_compile                | 开启jit编译。                                      | 否       |
-   | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。 | 否       |
+   | 参数名称                       | 说明                                               | 是否必选 |
+   | ------------------------------ | -------------------------------------------------- | -------- |
+   | -forward或--forward_input_file | 指定前向API信息文件forward_info_{pid}.json。       | 是       |
+   | -j或--jit_compile              | 开启jit编译。                                      | 否       |
+   | -d或--device                   | 指定Device ID，选择UT代码运行所在的卡，默认值为0。 | 否       |
    
    反向过程溢出的API暂不支持该功能。
 
