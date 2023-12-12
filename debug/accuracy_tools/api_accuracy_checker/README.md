@@ -192,7 +192,7 @@ msCheckerConfig.update_config(dump_path="./", real_data=False, target_iter=[1], 
 | Relative  Error (dual thousandth)     | 双千精度指标。                                               |
 | Relative  Error (dual ten thousandth) | 双万精度指标。                                               |
 | Error Rate                            | 误差率。                                                     |
-| Status                                | 通过状态，pass表示通过测试，error表示未通过，waring表示存在双千或双万精度指标未通过测试。 |
+| Status                                | 通过状态，pass表示通过测试，error表示未通过，warning表示存在双千或双万精度指标未通过测试。 |
 
 ## API预检指标
 
