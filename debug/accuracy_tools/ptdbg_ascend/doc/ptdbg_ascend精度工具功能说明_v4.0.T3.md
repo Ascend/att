@@ -185,13 +185,20 @@ PyTorch训练场景的精度问题分析建议参考以下思路进行精度比�
 
 说明：多机多卡场景需要每个设备单独执行比对操作。
 
-假设NPU dump npy数据目录为npu_dump/dump_conv2d_v1.0，GPU dump npy数据目录为gpu_dump/dump_conv2d_v1.0。
+假设NPU dump npy数据目录为npu_dump/dump_conv2d_v3.0，GPU dump npy数据目录为gpu_dump/dump_conv2d_v3.0。
 
 1. 创建比对脚本，例如compare_distributed.py，拷贝如下代码。
 
    ```python
    from ptdbg_ascend import *
-   compare_distributed('./npu_dump/ptdbg_dump_v2.0', './gpu_dump/ptdbg_dump_v2.0', './output')
+   compare_distributed('./npu_dump/dump_conv2d_v3.0', './gpu_dump/dump_conv2d_v3.0', './output')
+   ```
+
+   若使用debugger方式dump数据，且配置了PrecisionDebugger模块的step参数，则compare_distributed指定到step目录层级，如下示例：
+
+   ```python
+   from ptdbg_ascend import *
+   compare_distributed('./npu_dump/step0', './gpu_dump/step0', './output')
    ```
 
 2. 执行比对：
