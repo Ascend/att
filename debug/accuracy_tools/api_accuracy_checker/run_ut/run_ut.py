@@ -102,7 +102,7 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
     raise_dtype = None
     need_raise_dtypes = set(
         input_arg.dtype
-        for input_arg in input_args
+        for input_arg in (input_args if isinstance(input_args, (list, tuple)) else [input_args])
         if isinstance(input_arg, torch.Tensor) and input_arg.dtype in Const.RAISE_PRECISION
     )
     if len(need_raise_dtypes) == 1:
