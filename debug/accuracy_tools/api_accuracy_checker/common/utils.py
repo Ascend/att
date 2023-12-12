@@ -378,19 +378,18 @@ def modify_dump_path(dump_path, mode):
 def create_directory(dir_path):
     """
     Function Description:
-        creating a directory with specified permissions
+        creating a directory with specified permissions in a thread-safe manner
     Parameter:
         dir_path: directory path
     Exception Description:
         when invalid data throw exception
     """
-    if not os.path.exists(dir_path):
-        try:
-            os.makedirs(dir_path, mode=FileCheckConst.DATA_DIR_AUTHORITY)
-        except OSError as ex:
-            print_error_log(
-                'Failed to create {}.Please check the path permission or disk space .{}'.format(dir_path, str(ex)))
-            raise CompareException(CompareException.INVALID_PATH_ERROR) from ex
+    try:
+        os.makedirs(dir_path, mode=FileCheckConst.DATA_DIR_AUTHORITY, exist_ok=True)
+    except OSError as ex:
+        print_error_log(
+            'Failed to create {}. Please check the path permission or disk space. {}'.format(dir_path, str(ex)))
+        raise CompareException(CompareException.INVALID_PATH_ERROR) from ex
 
 
 def execute_command(cmd):
