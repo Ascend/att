@@ -56,7 +56,7 @@ def deal_detach(arg, to_detach=True):
 
 
 def deal_dtype(arg, raise_dtype=None):
-    if raise_dtype is None or not Const.RAISE_PRECISION.get(arg.dtype) or raise_dtype == arg.dtype:
+    if raise_dtype is None or arg.dtype not in Const.RAISE_PRECISION or raise_dtype == arg.dtype:
         return arg
     return arg.type(raise_dtype)
 
@@ -83,7 +83,6 @@ def generate_device_params(input_args, input_kwargs, need_backward):
 
 
 def generate_cpu_params(input_args, input_kwargs, need_backward):
-
     def recursive_arg_to_cpu(arg_in, to_detach=True, raise_dtype=None):
         if isinstance(arg_in, (list, tuple)):
             return type(arg_in)(recursive_arg_to_cpu(arg, to_detach, raise_dtype=raise_dtype) for arg in arg_in)
@@ -99,20 +98,18 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
         else:
             return arg_in
 
+    def recursive_find_dtypes(arg_in):
+        if isinstance(arg_in, (list, tuple)):
+            return set().union(recursive_find_dtypes(arg) for arg in arg_in)
+        elif isinstance(arg_in, torch.Tensor) and arg_in.dtype in Const.RAISE_PRECISION:
+            return {arg_in.dtype}
+
     raise_dtype = None
-    need_raise_dtypes = set(
-        input_arg.dtype
-        for input_arg in (input_args if isinstance(input_args, (list, tuple)) else [input_args])
-        if isinstance(input_arg, torch.Tensor) and input_arg.dtype in Const.RAISE_PRECISION
-    )
+    need_raise_dtypes = recursive_find_dtypes(input_args)
     if len(need_raise_dtypes) == 1:
         raise_dtype = Const.RAISE_PRECISION.get(need_raise_dtypes.pop())
     elif len(need_raise_dtypes) >= 2:
         raise_dtype = torch.float32
-        for dtype in need_raise_dtypes:
-            if str(dtype).endswith("64"):
-                raise_dtype = torch.float64
-                break
 
     cpu_args = recursive_arg_to_cpu(input_args, raise_dtype=raise_dtype)
     cpu_kwargs = {key: recursive_arg_to_cpu(value, key != "out") for key, value in input_kwargs.items()}
