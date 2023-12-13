@@ -102,7 +102,7 @@ def generate_cpu_params(input_args, input_kwargs, need_backward):
         if isinstance(arg_in, (list, tuple)):
             return set().union(*tuple(recursive_find_dtypes(arg) for arg in arg_in))
         elif isinstance(arg_in, torch.Tensor) and arg_in.dtype in Const.RAISE_PRECISION:
-            return {arg_in.dtype}
+            return set((arg_in.dtype, ))
         return set()
 
     raise_dtype = None
