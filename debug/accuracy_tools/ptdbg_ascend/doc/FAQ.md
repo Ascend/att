@@ -173,4 +173,12 @@ compare(dump_result_param, "./output", stack_mode=True)
 
 ### 17. 添加ptdbg_ascend工具后截取操作报错：`IndexError: too many indices for tensor of dimension x` 或 `TypeError: len() of a 0-d tensor`。
 
-删除ptdbg_ascend工具的hook_module目录下yaml文件中Tensor:下的`- __getitem__`即可。
+- 删除ptdbg_ascend工具的hook_module目录下yaml文件中Tensor:下的`- __getitem__`即可。
+
+### 18. 添加ptdbg_ascend工具后触发一些类型检查相关的报错（比如F.gelu)，原因是工具对api进行了套壳，虽然行为和原api保持一致，但是这种回报类型检查错误。
+
+- 删除ptdbg_ascend工具的hook_module目录下yaml文件中的gelu。
+
+### 19. 添加ptdbg_ascend工具后触发AsStrided算子相关的报错，或者编译相关的报错。
+
+- 删除ptdbg_ascend工具的hook_module目录下yaml文件中yaml里的t和transpose。
