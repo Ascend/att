@@ -232,6 +232,8 @@ API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件�
 
 2. 执行溢出API解析操作
 
+   **forward_info_0.json为[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)中的"溢出检测场景"执行溢出检测dump时生成，而不是精度预检工具生成。**
+
    ```bash
    cd $ATT_HOME/debug/accuracy_tools/api_accuracy_checker/run_ut
    python run_overflow_check.py -forward ./forward_info_0.json
@@ -242,7 +244,7 @@ API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件�
    | -forward或--forward_input_file | 指定前向API信息文件forward_info_{pid}.json。       | 是       |
    | -j或--jit_compile              | 开启jit编译。                                      | 否       |
    | -d或--device                   | 指定Device ID，选择UT代码运行所在的卡，默认值为0。 | 否       |
-   
+
    反向过程溢出的API暂不支持该功能。
 
 
