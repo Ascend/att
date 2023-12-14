@@ -179,8 +179,6 @@ compare(dump_result_param, "./output", stack_mode=True)
 
 - 删除工具目录ptdbg_ascend/hook_module/support_wrap_ops.yaml文件中functional:下的的`- gelu`。
 
-删除ptdbg_ascend工具hook_module/support_wrap_ops.yaml文件中对应的api名字（比如F.gelu就对应了functional下的gelu）
-
 ### 19. 添加ptdbg_ascend工具后触发AsStrided算子相关的报错，或者编译相关的报错，如：`Failed to compile Op [AsStrided]`。
 
 - 删除工具目录ptdbg_ascend/hook_module/support_wrap_ops.yaml文件中Tensor:下的`- t`和`- transpose`。
