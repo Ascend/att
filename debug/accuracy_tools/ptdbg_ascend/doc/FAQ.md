@@ -171,14 +171,14 @@ compare(dump_result_param, "./output", stack_mode=True)
 
 - 请在model示例化之后配置register hook。
 
-### 17. 添加ptdbg_ascend工具后截取操作报错：`IndexError: too many indices for tensor of dimension x` 或 `TypeError: len() of a 0-d tensor`。
+### 17. 添加ptdbg_ascend工具后如果截取操作报错：`IndexError: too many indices for tensor of dimension x` 或 `TypeError: len() of a 0-d tensor`。
 
 - 删除ptdbg_ascend工具的hook_module目录下yaml文件中Tensor:下的`- __getitem__`即可。
 
-### 18. 添加ptdbg_ascend工具后触发一些类型检查相关的报错（比如F.gelu)，原因是工具对api进行了套壳，虽然行为和原api保持一致，但是这种回报类型检查错误。
+### 18. 添加ptdbg_ascend工具后如果F.gelu触发ValueError报错：`activation_func must be F.gelu`等。
 
 - 删除ptdbg_ascend工具的hook_module目录下yaml文件中的gelu。
 
-### 19. 添加ptdbg_ascend工具后触发AsStrided算子相关的报错，或者编译相关的报错。
+### 19. 添加ptdbg_ascend工具后如果触发AsStrided算子相关的报错，或者编译相关的报错，如：`Failed to compile Op [AsStrided]`。
 
-- 删除ptdbg_ascend工具的hook_module目录下yaml文件中yaml里的t和transpose。
+- 删除ptdbg_ascend工具的hook_module目录下yaml文件中Tensor:下的`- t`和`- transpose`即可。
