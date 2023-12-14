@@ -173,4 +173,12 @@ compare(dump_result_param, "./output", stack_mode=True)
 
 ### 17. 添加ptdbg_ascend工具后截取操作报错：`IndexError: too many indices for tensor of dimension x` 或 `TypeError: len() of a 0-d tensor`。
 
-删除ptdbg_ascend工具的hook_module目录下yaml文件中Tensor:下的`- __getitem__`即可。
+- 删除工具目录ptdbg_ascend/hook_module/support_wrap_ops.yaml文件中Tensor:下的`- __getitem__`。
+
+### 18. 添加ptdbg_ascend工具后F.gelu触发ValueError报错：`activation_func must be F.gelu`等。
+
+- 删除工具目录ptdbg_ascend/hook_module/support_wrap_ops.yaml文件中functional:下的的`- gelu`。
+
+### 19. 添加ptdbg_ascend工具后触发AsStrided算子相关的报错，或者编译相关的报错，如：`Failed to compile Op [AsStrided]`。
+
+- 删除工具目录ptdbg_ascend/hook_module/support_wrap_ops.yaml文件中Tensor:下的`- t`和`- transpose`。
