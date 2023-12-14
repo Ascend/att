@@ -46,10 +46,6 @@ Ascend Training Tools，昇腾训练工具链。针对训练&大模型场景，�
 
    融合多个Profiling的timeline在一个json文件中的功能。
 
-4. [distribute_tools（集群场景脚本集合工具）](https://gitee.com/ascend/att/tree/master/profiler/distribute_tools)
-
-   提供集群场景数据一键汇聚功能。
-
 ### [Tensorboard](https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin)
 
 Tensorboard支持NPU性能数据可视化插件PyTorch Profiler TensorBoard NPU Plugin。
