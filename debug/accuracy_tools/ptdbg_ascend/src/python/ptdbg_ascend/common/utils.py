@@ -225,6 +225,7 @@ class CompareException(Exception):
     def __str__(self):
         return self.error_info
 
+
 class DumpException(CompareException):
     pass
 
@@ -434,7 +435,7 @@ def check_file_size(input_file, max_size):
         file_size = os.path.getsize(input_file)
     except OSError as os_error:
         print_error_log('Failed to open "%s". %s' % (input_file, str(os_error)))
-        raise CompareException(CompareException.INVALID_FILE_ERROR)
+        raise CompareException(CompareException.INVALID_FILE_ERROR) from os_error
     if file_size > max_size:
         print_error_log('The size (%d) of %s exceeds (%d) bytes, tools not support.'
                         % (file_size, input_file, max_size))
@@ -510,7 +511,7 @@ def create_directory(dir_path):
         except OSError as ex:
             print_error_log(
                 'Failed to create {}.Please check the path permission or disk space .{}'.format(dir_path, str(ex)))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
+            raise CompareException(CompareException.INVALID_PATH_ERROR) from ex
 
 
 def execute_command(cmd):
