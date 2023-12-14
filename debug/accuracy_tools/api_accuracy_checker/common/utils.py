@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-# Copyright (C) 2019-2020. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2023-2023. Huawei Technologies Co., Ltd. All rights reserved.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -29,15 +29,15 @@ import numpy as np
 import torch
 import csv
 
-from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, FileChecker, FileOpen
-from ptdbg_ascend.src.python.ptdbg_ascend.common import file_check_util
-
 try:
     import torch_npu
 except ImportError:
     IS_GPU = True
 else:
     IS_GPU = False
+
+from ptdbg_ascend.src.python.ptdbg_ascend.common.file_check_util import FileCheckConst, FileChecker, FileOpen
+from ptdbg_ascend.src.python.ptdbg_ascend.common import file_check_util
 
 torch_without_guard_version_list = ['2.1']
 for version in torch_without_guard_version_list:
@@ -49,15 +49,15 @@ for version in torch_without_guard_version_list:
 if not IS_GPU and not torch_without_guard_version:
     from torch_npu.utils.device_guard import torch_device_guard as torch_npu_device_guard
 
-device = collections.namedtuple('device', ['type', 'index'])
-
 
 class Const:
     """
     Class for const
     """
+    DIRECTORY_LENGTH = 4096
+    FILE_NAME_LENGTH = 255
+    FILE_PATTERN = r'^[a-zA-Z0-9_./-]+$'
     MODEL_TYPE = ['.onnx', '.pb', '.om']
-    DIM_PATTERN = r"^(-?[0-9]+)(,-?[0-9]+)*"
     SEMICOLON = ";"
     COLON = ":"
     EQUAL = "="
@@ -65,7 +65,7 @@ class Const:
     DOT = "."
     DUMP_RATIO_MAX = 100
     SUMMERY_DATA_NUMS = 256
-    ONE_HUNDRED_MB = 100*1024*1024
+    ONE_HUNDRED_MB = 100 * 1024 * 1024
     FLOAT_EPSILON = np.finfo(float).eps
     SUPPORT_DUMP_MODE = ['api', 'acl']
     ON = 'ON'
@@ -91,9 +91,9 @@ class Const:
     WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
 
     RAISE_PRECISION = {
-        "torch.float16" : "torch.float32",
-        "torch.bfloat16" : "torch.float32",
-        "torch.float32" : "torch.float64"
+        torch.float16: torch.float32,
+        torch.bfloat16: torch.float32,
+        torch.float32: torch.float64
     }
     CONVERT = {
         "int32_to_int64": ["torch.int32", "torch.int64"],
@@ -102,6 +102,7 @@ class Const:
     CONVERT_API = {
         "int32_to_int64": ["cross_entropy"]
     }
+
 
 class CompareConst:
     """
@@ -191,18 +192,22 @@ class CompareException(Exception):
     def __str__(self):
         return self.error_info
 
+
 class DumpException(CompareException):
     pass
+
 
 def read_json(file):
     with FileOpen(file, 'r') as f:
         obj = json.load(f)
     return obj
 
+
 def write_csv(data, filepath):
     with FileOpen(filepath, 'a') as f:
         writer = csv.writer(f)
         writer.writerows(data)
+
 
 def _print_log(level, msg):
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(time.time())))
@@ -296,6 +301,7 @@ def check_file_or_directory_path(path, isdir=False):
             'The path {} does not have permission to read. Please check the path permission'.format(path))
         raise CompareException(CompareException.INVALID_PATH_ERROR)
 
+
 def _check_pkl(pkl_file_handle, file_name):
     tensor_line = pkl_file_handle.readline()
     if len(tensor_line) == 0:
@@ -326,7 +332,7 @@ def check_file_size(input_file, max_size):
         file_size = os.path.getsize(input_file)
     except OSError as os_error:
         print_error_log('Failed to open "%s". %s' % (input_file, str(os_error)))
-        raise CompareException(CompareException.INVALID_FILE_ERROR)
+        raise CompareException(CompareException.INVALID_FILE_ERROR) from os_error
     if file_size > max_size:
         print_error_log('The size (%d) of %s exceeds (%d) bytes, tools not support.'
                         % (file_size, input_file, max_size))
@@ -372,19 +378,18 @@ def modify_dump_path(dump_path, mode):
 def create_directory(dir_path):
     """
     Function Description:
-        creating a directory with specified permissions
+        creating a directory with specified permissions in a thread-safe manner
     Parameter:
         dir_path: directory path
     Exception Description:
         when invalid data throw exception
     """
-    if not os.path.exists(dir_path):
-        try:
-            os.makedirs(dir_path, mode=FileCheckConst.DATA_DIR_AUTHORITY)
-        except OSError as ex:
-            print_error_log(
-                'Failed to create {}.Please check the path permission or disk space .{}'.format(dir_path, str(ex)))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
+    try:
+        os.makedirs(dir_path, mode=FileCheckConst.DATA_DIR_AUTHORITY, exist_ok=True)
+    except OSError as ex:
+        print_error_log(
+            'Failed to create {}. Please check the path permission or disk space. {}'.format(dir_path, str(ex)))
+        raise CompareException(CompareException.INVALID_PATH_ERROR) from ex
 
 
 def execute_command(cmd):
@@ -512,7 +517,15 @@ def get_process_rank(model):
 
 def get_json_contents(file_path):
     ops = get_file_content_bytes(file_path)
-    return json.loads(ops)
+    try:
+        json_obj = json.loads(ops)
+    except ValueError as error:
+        print_error_log('Failed to load "%s". %s' % (file_path, str(error)))
+        raise CompareException(CompareException.INVALID_FILE_ERROR) from error
+    if not isinstance(json_obj, dict):
+        print_error_log('Json file %s, content is not a dictionary!' % file_path)
+        raise CompareException(CompareException.INVALID_FILE_ERROR)
+    return json_obj
 
 
 def get_file_content_bytes(file):
@@ -555,10 +568,10 @@ def check_input_file_valid(input_path, max_file_size=MAX_JSON_FILE_SIZE):
     if not os.access(input_path, os.R_OK):
         raise PermissionError('Input file %s is not readable!' % input_path)
 
-    check_path_pattern_valid(input_path)
-
     if not check_path_length_valid(input_path):
         raise ValueError("The real path or file_name of input is too long.")
+
+    check_path_pattern_valid(input_path)
 
     if os.path.getsize(input_path) > max_file_size:
         raise ValueError(f'The file is too large, exceeds {max_file_size // 1024 ** 2}MB')
@@ -572,6 +585,7 @@ def check_need_convert(api_name):
         else:
             convert_type = key
     return convert_type
+
 
 def api_info_preprocess(api_name, api_info_dict):
     """
@@ -589,6 +603,7 @@ def api_info_preprocess(api_name, api_info_dict):
         api_info_dict = cross_entropy_process(api_info_dict)
     return convert_type, api_info_dict
 
+
 def cross_entropy_process(api_info_dict):
     """
     Function Description:
@@ -603,10 +618,11 @@ def cross_entropy_process(api_info_dict):
             api_info_dict['args'][1]['Min'] = 0 #The second argument in cross_entropy should be -100 or not less than 0.
     return api_info_dict
 
+
 def initialize_save_path(save_path, dir_name):
     data_path = os.path.join(save_path, dir_name)
     if os.path.exists(data_path):
-        raise ValueError(f"file {data_path} already exists, please remove it first")
+        print_warn_log(f"{data_path} already exists, it will be overwritten")
     else:
         os.mkdir(data_path, mode=FileCheckConst.DATA_DIR_AUTHORITY)
     data_path_checker = FileChecker(data_path, FileCheckConst.DIR)

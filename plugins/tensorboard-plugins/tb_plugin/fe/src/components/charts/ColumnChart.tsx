@@ -1,11 +1,27 @@
 /*---------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------------------------------------------
+ * Copyright (c) 2023, Huawei Technologies.
+ * All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0  (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * Modifications: Offer offline supporting.
  *--------------------------------------------------------------------------------------------*/
 
-import { makeStyles } from '@material-ui/core/styles'
 import * as React from 'react'
-import { Graph } from '../../api'
 import { useResizeEventDependency } from '../../utils/resize'
+import * as echarts from 'echarts'
 
 interface IProps {
   title?: string
@@ -13,12 +29,6 @@ interface IProps {
   colors?: Array<string>
   chartData: ColumnChartData
 }
-
-const useStyles = makeStyles(() => ({
-  root: {
-    height: 500
-  }
-}))
 
 export interface ColumnChartData {
   legends: Array<string>
@@ -29,59 +39,78 @@ export interface ColumnChartData {
 export const ColumnChart: React.FC<IProps> = (props) => {
   const { title, units, colors, chartData } = props
   const { legends, barLabels, barHeights } = chartData
-  const classes = useStyles()
   const graphRef = React.useRef<HTMLDivElement>(null)
   const [resizeEventDependency] = useResizeEventDependency()
+
+  const getAngleByDataLength = (data: number) => {
+    if (data < 10) {
+      return 0
+    } else {
+      // 数量越大越趋近于旋转90度
+      return 90 * (1 - 10 / data)
+    }
+  }
 
   React.useLayoutEffect(() => {
     const element = graphRef.current
     if (!element) return
 
-    const data = new google.visualization.DataTable()
-    data.addColumn({
-      type: 'string',
-      label: 'Worker'
+    const chart = echarts.init(element)
+    const dataSource: Array<Array<number | string>> = []
+    dataSource.push(['worker', ...legends])
+    barHeights.forEach((item, index) => {
+      barLabels[index] !== undefined && dataSource.push([barLabels[index], ...item])
     })
-    legends.forEach((label) => {
-      data.addColumn({
-        type: 'number',
-        label
-      })
-    })
-    const rows = barHeights.map((heights, i) =>
-      [barLabels[i] as string | number].concat(heights)
-    )
-    data.addRows(rows)
-
-    const options = {
-      height: 500,
-      title,
-      isStacked: true,
-      legend: { position: 'bottom' },
-      vAxis: {
-        title: units
+    const options: echarts.EChartsOption = {
+      title: {
+        text: title
       },
-      tooltip: { isHtml: true },
-      chartArea: {
-        left: '15%',
-        width: '80%',
-        top: title ? '10%' : '5%'
+      legend: {
+        bottom: 0
       },
-      colors
+      xAxis: {
+        type: 'category',
+        axisLabel: {
+          interval: 0,
+          rotate: getAngleByDataLength(barLabels.length),
+          formatter: (name: string) => {
+            const index = name.indexOf('@')
+            if (index > -1) {
+              name = name.slice(index + 1)
+            }
+            return name.length > 16 ? name.slice(0, 14) + "..." : name;
+          }
+        }
+      },
+      yAxis: {
+        type: 'value',
+        name: units,
+        nameTextStyle: {
+          fontSize: 16
+        }
+      },
+      tooltip: {
+        trigger: 'item'
+      },
+      dataset: {
+        source: dataSource
+      },
+      series: Array(legends.length).fill({
+        type: 'bar',
+        stack: 'samesign'
+      }),
+    }
+    if (colors) {
+      options.color = colors.slice(0, barLabels.length)
     }
 
-    const chart = new google.visualization.ColumnChart(element)
-
-    chart.draw(data, options)
-
+    options && chart.setOption(options, true)
     return () => {
-      chart.clearChart()
+      chart.dispose()
     }
   }, [title, chartData, resizeEventDependency])
 
   return (
-    <div className={classes.root}>
-      <div ref={graphRef}></div>
-    </div>
+    <div ref={graphRef} style={{ height: '500px' }}></div>
   )
 }

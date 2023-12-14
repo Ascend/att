@@ -29,6 +29,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from .file_check_util import FileOpen, FileChecker, FileCheckConst
+
 try:
     import torch_npu
 except ImportError:
@@ -49,6 +51,7 @@ if not is_gpu and not torch_without_guard_version:
 
 device = collections.namedtuple('device', ['type', 'index'])
 prefixes = ['api_stack', 'list', 'range', 'acl']
+npu_distributed_api = ['isend', 'irecv']
 
 
 class Const:
@@ -65,11 +68,12 @@ class Const:
     DUMP_RATIO_MAX = 100
     SUMMERY_DATA_NUMS = 256
     FLOAT_EPSILON = np.finfo(float).eps
-    SUPPORT_DUMP_MODE = ['api', 'acl']
+    SUPPORT_DUMP_MODE = ['api', 'acl', 'model']
     ON = 'ON'
     OFF = 'OFF'
     BACKWARD = 'backward'
     FORWARD = 'forward'
+    PRE_FORWARD = "pre_forward"
 
     # dump mode
     ALL = "all"
@@ -94,12 +98,17 @@ class Const:
     FILE_PATTERN = r'^[a-zA-Z0-9_./-]+$'
     FILE_NAME_LENGTH = 255
     DIRECTORY_LENGTH = 4096
-
+    DISTRIBUTED_PREFIX_LENGTH = 60
     # env dump path
     ASCEND_WORK_PATH = "ASCEND_WORK_PATH"
     DUMP_DIR = "dump_data"
 
+    ENV_ENABLE = "1"
+    ENV_DISABLE = "0"
+
     MAX_SEED_VALUE = 2**32 - 1
+
+    INPLACE_LIST = ["broadcast", "all_reduce", "reduce", "all_gather", "gather", "scatter", "reduce_scatter"]
 
 
 class CompareConst:
@@ -116,15 +125,34 @@ class CompareConst:
     NPU_MAX = "NPU max"
     NPU_MIN = "NPU min"
     NPU_MEAN = "NPU mean"
+    NPU_NORM = "NPU l2norm"
     BENCH_MAX = "Bench max"
     BENCH_MIN = "Bench min"
     BENCH_MEAN = "Bench mean"
+    BENCH_NORM = "Bench l2norm"
+    MAX_DIFF = "Max diff"
+    MIN_DIFF = "Min diff"
+    MEAN_DIFF = "Mean diff"
+    NORM_DIFF = "L2norm diff"
     COSINE = "Cosine"
     MAX_ABS_ERR = "MaxAbsErr"
     MAX_RELATIVE_ERR = "MaxRelativeErr"
     ACCURACY = "Accuracy Reached or Not"
     STACK = "NPU_Stack_Info"
     ERROR_MESSAGE = "Err_message"
+    ONE_THOUSANDTH_ERR_RATIO = "One Thousandth Err Ratio"
+    FIVE_THOUSANDTHS_ERR_RATIO = "Five Thousandths Err Ratio"
+
+    COMPARE_RESULT_HEADER = [
+        NPU_NAME, BENCH_NAME, NPU_DTYPE, BENCH_DTYPE, NPU_SHAPE, BENCH_SHAPE, COSINE, MAX_ABS_ERR, MAX_RELATIVE_ERR,
+        ONE_THOUSANDTH_ERR_RATIO, FIVE_THOUSANDTHS_ERR_RATIO,
+        NPU_MAX, NPU_MIN, NPU_MEAN, NPU_NORM, BENCH_MAX, BENCH_MIN, BENCH_MEAN, BENCH_NORM, ACCURACY, ERROR_MESSAGE
+    ]
+
+    SUMMARY_COMPARE_RESULT_HEADER = [
+        NPU_NAME, BENCH_NAME, NPU_DTYPE, BENCH_DTYPE, NPU_SHAPE, BENCH_SHAPE, MAX_DIFF, MIN_DIFF, MEAN_DIFF, NORM_DIFF,
+        NPU_MAX, NPU_MIN, NPU_MEAN, NPU_NORM, BENCH_MAX, BENCH_MIN, BENCH_MEAN, BENCH_NORM, ACCURACY, ERROR_MESSAGE
+    ]
 
     # compare result data
     NAN = 'Nan'
@@ -201,6 +229,15 @@ class DumpException(CompareException):
     pass
 
 
+class OverflowConst:
+    """
+    Class for Overflow
+    """
+    OVERFLOW_DEBUG_MODE_ENABLE = "OVERFLOW_DEBUG_MODE_ENABLE"
+    OVERFLOW_ORIGINAL_MODE = 0
+    OVERFLOW_DEBUG_MODE = 1
+
+
 def make_dump_path_if_not_exists(dump_path):
     if not os.path.exists(dump_path):
         try:
@@ -208,7 +245,7 @@ def make_dump_path_if_not_exists(dump_path):
         except OSError as ex:
             print_error_log(
                 'Failed to create {}.Please check the path permission or disk space .{}'.format(dump_path, str(ex)))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
+            raise CompareException(CompareException.INVALID_PATH_ERROR) from ex
     else:
         if not os.path.isdir(dump_path):
             print_error_log('{} already exists and is not a directory.'.format(dump_path))
@@ -251,7 +288,11 @@ def print_warn_log(warn_msg):
     _print_log("WARNING", warn_msg)
 
 
-def check_mode_valid(mode, scope=[], api_list=[]):
+def check_mode_valid(mode, scope=None, api_list=None):
+    if scope is None:
+        scope = []
+    if api_list is None:
+        api_list = []
     if not isinstance(scope, list):
         raise ValueError("scope param set invalid, it's must be a list.")
     if not isinstance(api_list, list):
@@ -270,14 +311,15 @@ def check_mode_valid(mode, scope=[], api_list=[]):
               (mode, Const.DUMP_MODE)
         raise CompareException(CompareException.INVALID_DUMP_MODE, msg)
 
-    if mode_check[mode]() is not None:
-        raise mode_check[mode]()
+    if mode_check.get(mode)() is not None:
+        raise mode_check.get(mode)()
 
 
 def check_switch_valid(switch):
     if switch not in ["ON", "OFF"]:
         print_error_log("Please set switch with 'ON' or 'OFF'.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
+
 
 def check_dump_mode_valid(dump_mode):
     if not isinstance(dump_mode, list):
@@ -293,32 +335,49 @@ def check_dump_mode_valid(dump_mode):
         return ["forward", "backward", "input", "output"]
     return dump_mode
 
+
 def check_summary_only_valid(summary_only):
     if not isinstance(summary_only, bool):
         print_error_log("Params summary_only only support True or False.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
     return summary_only
 
-def check_compare_param(input_parma, output_path, stack_mode=False, auto_analyze=True,
-                        fuzzy_match=False):  # 添加默认值来让不传参时能通过参数检查
-    if not (isinstance(input_parma, dict) and isinstance(output_path, str)
-            and isinstance(stack_mode, bool) and isinstance(fuzzy_match, bool)):
+
+def check_compare_param(input_parma, output_path, stack_mode=False, summary_compare=False):  # 添加默认值来让不传参时能通过参数检查
+    if not (isinstance(input_parma, dict) and isinstance(output_path, str)):
         print_error_log("Invalid input parameters")
-        raise CompareException(CompareException.INVALID_PARAM_ERROR)
-    if not isinstance(auto_analyze, bool):
-        print_error_log("Params auto_analyze only support True or False.")
         raise CompareException(CompareException.INVALID_PARAM_ERROR)
     check_file_or_directory_path(input_parma.get("npu_pkl_path"), False)
     check_file_or_directory_path(input_parma.get("bench_pkl_path"), False)
-    check_file_or_directory_path(input_parma.get("npu_dump_data_dir"), True)
-    check_file_or_directory_path(input_parma.get("bench_dump_data_dir"), True)
+    if not summary_compare:
+        check_file_or_directory_path(input_parma.get("npu_dump_data_dir"), True)
+        check_file_or_directory_path(input_parma.get("bench_dump_data_dir"), True)
     check_file_or_directory_path(output_path, True)
-    npu_pkl = open(input_parma.get("npu_pkl_path"), "r")
-    bench_pkl = open(input_parma.get("bench_pkl_path"), "r")
-    check_file_mode(npu_pkl.name, bench_pkl.name, stack_mode)
-    _check_pkl(npu_pkl, input_parma.get("npu_pkl_path"))
-    _check_pkl(bench_pkl, input_parma.get("bench_pkl_path"))
-    return npu_pkl, bench_pkl
+    with FileOpen(input_parma.get("npu_pkl_path"), "r") as npu_pkl, \
+         FileOpen(input_parma.get("bench_pkl_path"), "r") as bench_pkl:
+        check_pkl_file(input_parma, npu_pkl, bench_pkl, stack_mode)
+
+
+def is_summary_compare(input_param):
+    npu_pkl_path = input_param.get("npu_pkl_path", None)
+    bench_pkl_path = input_param.get("bench_pkl_path", None)
+    npu_dump_data_dir = input_param.get("npu_dump_data_dir", None)
+    bench_dump_data_dir = input_param.get("bench_dump_data_dir", None)
+    if not npu_pkl_path or not bench_pkl_path:
+        print_error_log(f"Please check the pkl path is valid.")
+        raise CompareException(CompareException.INVALID_PATH_ERROR)
+    if not (npu_dump_data_dir and bench_dump_data_dir):
+        return True
+    if npu_dump_data_dir and bench_dump_data_dir:
+        return False
+    print_error_log(f"Please check the dump data dir is valid.")
+    raise CompareException(CompareException.INVALID_PATH_ERROR)
+
+
+def check_configuration_param(stack_mode=False, auto_analyze=True, fuzzy_match=False):
+    if not (isinstance(stack_mode, bool) and isinstance(auto_analyze, bool) and isinstance(fuzzy_match, bool)):
+        print_error_log("Invalid input parameters which should be only bool type.")
+        raise CompareException(CompareException.INVALID_PARAM_ERROR)
 
 
 def check_file_or_directory_path(path, isdir=False):
@@ -332,29 +391,10 @@ def check_file_or_directory_path(path, isdir=False):
         when invalid data throw exception
     """
     if isdir:
-        if not os.path.exists(path):
-            print_error_log('The path {} is not exist.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-        if not os.path.isdir(path):
-            print_error_log('The path {} is not a directory.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-        if not os.access(path, os.W_OK):
-            print_error_log(
-                'The path {} does not have permission to write. Please check the path permission'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
+        path_checker = FileChecker(path, FileCheckConst.DIR, FileCheckConst.WRITE_ABLE)
     else:
-        if not os.path.isfile(path):
-            print_error_log('{} is an invalid file or non-exist.'.format(path))
-            raise CompareException(CompareException.INVALID_PATH_ERROR)
-
-    check_file_valid(path)
-
-    if not os.access(path, os.R_OK):
-        print_error_log(
-            'The path {} does not have permission to read. Please check the path permission'.format(path))
-        raise CompareException(CompareException.INVALID_PATH_ERROR)
+        path_checker = FileChecker(path, FileCheckConst.FILE, FileCheckConst.READ_ABLE)
+    path_checker.common_check()
 
 
 def _check_pkl(pkl_file_handle, file_name):
@@ -365,13 +405,13 @@ def _check_pkl(pkl_file_handle, file_name):
     pkl_file_handle.seek(0, 0)
 
 
-def is_starts_with(string, prefixes):
-    return any(string.startswith(prefix) for prefix in prefixes)
+def is_starts_with(string, prefix_list):
+    return any(string.startswith(prefix) for prefix in prefix_list)
 
 
-def check_file_mode(npu_pkl, bench_pkl, stack_mode):
-    npu_pkl_name = os.path.split(npu_pkl)[-1]
-    bench_pkl_name = os.path.split(bench_pkl)[-1]
+def check_pkl_file(input_param, npu_pkl, bench_pkl, stack_mode):
+    npu_pkl_name = os.path.split(npu_pkl.name)[-1]
+    bench_pkl_name = os.path.split(bench_pkl.name)[-1]
 
     if not is_starts_with(npu_pkl_name, prefixes) and not is_starts_with(bench_pkl_name, prefixes):
         if stack_mode:
@@ -384,6 +424,9 @@ def check_file_mode(npu_pkl, bench_pkl, stack_mode):
     else:
         print_error_log("The dump mode of the two files is not same, please check the dump files")
         raise CompareException(CompareException.INVALID_COMPARE_MODE)
+
+    _check_pkl(npu_pkl, input_param.get("npu_pkl_path"))
+    _check_pkl(bench_pkl, input_param.get("bench_pkl_path"))
 
 
 def check_file_size(input_file, max_size):
@@ -411,9 +454,9 @@ def remove_path(path):
             os.remove(path)
         else:
             shutil.rmtree(path)
-    except PermissionError:
+    except PermissionError as err:
         print_error_log("Failed to delete {}. Please check the permission.".format(path))
-        raise CompareException(CompareException.INVALID_PATH_ERROR)
+        raise CompareException(CompareException.INVALID_PATH_ERROR) from err
 
 
 def get_dump_data_path(dump_dir):
@@ -632,7 +675,7 @@ def generate_compare_script(dump_path, pkl_file_path, dump_switch_mode):
     is_api_stack = "True" if dump_switch_mode == Const.API_STACK else "False"
 
     try:
-        with open(template_path, 'r') as ftemp, \
+        with FileOpen(template_path, 'r') as ftemp, \
            os.fdopen(os.open(compare_script_path, Const.WRITE_FLAGS, Const.WRITE_MODES), 'w+') as fout:
             code_temp = ftemp.read()
             fout.write(code_temp % (pkl_file_path, dump_path, is_api_stack))
@@ -668,3 +711,22 @@ def check_file_valid(file_path):
         if file_path.endswith(Const.NUMPY_SUFFIX) and file_size > Const.TEN_GB:
             print_error_log('The file {} size is greater than 10GB.'.format(file_path))
             raise CompareException(CompareException.INVALID_PATH_ERROR)
+
+
+def check_path_before_create(path):
+    if len(os.path.realpath(path)) > Const.DIRECTORY_LENGTH or len(os.path.basename(path)) > \
+            Const.FILE_NAME_LENGTH:
+        print_error_log('The file path length exceeds limit.')
+        raise CompareException(CompareException.INVALID_PATH_ERROR)
+
+    if not re.match(Const.FILE_PATTERN, os.path.realpath(path)):
+        print_error_log('The file path {} contains special characters.'.format(path))
+        raise CompareException(CompareException.INVALID_PATH_ERROR)
+
+
+def check_inplace_op(prefix):
+    if len(prefix) > Const.DISTRIBUTED_PREFIX_LENGTH:
+        return False
+    match_op = re.findall(r"Distributed_(.+?)_\d", prefix)
+    op_name = match_op[0] if match_op else None
+    return op_name in Const.INPLACE_LIST

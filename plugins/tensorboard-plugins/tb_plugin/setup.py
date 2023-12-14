@@ -20,8 +20,8 @@
 # --------------------------------------------------------------------------
 import os
 import pathlib
-import setuptools
 import subprocess
+import setuptools
 
 
 def read(rel_path):
@@ -84,8 +84,8 @@ setuptools.setup(
     version=get_version(os.path.join('torch_tb_profiler', '__init__.py')),
     description="PyTorch Ascend Profiler TensorBoard Plugin",
     long_description="PyTorch Ascend Profiler TensorBoard Plugin : \
-        https://gitee.com/ascend/att/tree/master/tb_plugins/profiling/tb_plugin",
-    url="https://gitee.com/ascend/att/tree/master/tb_plugins/profiling/tb_plugin",
+        https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin",
+    url="https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin",
     author="Ascend Team",
     author_email="pmail_mindstudio@huawei.com",
     cmdclass={

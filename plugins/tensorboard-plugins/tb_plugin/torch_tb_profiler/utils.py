@@ -94,24 +94,24 @@ class Canonicalizer:
         self.canonical_time_metrics = {
             'micro': 'us', 'microsecond': 'us', 'us': 'us',
             'milli': 'ms', 'millisecond': 'ms', 'ms': 'ms',
-            '':  's',      'second':  's',  's':  's',
+            '': 's', 'second': 's', 's': 's',
         }
         # canonicalize the memory metric to a string
         self.canonical_memory_metrics = {
-            '':  'B',  'B':  'B',
+            '': 'B', 'B': 'B',
             'K': 'KB', 'KB': 'KB',
             'M': 'MB', 'MB': 'MB',
             'G': 'GB', 'GB': 'GB',
         }
 
-        self.time_metric = self.canonical_time_metrics[time_metric]
-        self.memory_metric = self.canonical_memory_metrics[memory_metric]
+        self.time_metric = self.canonical_time_metrics.get(time_metric)
+        self.memory_metric = self.canonical_memory_metrics.get(memory_metric)
 
         # scale factor scale input to output
-        self.time_factor = time_metric_to_factor[self.canonical_time_metrics[input_time_metric]] /\
-            time_metric_to_factor[self.time_metric]
-        self.memory_factor = memory_metric_to_factor[self.canonical_memory_metrics[input_memory_metric]] /\
-            memory_metric_to_factor[self.memory_metric]
+        self.time_factor = time_metric_to_factor.get(self.canonical_time_metrics.get(input_time_metric)) /\
+            time_metric_to_factor.get(self.time_metric)
+        self.memory_factor = memory_metric_to_factor.get(self.canonical_memory_metrics.get(input_memory_metric)) /\
+            memory_metric_to_factor.get(self.memory_metric)
 
     def convert_time(self, t):
         return self.time_factor * t
@@ -130,7 +130,7 @@ class DisplayRounder:
     def __call__(self, v: float):
         _v = abs(v)
         if _v >= self.precision or v == 0:
-            return round(v, 2)
+            return round(v, 3)
         else:
             ndigit = abs(math.floor(math.log10(_v)))
             return round(v, ndigit)

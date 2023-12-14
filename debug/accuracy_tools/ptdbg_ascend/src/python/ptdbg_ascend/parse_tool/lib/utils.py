@@ -37,8 +37,7 @@ except ImportError as err:
     Table = None
     Columns = None
     rich_print = None
-    print("[Warning] Failed to import rich.", err)
-    print("[Warning] Some features may not be available. Please run 'pip install rich' to fix it.")
+    print("[Warning] Failed to import rich, Some features may not be available. Please run 'pip install rich' to fix it.")
 
 
 class Util:
@@ -104,11 +103,12 @@ class Util:
         path = self.path_strip(path)
         if os.path.exists(path):
             return
+        self.check_path_name(path)
         try:
             os.makedirs(path, mode=0o750)
         except OSError as e:
-            self.log.error("Failed to create %s. %s", path, str(e))
-            raise ParseException(ParseException.PARSE_INVALID_PATH_ERROR)
+            self.log.error("Failed to create %s.", path)
+            raise ParseException(ParseException.PARSE_INVALID_PATH_ERROR) from e
 
     def gen_npy_info_txt(self, source_data):
         shape, dtype, max_data, min_data, mean = \
@@ -220,4 +220,13 @@ class Util:
             raise ParseException(ParseException.PARSE_INVALID_PATH_ERROR)
         else:
             self.log.error("The file path %s is invalid" % path)
+            raise ParseException(ParseException.PARSE_INVALID_PATH_ERROR)
+        
+    def check_path_name(self, path):
+        if len(os.path.realpath(path)) > Const.DIRECTORY_LENGTH or len(os.path.basename(path)) > \
+                Const.FILE_NAME_LENGTH:
+            self.log.error('The file path length exceeds limit.')
+            raise ParseException(ParseException.PARSE_INVALID_PATH_ERROR)
+        if not re.match(Const.FILE_PATTERN, os.path.realpath(path)):
+            self.log.error('The file path {} contains special characters.'.format(path))
             raise ParseException(ParseException.PARSE_INVALID_PATH_ERROR)

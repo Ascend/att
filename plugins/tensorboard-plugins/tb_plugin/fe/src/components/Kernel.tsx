@@ -317,12 +317,14 @@ export const Kernel: React.FC<IProps> = (props) => {
                   }
                 </Grid>
               </Grid>
-              <Grid item>
-                <DataLoading value={searchedOpTable}>
-                  {(graph) => (
-                    <AntTableChart graph={graph} sortColumn={sortColumn} />
-                  )}
-                </DataLoading>
+              <Grid item container>
+                <Grid item sm={12}>
+                  <DataLoading value={searchedOpTable}>
+                    {(graph) => (
+                      <AntTableChart graph={graph} sortColumn={sortColumn} />
+                    )}
+                  </DataLoading>
+                </Grid>
               </Grid>
             </Grid>
           </Grid>

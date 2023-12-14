@@ -22,11 +22,21 @@ import yaml
 
 from .hook_module import HOOKModule
 from ..common.utils import torch_device_guard, torch_without_guard_version
+from ..common.file_check_util import FileOpen
 
 cur_path = os.path.dirname(os.path.realpath(__file__))
 yaml_path = os.path.join(cur_path, "support_wrap_ops.yaml")
-with open(yaml_path, 'r') as f:
+with FileOpen(yaml_path, 'r') as f:
     WrapNpuOps = yaml.safe_load(f).get('torch_npu')
+
+
+def get_npu_ops():
+    global WrapNpuOps
+    if torch_without_guard_version:
+        _npu_ops = dir(torch.ops.npu)
+    else:
+        _npu_ops = dir(torch_npu._C._VariableFunctionsClass)
+    return set(WrapNpuOps) & set(_npu_ops)
 
 
 class HOOKNpuOP(object):
@@ -47,6 +57,7 @@ class NpuOPTemplate(HOOKModule):
         else:
             return getattr(torch_npu._C._VariableFunctionsClass, str(self.op_name_))(*args, **kwargs)
 
+
 def wrap_npu_op(op_name, hook):
 
     def npu_op_template(*args, **kwargs):
@@ -56,6 +67,6 @@ def wrap_npu_op(op_name, hook):
 
 
 def wrap_npu_ops_and_bind(hook):
-    _npu_ops = WrapNpuOps
+    _npu_ops = get_npu_ops()
     for op_name in _npu_ops:
         setattr(HOOKNpuOP, "wrap_" + str(op_name), wrap_npu_op(op_name, hook))

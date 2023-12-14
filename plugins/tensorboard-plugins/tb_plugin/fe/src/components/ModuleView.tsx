@@ -157,45 +157,47 @@ export const ModuleView: React.FC<IProps> = (props) => {
     if (cardRef.current) {
       setCardWidth(cardRef.current.offsetWidth - 10)
     }
-    if (timelineRef.current) {
-      defaultApi.treeGet(run, worker, span).then((resp) => {
-        if (resp) {
-          const data = new google.visualization.DataTable()
-          data.addColumn({ type: 'string', id: 'Layer' })
-          data.addColumn({ type: 'string', id: 'Name' })
-          data.addColumn({ type: 'string', role: 'tooltip' })
-          data.addColumn({ type: 'number', id: 'Start' })
-          data.addColumn({ type: 'number', id: 'End' })
+    try {
+      if (timelineRef.current) {
+        defaultApi.treeGet(run, worker, span).then((resp) => {
+          if (resp) {
+            const data = new google.visualization.DataTable()
+            data.addColumn({ type: 'string', id: 'Layer' })
+            data.addColumn({ type: 'string', id: 'Name' })
+            data.addColumn({ type: 'string', role: 'tooltip' })
+            data.addColumn({ type: 'number', id: 'Start' })
+            data.addColumn({ type: 'number', id: 'End' })
 
-          let timeline_data: any[] = []
-          getOperatorTree(0, resp, timeline_data)
-          timeline_data.sort((a, b) => a.level - b.level)
-          const max_level = timeline_data[timeline_data.length - 1].level
-          timeline_data.forEach((d) => {
-            data.addRow([
-              d.level.toString(),
-              d.name,
-              `${d.name} Duration: ${d.end - d.start} us`,
-              d.start / 1000.0, // the time unit is us returned from server, but the google charts only accept milliseconds here
-              d.end / 1000.0
-            ])
-          })
+            let timeline_data: any[] = []
+            getOperatorTree(0, resp, timeline_data)
+            timeline_data.sort((a, b) => a.level - b.level)
+            const max_level = timeline_data[timeline_data.length - 1].level
+            timeline_data.forEach((d) => {
+              data.addRow([
+                d.level.toString(),
+                d.name,
+                `${d.name} Duration: ${d.end - d.start} us`,
+                d.start / 1000.0, // the time unit is us returned from server, but the google charts only accept milliseconds here
+                d.end / 1000.0
+              ])
+            })
 
-          const chart = new google.visualization.Timeline(timelineRef.current)
-
-          // console.info(timeline_data)
-          const options = {
-            height: (max_level + 1) * 50,
-            tooltip: {
-              isHtml: true
-            },
-            timeline: {
-              showRowLabels: false
+            const chart = new google.visualization.Timeline(timelineRef.current)
+            const options = {
+              height: (max_level + 1) * 50,
+              tooltip: {
+                isHtml: true
+              },
+              timeline: {
+                showRowLabels: false
+              }
             }
+            chart.draw(data, options)
           }
-          chart.draw(data, options)
-        }
-      })
+        })
+      }
+    } catch (e) {
+      console.warn('Timeline in module view is not supported offline.')
     }
   }, [run, worker, span])
 
@@ -226,11 +228,6 @@ export const ModuleView: React.FC<IProps> = (props) => {
     <div className={classes.root}>
       <Card variant="outlined" ref={cardRef}>
         <CardHeader title="Module View" />
-
-        {/* defaultExpandAllRows will only valid when first render the Table
-          if row is null, then it will be ignored so all data will be collapse.
-          see https://segmentfault.com/a/1190000007830998 for more information.
-          */}
         {rows && rows.length > 0 && (
           <Table
             size="small"

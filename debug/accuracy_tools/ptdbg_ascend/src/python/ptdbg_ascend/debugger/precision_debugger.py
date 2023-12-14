@@ -16,12 +16,14 @@ class PrecisionDebugger:
     first_start = True
     hook_func = None
     config = None
+    model = None
 
-    def __init__(self, dump_path=None, hook_name=None, rank=None, step=[], enable_dataloader=False):
+    def __init__(self, dump_path=None, hook_name=None, rank=None, step=None, enable_dataloader=False, model=None):
         if hook_name is None:
             err_msg = "You must provide hook_name argument to PrecisionDebugger\
                             when config is not provided."
             raise Exception(err_msg)
+        step = step or []
         self.config = DebuggerConfig(dump_path, hook_name, rank, step)
         self.configure_hook = self.get_configure_hook(self.config.hook_name)
         self.configure_hook()
@@ -29,6 +31,7 @@ class PrecisionDebugger:
         DumpUtil.target_rank = self.config.rank
         set_dump_path(self.config.dump_path)
         PrecisionDebugger.hook_func = overflow_check if self.config.hook_name == "overflow_check" else acc_cmp_dump
+        PrecisionDebugger.model = model
         if not isinstance(enable_dataloader, bool):
             print_error_log("Params enable_dataloader only support True or False.")
             raise CompareException(CompareException.INVALID_PARAM_ERROR)
@@ -40,14 +43,15 @@ class PrecisionDebugger:
         hook_dict = {"dump": self.configure_full_dump, "overflow_check": self.configure_overflow_dump}
         return hook_dict.get(hook_name, lambda: ValueError("hook name {} is not in ['dump', 'overflow_check']".format(hook_name)))
 
-    def configure_full_dump(self, mode='api_stack', scope=[], api_list=[], filter_switch=Const.ON,
-            input_output_mode=[Const.ALL], acl_config=None, backward_input=[], summary_only=False):
+    def configure_full_dump(self, mode='api_stack', scope=None, api_list=None, filter_switch=Const.OFF,
+            input_output_mode=[Const.ALL], acl_config=None, backward_input=None, summary_only=False):
+        scope = scope or [] 
+        api_list = api_list or []
+        backward_input = backward_input or []
         set_dump_switch_config(mode=mode, scope=scope, api_list=api_list,
                                filter_switch=filter_switch, dump_mode=input_output_mode, summary_only=summary_only)
         if mode == 'acl':
-            if not acl_config:
-                raise ValueError("acl_config must be configured when mode is 'acl'")
-            DumpUtil.dump_config = acl_config
+            DumpUtil.set_acl_config(acl_config)
             if not scope or not isinstance(scope, list) or len(scope) != 1:
                 raise ValueError("scope must be congfigured as a list with one api name")
             if isinstance(scope[0], str) and 'backward' in scope[0] and not backward_input:
@@ -55,21 +59,24 @@ class PrecisionDebugger:
             elif 'backward' in scope[0]:
                 set_backward_input(backward_input)
 
-    def configure_overflow_dump(self, mode="api", acl_config=None, overflow_nums=1, filter_switch = Const.OFF):
+    def configure_overflow_dump(self, mode="api", acl_config=None, overflow_nums=1, filter_switch=Const.OFF, need_replicate=False):
         if mode == "acl":
             DumpUtil.dump_switch_mode = mode
-            DumpUtil.dump_config = acl_config
-            if acl_config is None:
-                raise ValueError("acl_config must be configured when mode is 'acl'")
+            DumpUtil.set_acl_config(acl_config)
         init_overflow_nums(overflow_nums)
         check_switch_valid(filter_switch)
         OverFlowUtil.overflow_filter_switch = filter_switch
+        if not isinstance(need_replicate, bool):
+            print_error_log("Params autojudge only support True or False.")
+            raise CompareException(CompareException.INVALID_PARAM_ERROR)
+        if need_replicate:
+            DumpUtil.need_replicate = True
 
     @classmethod
     def start(cls):
         if DumpUtil.iter_num in DumpUtil.target_iter or len(DumpUtil.target_iter) == 0:
             if cls.first_start:
-                register_hook_core(cls.hook_func)
+                register_hook_core(cls.hook_func, cls.model)
                 cls.first_start = False
             DumpUtil.dump_switch = "ON"
             OverFlowUtil.overflow_check_switch = "ON"
@@ -89,7 +96,7 @@ class PrecisionDebugger:
         dump_path_str = generate_dump_path_str()
         set_dump_switch_print_info("OFF", DumpUtil.dump_switch_mode, dump_path_str)
         write_to_disk()
-        if check_is_npu() and DumpUtil.dump_switch_mode in [Const.ALL, Const.API_STACK, Const.LIST, Const.RANGE]:
+        if check_is_npu() and DumpUtil.dump_switch_mode in [Const.ALL, Const.API_STACK, Const.LIST, Const.RANGE, Const.API_LIST]:
             generate_compare_script(DumpUtil.dump_data_dir, get_pkl_file_path(), DumpUtil.dump_switch_mode)
 
     @classmethod
@@ -102,6 +109,7 @@ class PrecisionDebugger:
     def incr_iter_num_maybe_exit():
         PrecisionDebugger.step()
         PrecisionDebugger.start()
+
 
 def iter_tracer(func):
     def func_wrapper(*args, **kwargs):

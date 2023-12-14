@@ -373,6 +373,50 @@ export interface Graph {
 /**
  *
  * @export
+ * @interface ValueAndTooltip
+ */
+export interface ValueAndTooltip {
+  /**
+   *
+   * @type {string | number}
+   * @memberof ValueAndTooltip
+   */
+  value: string | number
+  /**
+   *
+   * @type {string}
+   * @memberof ValueAndTooltip
+   */
+  tooltip?: string
+}
+/**
+ *
+ * @export
+ * @interface StepedGraph
+ */
+export interface StepedGraph {
+  /**
+   *
+   * @type {string}
+   * @memberof StepedGraph
+   */
+  title?: string
+  /**
+   *
+   * @type {Array<string>}
+   * @memberof StepedGraph
+   */
+  columns: Array<string>
+  /**
+   *
+   * @type {Array<Array<ValueAndTooltip>>}
+   * @memberof StepedGraph
+   */
+  rows: Array<Array<ValueAndTooltip>>
+}
+/**
+ *
+ * @export
  * @interface GraphAscend
  */
 export interface GraphAscend {
@@ -1147,10 +1191,10 @@ export interface Overview {
   environments: Array<Environment>
   /**
    *
-   * @type {Graph}
+   * @type {StepedGraph}
    * @memberof Overview
    */
-  steps: Graph
+  steps: StepedGraph
   /**
    *
    * @type {string}

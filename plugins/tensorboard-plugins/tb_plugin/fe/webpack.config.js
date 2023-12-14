@@ -32,9 +32,5 @@ module.exports = {
     }),
     !isDev ? new InlineChunkHtmlPlugin(HtmlWebpackPlugin, [/.*/]) : undefined
   ].filter(Boolean),
-  devServer: {
-    // proxy: {
-    //     '/data/plugin/pytorch_profiler': ''
-    // }
-  }
+  devServer: {}
 }

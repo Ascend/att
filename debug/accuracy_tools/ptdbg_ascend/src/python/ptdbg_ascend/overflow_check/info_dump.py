@@ -1,13 +1,14 @@
 import inspect
 import fcntl
-import json
 import os
-import torch
 import threading
 
+import json
 import numpy as np
+import torch
 
-from ..common.utils import print_error_log
+from ..common.utils import print_error_log, get_time
+from ..common.file_check_util import FileOpen
 
 
 special_torch_object = ["memory_format"]
@@ -41,28 +42,29 @@ class APIInfo:
             out = []
             for item in element:
                 out.append(self.analyze_element(item))
+            return out
         elif isinstance(element, dict):
-            out = {}
+            out_dict = {}
             for key, value in element.items():
                 if key in self.torch_object_key.keys():
                     fun = self.torch_object_key[key]
-                    out[key] = fun(value)
+                    out_dict[key] = fun(value)
                 elif key in special_torch_object:
                     continue
                 else:
-                    out[key] = self.analyze_element(value)
-
+                    out_dict[key] = self.analyze_element(value)
+            return out_dict
         elif isinstance(element, torch.Tensor):
-            out = self.analyze_tensor(element, self.save_real_data)
-
+            out_tensor = self.analyze_tensor(element, self.save_real_data)
+            return out_tensor
         elif self.is_builtin_class(element):
-            out = self.analyze_builtin(element)
+            out_builtin = self.analyze_builtin(element)
+            return out_builtin
         else:
             msg = f"Type {type(element)} is unsupported at analyze_element"
             print_error_log(msg)
 
             raise NotImplementedError(msg)
-        return out
 
     def analyze_tensor(self, arg, save_real_data):
         single_arg = {}
@@ -79,13 +81,13 @@ class APIInfo:
             api_args = self.api_name + '.' + str(self.args_num)
             rank = arg.device.index
             if self.is_forward:
-                forward_real_data_path = os.path.join(dump_path, 'forward_real_data', f"rank{rank}")
+                forward_real_data_path = os.path.join(dump_path, "forward_real_data_" + get_time(), f"rank{rank}")
                 if not os.path.exists(forward_real_data_path):
                     os.makedirs(forward_real_data_path, 0o755)
 
                 file_path = os.path.join(forward_real_data_path, f'{api_args}.npy')
             else:
-                backward_real_data_path = os.path.join(dump_path, 'backward_real_data', f"rank{rank}")
+                backward_real_data_path = os.path.join(dump_path, "backward_real_data_" + get_time(), f"rank{rank}")
                 if not os.path.exists(backward_real_data_path):
                     os.makedirs(backward_real_data_path, 0o755)
                 file_path = os.path.join(backward_real_data_path, f'{api_args}.npy')
@@ -169,7 +171,8 @@ class ForwardAPIInfo(APIInfo):
     def analyze_api_call_stack(self):
         stack_str = []
         for (_, path, line, func, code, _) in inspect.stack()[3:]:
-            if not code: continue
+            if not code: 
+                continue
             stack_line = " ".join([
                 "File", ", ".join([path, " ".join(["line", str(line)]), " ".join(["in", func]),
                                    " ".join(["\n", code[0].strip()])])])
@@ -205,10 +208,10 @@ def write_api_info_json(api_info):
 
 def write_json(file_path, data, indent=None):
     if not os.path.exists(file_path):
-        with open(file_path, 'w') as f:
+        with FileOpen(file_path, 'w') as f:
             f.write("{\n}")
     lock.acquire()
-    with open(file_path, 'a+') as f:
+    with FileOpen(file_path, 'a+') as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
             f.seek(0, os.SEEK_END)

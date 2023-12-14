@@ -45,6 +45,9 @@ import 'antd/es/table/style/css'
 import clsx from 'clsx'
 import * as React from 'react'
 import * as api from './api'
+import { AccuracyLeftPanel } from './components/Accuracy/AccuracyLeftPanel'
+import { FileInfo } from './components/Accuracy/entity'
+import { LossComparison } from './components/Accuracy/LossComparison'
 import { DiffOverview } from './components/DiffOverview'
 import { DistributedView } from './components/DistributedView'
 import { FullCircularProgress } from './components/FullCircularProgress'
@@ -80,10 +83,13 @@ const ViewNames = {
   [Views.Lightning]: Views.Lightning
 }
 
+const accViews = ['Loss Comparison']
+
 const drawerWidth = 340
 const useStyles = makeStyles((theme) => ({
   root: {
-    display: 'flex'
+    display: 'flex',
+    height: '100%'
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
@@ -113,6 +119,7 @@ const useStyles = makeStyles((theme) => ({
   },
   drawerOpen: {
     width: drawerWidth,
+    zIndex: 999,
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen
@@ -139,7 +146,8 @@ const useStyles = makeStyles((theme) => ({
   },
   content: {
     flexGrow: 1,
-    padding: theme.spacing(3)
+    padding: theme.spacing(3),
+    overflowX: 'hidden'
   },
   formControl: {
     margin: theme.spacing(1),
@@ -200,10 +208,16 @@ export const App = () => {
 
   const [open, setOpen] = React.useState(true)
 
+  const [topTab, setTopTab] = React.useState<number>(0)
+  const [fileList, setFileList] = React.useState<FileInfo[]>([])
+  const [uploadedCount, setUploadedCount] = React.useState<number>(0)
+
   // #endregion
 
   React.useEffect(() => {
-    setup().then(() => {
+    setup().catch(() => {
+      console.log('google chart is not supported offline')
+    }).finally(() => {
       setLoaded(true)
     })
   }, [])
@@ -322,6 +336,10 @@ export const App = () => {
     setSelectedTab(value as number)
   }
 
+  const handleTopTabChange = (event: React.ChangeEvent<{}>, value: any) => {
+    setTopTab(value as number)
+  }
+
   const handleRunChange: SelectProps['onChange'] = (event) => {
     setRun(event.target.value as string)
     setView('')
@@ -386,6 +404,16 @@ export const App = () => {
 
   const SetIframeActive = () => {
     iframeRef.current?.focus()
+  }
+
+  const _changeFileList = (files: FileInfo[]) => {
+    if (JSON.stringify(files) !== JSON.stringify(fileList)) {
+      setFileList(files)
+    }
+  }
+
+  const _changeUploadCount = (count: number) => {
+    setUploadedCount(count)
   }
 
   // #endregion
@@ -497,117 +525,136 @@ export const App = () => {
         <Divider />
         <Box>
           <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            aria-label="basic tabs example"
+            value={topTab}
+            onChange={handleTopTabChange}
+            aria-label="top tabs example"
           >
-            <Tab label="Normal" />
-            <Tab label="Diff" />
+            <Tab label="Profiling" />
+            <Tab label="Accuracy" />
           </Tabs>
         </Box>
-        {selectedTab == 0 ? (
+        {topTab === 0 ? (
           <>
-            <ListSubheader>Runs</ListSubheader>
-            <ClickAwayListener onClickAway={SetIframeActive}>
-              <FormControl variant="outlined" className={classes.formControl}>
-                <Select value={run} onChange={handleRunChange}>
-                  {runs.map((run) => (
-                    <MenuItem value={run}>{run}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </ClickAwayListener>
-            <ListSubheader>Views</ListSubheader>
-            <ClickAwayListener onClickAway={SetIframeActive}>
-              <FormControl variant="outlined" className={classes.formControl}>
-                <Select value={view} onChange={handleViewChange}>
-                  {views.map((view) => (
-                    <MenuItem value={view}>{view === Views.Kernel ? (
-                      deviceTarget === 'Ascend' ? `NPU ${ViewNames[view]}` : `GPU ${ViewNames[view]}`
-                    ) : ViewNames[view]}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </ClickAwayListener>
-            <ListSubheader>Workers</ListSubheader>
-            <ClickAwayListener onClickAway={SetIframeActive}>
-              <FormControl variant="outlined" className={classes.formControl}>
-                <Select value={worker} onChange={handleWorkerChange}>
-                  {workers.map((worker) => (
-                    <MenuItem value={worker}>{worker}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </ClickAwayListener>
-            {spanComponent()}
+            <Box>
+              <Tabs
+                value={selectedTab}
+                onChange={handleTabChange}
+                aria-label="basic tabs example"
+              >
+                <Tab label="Normal" />
+                <Tab label="Diff" />
+              </Tabs>
+            </Box>
+            {selectedTab == 0 ? (
+              <>
+                <ListSubheader>Runs</ListSubheader>
+                <ClickAwayListener onClickAway={SetIframeActive}>
+                  <FormControl variant="outlined" className={classes.formControl}>
+                    <Select value={run} onChange={handleRunChange}>
+                      {runs.map((run) => (
+                        <MenuItem value={run}>{run}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </ClickAwayListener>
+                <ListSubheader>Views</ListSubheader>
+                <ClickAwayListener onClickAway={SetIframeActive}>
+                  <FormControl variant="outlined" className={classes.formControl}>
+                    <Select value={view} onChange={handleViewChange}>
+                      {views.map((view) => (
+                        <MenuItem value={view}>{view === Views.Kernel ? (
+                          deviceTarget === 'Ascend' ? `NPU ${ViewNames[view]}` : `GPU ${ViewNames[view]}`
+                        ) : ViewNames[view]}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </ClickAwayListener>
+                <ListSubheader>Workers</ListSubheader>
+                <ClickAwayListener onClickAway={SetIframeActive}>
+                  <FormControl variant="outlined" className={classes.formControl}>
+                    <Select value={worker} onChange={handleWorkerChange}>
+                      {workers.map((worker) => (
+                        <MenuItem value={worker}>{worker}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </ClickAwayListener>
+                {spanComponent()}
+              </>
+            ) : (
+              <>
+                <Typography variant="h6">&nbsp;&nbsp;Baseline</Typography>
+                <ListSubheader>Runs</ListSubheader>
+                <FormControl variant="outlined" className={classes.formControl}>
+                  <Select value={diffLeftRun} onChange={handleDiffLeftRunChange}>
+                    {runs.map((run) => (
+                      <MenuItem value={run}>{run}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <ListSubheader>Workers</ListSubheader>
+
+                  <FormControl variant="outlined" className={classes.formControl}>
+                    <Select
+                      value={diffLeftWorker}
+                      onChange={handleDiffLeftWorkerChange}
+                    >
+                      {diffLeftWorkerOptions.map((worker) => (
+                        <MenuItem value={worker}>{worker}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <ListSubheader>Spans</ListSubheader>
+                  <FormControl variant="outlined" className={classes.formControl}>
+                    <Select value={diffLeftSpan} onChange={handleDiffLeftSpanChange}>
+                      {diffLeftSpansOptions.map((span) => (
+                        <MenuItem value={span}>{span}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <Divider />
+
+                <Typography variant="h6">&nbsp;&nbsp;Experimental</Typography>
+                <ListSubheader>Runs</ListSubheader>
+                <FormControl variant="outlined" className={classes.formControl}>
+                  <Select value={diffRightRun} onChange={handleDiffRightRunChange}>
+                    {runs.map((run) => (
+                      <MenuItem value={run}>{run}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <ListSubheader>Workers</ListSubheader>
+                <FormControl variant="outlined" className={classes.formControl}>
+                  <Select
+                    value={diffRightWorker}
+                    onChange={handleDiffRightWorkerChange}
+                  >
+                    {diffRightWorkerOptions.map((worker) => (
+                      <MenuItem value={worker}>{worker}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <ListSubheader>Spans</ListSubheader>
+                <FormControl variant="outlined" className={classes.formControl}>
+                  <Select
+                    value={diffRightSpan}
+                    onChange={handleDiffRightSpanChange}
+                  >
+                    {diffRightSpansOptions.map((span) => (
+                      <MenuItem value={span}>{span}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </>
+            )}
           </>
-        ) : (
-          <>
-            <Typography variant="h6">&nbsp;&nbsp;Baseline</Typography>
-            <ListSubheader>Runs</ListSubheader>
-            <FormControl variant="outlined" className={classes.formControl}>
-              <Select value={diffLeftRun} onChange={handleDiffLeftRunChange}>
-                {runs.map((run) => (
-                  <MenuItem value={run}>{run}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <ListSubheader>Workers</ListSubheader>
-
-            <FormControl variant="outlined" className={classes.formControl}>
-              <Select
-                value={diffLeftWorker}
-                onChange={handleDiffLeftWorkerChange}
-              >
-                {diffLeftWorkerOptions.map((worker) => (
-                  <MenuItem value={worker}>{worker}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <ListSubheader>Spans</ListSubheader>
-            <FormControl variant="outlined" className={classes.formControl}>
-              <Select value={diffLeftSpan} onChange={handleDiffLeftSpanChange}>
-                {diffLeftSpansOptions.map((span) => (
-                  <MenuItem value={span}>{span}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Divider />
-
-            <Typography variant="h6">&nbsp;&nbsp;Experimental</Typography>
-            <ListSubheader>Runs</ListSubheader>
-            <FormControl variant="outlined" className={classes.formControl}>
-              <Select value={diffRightRun} onChange={handleDiffRightRunChange}>
-                {runs.map((run) => (
-                  <MenuItem value={run}>{run}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <ListSubheader>Workers</ListSubheader>
-            <FormControl variant="outlined" className={classes.formControl}>
-              <Select
-                value={diffRightWorker}
-                onChange={handleDiffRightWorkerChange}
-              >
-                {diffRightWorkerOptions.map((worker) => (
-                  <MenuItem value={worker}>{worker}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <ListSubheader>Spans</ListSubheader>
-            <FormControl variant="outlined" className={classes.formControl}>
-              <Select
-                value={diffRightSpan}
-                onChange={handleDiffRightSpanChange}
-              >
-                {diffRightSpansOptions.map((span) => (
-                  <MenuItem value={span}>{span}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </>
-        )}
+        ) :
+          <AccuracyLeftPanel
+            onChangeCheckedFileList={_changeFileList}
+            onChangeUploadedCount={_changeUploadCount}
+          />
+        }
       </Drawer>
       {!open && (
         <Fab
@@ -620,7 +667,9 @@ export const App = () => {
           <ChevronRightIcon />
         </Fab>
       )}
-      <main className={classes.content}>{renderContent()}</main>
-    </div>
+      <main className={classes.content}>
+        {topTab === 0 ? renderContent() : <LossComparison fileList={fileList} fileCount={uploadedCount} />}
+      </main>
+    </div >
   )
 }

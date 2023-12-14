@@ -18,13 +18,13 @@ class Module:
     def __hash__(self):
         return hash((self.name, self.module_id, tuple(self.children)))
 
-    def __eq__(self, o) -> bool:
-        if not isinstance(o, Module):
+    def __eq__(self, obj) -> bool:
+        if not isinstance(obj, Module):
             return False
 
-        return (self.name == o.name and
-                self.module_id == o.module_id and
-                self.children == o.children)
+        return (self.name == obj.name and
+                self.module_id == obj.module_id and
+                self.children == obj.children)
 
 
 class ModuleStats:
@@ -40,11 +40,11 @@ class ModuleStats:
 
     @property
     def avg_host_duration(self):
-        return self.host_duration / self.occurences
+        return self.host_duration / self.occurences if self.occurences != 0 else 0
 
     @property
     def avg_device_duration(self):
-        return self.device_duration / self.occurences
+        return self.device_duration / self.occurences if self.occurences != 0 else 0
 
 
 Stats = namedtuple('Stats', [
@@ -111,7 +111,7 @@ def _build_module_hierarchy(events: List[PythonFunctionEvent]) -> List[Module]:
         children.setdefault(e_id, [])
         e_parent_id = e.python_parent_id
         children.setdefault(e_parent_id, [])
-        children[e_parent_id].append(e_id)
+        children.get(e_parent_id).append(e_id)
     function_leaves = [k for k, v in children.items() if not v]
 
     # Convert Python function topology to Module topology.
@@ -142,15 +142,15 @@ def _build_module_hierarchy(events: List[PythonFunctionEvent]) -> List[Module]:
     for child_id, parent_id in module_parent_map.items():
         module_child_map.setdefault(child_id, [])
         module_child_map.setdefault(parent_id, [])
-        module_child_map[parent_id].append(child_id)
+        module_child_map.get(parent_id).append(child_id)
 
     # The traverse order is well defined which guarantees that a given topology
     # will produce a unique and unambiguous hierarchy.
     def append_hierarchy(e_id) -> Module:
         e = id_to_event[e_id]
         module = Module(e.name, e.module_id)
-        for id in module_child_map[e_id]:
-            child = append_hierarchy(id)
+        for idx in module_child_map.get(e_id):
+            child = append_hierarchy(idx)
             module.children.append(child)
         return module
 
@@ -211,7 +211,7 @@ def _process_module_statistics(
     def process_modules(h_modules: Iterable[Module]):
         for m in h_modules:
             name = m.name.replace('nn.Module: ', '')
-            stats = module_aggs[(m.name, m.module_id)]
+            stats = module_aggs.get((m.name, m.module_id))
 
             child_stats = list(process_modules(m.children))
             yield Stats(

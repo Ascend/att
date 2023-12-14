@@ -14,14 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-import os, sys
+import os
+import sys
 import re
-from ..common.utils import print_error_log, CompareException, check_compare_param
+from ..common.utils import print_error_log, CompareException, check_compare_param, check_file_or_directory_path, \
+    check_configuration_param, is_summary_compare
 from .acc_compare import compare_core
 
 
 def compare_distributed(npu_dump_dir, bench_dump_dir, output_path, **kwargs):
     def check_and_return_dir_contents(dump_dir, prefix):
+        check_file_or_directory_path(dump_dir, True)
         contents = os.listdir(dump_dir)
         pattern = re.compile(f'^{prefix}[0-9]+$')
         for name in contents:
@@ -81,11 +84,13 @@ def compare_distributed(npu_dump_dir, bench_dump_dir, output_path, **kwargs):
             'bench_pkl_path': bench_pkl_path,
             'npu_dump_data_dir': npu_dump_data_dir,
             'bench_dump_data_dir': bench_dump_data_dir,
-            'is_print_compare_log':True
+            'is_print_compare_log': True
         }
         try:
-            npu_pkl, bench_pkl = check_compare_param(dump_result_param, output_path, **kwargs)
+            summary_compare = is_summary_compare(dump_result_param)
+            check_compare_param(dump_result_param, output_path, summary_compare=summary_compare, **kwargs)
+            check_configuration_param(**kwargs)
         except CompareException as error:
             print_error_log('Compare failed. Please check the arguments and do it again!')
             sys.exit(error.code)
-        compare_core(dump_result_param, output_path, npu_pkl, bench_pkl, suffix=f'_{nr}-{br}', **kwargs)
+        compare_core(dump_result_param, output_path, suffix=f'_{nr}-{br}', summary_compare=summary_compare, **kwargs)

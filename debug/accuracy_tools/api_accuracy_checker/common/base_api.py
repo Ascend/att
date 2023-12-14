@@ -1,6 +1,8 @@
 import os
 import torch
-from api_accuracy_checker.common.utils import print_error_log, write_pt
+from api_accuracy_checker.common.utils import print_error_log, write_pt, create_directory
+from ptdbg_ascend.src.python.ptdbg_ascend.common.utils import check_path_before_create
+from api_accuracy_checker.common.config import msCheckerConfig
 
 
 class BaseAPIInfo:
@@ -48,18 +50,22 @@ class BaseAPIInfo:
             single_arg.update({'type' : 'torch.Tensor'})
             single_arg.update({'dtype' : str(arg.dtype)})
             single_arg.update({'shape' : arg.shape})
-            single_arg.update({'Max' : self.transfer_types(self.get_tensor_extremum(arg,'max'), str(arg.dtype))})
-            single_arg.update({'Min' : self.transfer_types(self.get_tensor_extremum(arg,'min'), str(arg.dtype))})
+            single_arg.update({'Max' : self.transfer_types(self.get_tensor_extremum(arg, 'max'), str(arg.dtype))})
+            single_arg.update({'Min' : self.transfer_types(self.get_tensor_extremum(arg, 'min'), str(arg.dtype))})
             single_arg.update({'requires_grad': arg.requires_grad})
 
         else:
             api_args = self.api_name + '.' + str(self.args_num)
+            from api_accuracy_checker.dump.dump import DumpUtil
             if self.is_forward:
-                forward_real_data_path = os.path.join(self.save_path, self.forward_path)
-
+                forward_real_data_path = os.path.join(self.save_path, "step" + str((DumpUtil.call_num - 1) if msCheckerConfig.enable_dataloader else DumpUtil.call_num), self.forward_path, "rank" + str(self.rank))
+                check_path_before_create(forward_real_data_path)
+                create_directory(forward_real_data_path)
                 file_path = os.path.join(forward_real_data_path, f'{api_args}.pt')
             else:
-                backward_real_data_path = os.path.join(self.save_path, self.backward_path)
+                backward_real_data_path = os.path.join(self.save_path, "step" + str((DumpUtil.call_num - 1) if msCheckerConfig.enable_dataloader else DumpUtil.call_num), self.backward_path, "rank" + str(self.rank))
+                check_path_before_create(backward_real_data_path)
+                create_directory(backward_real_data_path)
                 file_path = os.path.join(backward_real_data_path, f'{api_args}.pt')
             self.args_num += 1
             pt_path = write_pt(file_path, arg.contiguous().cpu().detach())
@@ -87,7 +93,7 @@ class BaseAPIInfo:
             return float(data)
 
     def is_builtin_class(self, element):
-        if element is None or isinstance(element, (bool,int,float,str,slice)):
+        if element is None or isinstance(element, (bool, int, float, str, slice)):
             return True
         return False
 
@@ -118,9 +124,9 @@ class BaseAPIInfo:
             elif operator == 'min':
                 return False not in data
         if operator == 'max':
-            return torch._C._VariableFunctionsClass.max(data).item()
+            return torch._C._VariableFunctionsClass.max(data.float()).item()
         else:
-            return torch._C._VariableFunctionsClass.min(data).item()
+            return torch._C._VariableFunctionsClass.min(data.float()).item()
 
     def get_type_name(self, name):
 

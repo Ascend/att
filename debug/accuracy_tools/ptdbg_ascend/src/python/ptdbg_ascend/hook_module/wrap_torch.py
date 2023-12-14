@@ -22,10 +22,11 @@ import yaml
 
 from .hook_module import HOOKModule
 from ..common.utils import torch_device_guard
+from ..common.file_check_util import FileOpen
 
 cur_path = os.path.dirname(os.path.realpath(__file__))
 yaml_path = os.path.join(cur_path, "support_wrap_ops.yaml")
-with open(yaml_path, 'r') as f:
+with FileOpen(yaml_path, 'r') as f:
     WrapTorchOps = yaml.safe_load(f).get('torch')
 
 
@@ -47,12 +48,12 @@ class TorchOPTemplate(HOOKModule):
         super().__init__(hook)
 
     def input_param_need_adapt(self):
-        special_op_list = ["broadcast_tensors"]
+        special_op_list = ["broadcast_tensors", "block_diag"]
         for item in special_op_list:
             if item in self.op_name_:
                 return True
         return False
-    
+
     def einsum_adapt(self, *args):
         if len(args) < 2:
             raise ValueError('einsum(): must specify the equation string and at least one operand, '
@@ -69,7 +70,7 @@ class TorchOPTemplate(HOOKModule):
                     return chr(ord('a') + n - 26)
                 raise ValueError('einsum(): subscript in subscript list is not within the valid range [0, 52]')
             equation = ','.join(''.join(parse_subscript(s) for s in l) for l in args[1::2])
-            
+
             if len(args) % 2 == 1:
                 equation += '->' + ''.join(parse_subscript(s) for s in args[-1])
                 operands = args[:-1:2]

@@ -988,7 +988,6 @@ torch:
   - unique_consecutive
   - xlogy
   - unbind
-  - unique_dim
   - unsafe_chunk
   - unsafe_split
   - vander
@@ -1030,8 +1029,6 @@ torch_npu:
   - npu_scatter
   - npu_layer_norm_eval
   - npu_alloc_float_status
-  - npu_get_float_status
-  - npu_clear_float_status
   - npu_confusion_transpose
   - npu_bmmV2
   - fast_gelu
@@ -1047,9 +1044,7 @@ torch_npu:
   - npu_bert_apply_adam
   - npu_giou
   - npu_ciou
-  - npu_ciou_backward
   - npu_diou
-  - npu_diou_backward
   - npu_sign_bits_pack
   - npu_sign_bits_unpack
   - npu_flash_attention
@@ -1058,6 +1053,7 @@ torch_npu:
   - npu_roi_align
   - npu_roi_alignbk
   - npu_ptiou
+  - npu_fusion_attention
 
 aten:
   - signbit
@@ -1799,3 +1795,5 @@ distributed:
   - irecv
   - scatter
   - reduce_scatter
+  - _reduce_scatter_base
+  - _all_gather_base

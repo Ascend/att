@@ -111,6 +111,7 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
             '/index.html': self.static_file_route,
             '/trace_viewer_full.html': self.static_file_route,
             '/trace_embedding.html': self.static_file_route,
+            '/trace_script.js': self.static_file_route,
             '/runs': self.runs_route,
             '/views': self.views_route,
             '/workers': self.workers_route,
@@ -413,8 +414,8 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         try:
             with open(filepath, 'rb') as infile:
                 contents = infile.read()
-        except IOError:
-            raise exceptions.NotFound('404 Not Found')
+        except IOError as e:
+            raise exceptions.NotFound('404 Not Found') from e
         return werkzeug.Response(
             contents, content_type=mimetype, headers=TorchProfilerPlugin.headers
         )

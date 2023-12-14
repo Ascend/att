@@ -37,18 +37,19 @@ class OverallParser(object):
 
         @classmethod
         def create_from_range(cls, steps: List[Tuple[int, int]], role_ranges: List[List[Tuple[int, int]]]):
-            assert len(role_ranges) == ProfileRole.Total - 1
+            if len(role_ranges) != ProfileRole.Total - 1:
+                return cls([])
 
             cost_ranges: List[List[Tuple[int, int]]] = []
             slots: List[Tuple[int, int]] = []
             for role in role_ranges:
                 if slots:
-                    range = intersection_ranges_lists(slots, role)
+                    inter_range = intersection_ranges_lists(slots, role)
                 else:
-                    range = role
+                    inter_range = role
                     slots = merge_ranges(list(steps))
-                cost_ranges.append(range)
-                slots = subtract_ranges_lists(slots, range)
+                cost_ranges.append(inter_range)
+                slots = subtract_ranges_lists(slots, inter_range)
             # The last one is ProfileRole.Other
             cost_ranges.append(slots)
 

@@ -57,6 +57,7 @@ class RunGenerator(object):
         profile_run.has_communication = self.profile_data.has_communication
         profile_run.has_memcpy_or_memset = self.profile_data.has_memcpy_or_memset
         profile_run.profiler_start_ts = self.profile_data.profiler_start_ts
+        profile_run.device_target = self.device_target
 
         if self.device_target != 'Ascend':
             profile_run.views.append(consts.OVERALL_VIEW)
@@ -81,6 +82,25 @@ class RunGenerator(object):
             if self.profile_data.memory_snapshot:
                 profile_run.views.append(consts.MEMORY_VIEW)
                 profile_run.memory_snapshot = self.profile_data.memory_snapshot
+
+            profile_run.gpu_metrics = self.profile_data.gpu_metrics_parser.get_gpu_metrics()
+
+            gpu_infos = {gpu_id: RunGenerator._get_gpu_info(self.profile_data.device_props, gpu_id)
+                         for gpu_id in self.profile_data.gpu_metrics_parser.gpu_ids}
+            gpu_infos = {gpu_id: gpu_info for gpu_id, gpu_info in gpu_infos.items() if gpu_info is not None}
+
+            profile_run.gpu_summary, profile_run.gpu_tooltip = \
+                self.profile_data.gpu_metrics_parser.get_gpu_metrics_data_tooltip(
+                    gpu_infos, self.profile_data.tc_ratio)
+
+            profile_run.pl_tid2tree = self.profile_data.pl_tid2tree
+
+            profile_run.module_stats = aggegate_module_view(self.profile_data.tid2tree, self.profile_data.events)
+            profile_run.pl_module_stats = aggegate_pl_module_view(self.profile_data.tid2tree, self.profile_data.events)
+            if profile_run.is_pytorch_lightning and profile_run.pl_module_stats:
+                profile_run.views.append(consts.LIGHTNING_VIEW)
+            elif profile_run.module_stats:
+                profile_run.views.append(consts.MODULE_VIEW)
         else:
             if self.profile_data.has_operator_view:
                 profile_run.views.append(consts.OP_VIEW)
@@ -101,38 +121,19 @@ class RunGenerator(object):
             if self.profile_data.has_memory:
                 profile_run.views.append(consts.MEMORY_VIEW)
                 profile_run.memory_div_curve = None
-                self.process_data, self.component_curve_data, peak_memory_events = self._handle_memory_data()
+                self.process_data, self.component_curve_data = self._handle_memory_data()
                 profile_run.memory_all_curve = self._get_memory_all_curve()
+                peak_memory_events = self._handle_memory_component()
                 profile_run.memory_events = self._get_memory_event(peak_memory_events)
 
             if self.profile_data.has_communication:
                 profile_run.step_to_overlap = self._npu_get_overlap()
                 profile_run.step_to_wait, profile_run.comm_op = self._npu_get_wait_table()
 
+        profile_run.tid2tree = self.profile_data.tid2tree
         if self.profile_data.has_trace:
             profile_run.views.append(consts.TRACE_VIEW)
             profile_run.trace_file_path = self.profile_data.trace_file_path
-
-        profile_run.gpu_metrics = self.profile_data.gpu_metrics_parser.get_gpu_metrics()
-
-        gpu_infos = {gpu_id: RunGenerator._get_gpu_info(self.profile_data.device_props, gpu_id)
-                     for gpu_id in self.profile_data.gpu_metrics_parser.gpu_ids}
-        gpu_infos = {gpu_id: gpu_info for gpu_id, gpu_info in gpu_infos.items() if gpu_info is not None}
-
-        profile_run.gpu_summary, profile_run.gpu_tooltip = \
-            self.profile_data.gpu_metrics_parser.get_gpu_metrics_data_tooltip(
-                gpu_infos, self.profile_data.tc_ratio)
-
-        profile_run.tid2tree = self.profile_data.tid2tree
-        profile_run.pl_tid2tree = self.profile_data.pl_tid2tree
-        profile_run.device_target = self.device_target
-
-        profile_run.module_stats = aggegate_module_view(self.profile_data.tid2tree, self.profile_data.events)
-        profile_run.pl_module_stats = aggegate_pl_module_view(self.profile_data.tid2tree, self.profile_data.events)
-        if profile_run.is_pytorch_lightning and profile_run.pl_module_stats:
-            profile_run.views.append(consts.LIGHTNING_VIEW)
-        elif profile_run.module_stats:
-            profile_run.views.append(consts.MODULE_VIEW)
 
         return profile_run
 
@@ -144,7 +145,7 @@ class RunGenerator(object):
             return overlap_by_steps
         title = [x.lower() for x in data[0]]
         title_name = RunGenerator._check_overlap_data(title)
-        if title_name is None:
+        if not title_name:
             logger.error("Incomplete content of CSV file.")
             return overlap_by_steps
 
@@ -165,7 +166,7 @@ class RunGenerator(object):
         # csv: step / compute time / communication_not_overlap / overlap / communication / free time
         length = len(title)
         if length < 5:
-            return
+            return []
         key = ["computing", "overlapped", "communication(not overlapped)", "free"]
         get_key = list()
         for j in key:
@@ -173,7 +174,7 @@ class RunGenerator(object):
                 if j == title[i]:
                     get_key.append(i)
         if len(get_key) < 4:
-            return None
+            return []
         return get_key
 
     def _npu_get_wait_table(self):
@@ -435,9 +436,9 @@ class RunGenerator(object):
             # convert time metric 'us' to 'ms'
             # some operators may not have the following columns
             nums = [ls[0] if ls[0] else '<unknown>', abs(float(ls[1])),
-                    round((float(ls[2]) - self.profile_data.start_ts) / 1000, 2) if ls[2] else None,
-                    round((float(ls[3]) - self.profile_data.start_ts) / 1000, 2) if ls[3] else None,
-                    round(float(ls[4]) / 1000, 2) if ls[4] else None]
+                    round((float(ls[2]) - self.profile_data.profiler_start_ts) / 1000, 3) if ls[2] else None,
+                    round((float(ls[3]) - self.profile_data.profiler_start_ts) / 1000, 3) if ls[3] else None,
+                    round(float(ls[4]) / 1000, 3) if ls[4] else None]
             display_datas[device_type].append(nums)
         table['rows'] = display_datas
         for name in display_datas:
@@ -514,8 +515,9 @@ class RunGenerator(object):
                     {'name': f'APP Reserved ({cano.memory_metric})', 'type': 'number',
                      'tooltip': 'APP reserved memory by allocator, both used and unused.'}]
             if len(component_curve_result['columns'][device]) > 0:
-                component_curve_result['columns'][device].insert(0, {'name': f'Time ({cano.time_metric})', 'type': 'number',
-                                                            'tooltip': 'Time since profiler starts.'})
+                component_curve_result['columns'][device].insert(0, {'name': f'Time ({cano.time_metric})',
+                                                                     'type': 'number',
+                                                                     'tooltip': 'Time since profiler starts.'})
         device_types = list(set(process_devices_type + pta_ge_devices_type))
         return {
             'devices': device_types,
@@ -564,18 +566,7 @@ class RunGenerator(object):
     def _handle_memory_data(self):
         process_data = defaultdict()
         pta_or_ge_data = defaultdict()
-        path = self.profile_data.memory_component_path
-        datas = RunGenerator._get_csv_data(path)
-        peak_memory_events = {
-            'metadata': {
-                'title': 'Component Peak Memory',
-                'default_device': '',
-            },
-            'columns': [{'name': 'Component', 'type': 'string'},
-                        {'name': 'Peak Memory Usage(MB)', 'type': 'number'},
-                        {'name': 'Time(ms)', 'type': 'number'}]
-        }
-        peak_memory_rows = defaultdict(list)
+        datas = RunGenerator._get_csv_data(self.profile_data.memory_curve_path)
         required_column_idxs = {
             'Component': -1,
             'Device Type': -1,
@@ -585,11 +576,11 @@ class RunGenerator(object):
         }
         (tag_type_idx, device_type_idx, time_idx, reserved_idx, allocated_idx), column_exist_count = \
             RunGenerator._check_csv_columns(datas[0], required_column_idxs)
-        if column_exist_count < 5:
+        if column_exist_count < len(required_column_idxs):
             logger.error('Required column is missing in file "memory_record.csv"')
         else:
             for ls in datas[1:]:
-                time_column = round((float(ls[time_idx]) - self.profile_data.start_ts) / 1000, 2)
+                time_column = round((float(ls[time_idx]) - self.profile_data.profiler_start_ts) / 1000, 3)
                 device_type = ls[device_type_idx]
                 if ls[tag_type_idx] == 'PTA+GE':
                     process_data.setdefault(device_type, {}).setdefault('Allocated', []).append(
@@ -603,17 +594,52 @@ class RunGenerator(object):
                     line_chart_data = [time_column, round(float(ls[allocated_idx]), 3),
                                        round(float(ls[reserved_idx]), 3)]
                     pta_or_ge_data.setdefault(device_type, {}).setdefault(ls[tag_type_idx], []).append(line_chart_data)
-                else:
-                    self._handle_peak_memory_rows(device_type_idx, ls, peak_memory_rows, reserved_idx, tag_type_idx,
-                                                  time_idx)
 
+        return process_data, pta_or_ge_data
+
+    def _handle_memory_component(self):
+        peak_memory_events = {
+            'metadata': {
+                'title': 'Component Peak Memory',
+                'default_device': '',
+            },
+            'columns': [{'name': 'Component', 'type': 'string'},
+                        {'name': 'Peak Memory Reserved(MB)', 'type': 'number'},
+                        {'name': 'Time(ms)', 'type': 'number'}]
+        }
+        peak_memory_rows = defaultdict(list)
+        component_datas = RunGenerator._get_csv_data(self.profile_data.memory_component_path)
+        if component_datas:
+            required_column_idxs = {
+                'Component': -1,
+                'Timestamp(us)': -1,
+                'Total Reserved(MB)': -1,
+                'Device': -1
+            }
+            (tag_type_idx, time_idx, reserved_idx, device_type_idx), column_exist_count = \
+                RunGenerator._check_csv_columns(component_datas[0], required_column_idxs)
+            if column_exist_count < len(required_column_idxs):
+                logger.error('Required column is missing in file "npm_module_mem.csv"')
+            else:
+                for ls in component_datas[1:]:
+                    memory_curve_id_dict = {
+                        'device_type_idx': device_type_idx,
+                        'reserved_idx': reserved_idx,
+                        'tag_type_idx': tag_type_idx,
+                        'time_idx': time_idx
+                    }
+                    self._handle_peak_memory_rows(memory_curve_id_dict, ls, peak_memory_rows)
         peak_memory_events['rows'] = peak_memory_rows
-        return process_data, pta_or_ge_data, peak_memory_events
+        return peak_memory_events
 
-    def _handle_peak_memory_rows(self, device_type_idx, ls, peak_memory_rows, reserved_idx, tag_type_idx, time_idx):
+    def _handle_peak_memory_rows(self, memory_curve_id_dict, ls, peak_memory_rows):
         # Record the peak memory usage of other components.
         has_flag = False
-        time_column = round((float(ls[time_idx]) - self.profile_data.start_ts) / 1000, 2)
+        device_type_idx = memory_curve_id_dict.get('device_type_idx')
+        reserved_idx = memory_curve_id_dict.get('reserved_idx')
+        tag_type_idx = memory_curve_id_dict.get('tag_type_idx')
+        time_idx = memory_curve_id_dict.get('time_idx')
+        time_column = round((float(ls[time_idx]) - self.profile_data.profiler_start_ts) / 1000, 3)
         for item in peak_memory_rows[ls[device_type_idx]]:
             if item[0] == ls[tag_type_idx]:
                 if item[1] < ls[reserved_idx]:
@@ -650,51 +676,39 @@ class RunGenerator(object):
         column_tootip = {'type': 'string', 'role': 'tooltip', 'p': {'html': 'true'}}
         data = {}
         data['steps'] = {}
-        data['steps']['columns'] = [{'type': 'string', 'name': 'Step'}]
+        data['steps']['columns'] = ['Step']
         if show_gpu:
-            data['steps']['columns'].extend([{'type': 'number', 'name': 'Kernel'},
-                                             column_tootip,
-                                             {'type': 'number', 'name': 'Memcpy'},
-                                             column_tootip,
-                                             {'type': 'number', 'name': 'Memset'},
-                                             column_tootip])
+            data['steps']['columns'].extend(['Kernel', 'Memcpy', 'Memset'])
         if self.profile_data.has_communication:
-            data['steps']['columns'].extend([{'type': 'number', 'name': 'Communication'},
-                                             column_tootip])
+            data['steps']['columns'].append('Communication')
         if show_gpu:
-            data['steps']['columns'].extend([{'type': 'number', 'name': 'Runtime'},
-                                             column_tootip])
-        data['steps']['columns'].extend([{'type': 'number', 'name': 'DataLoader'},
-                                         column_tootip,
-                                         {'type': 'number', 'name': 'CPU Exec'},
-                                         column_tootip,
-                                         {'type': 'number', 'name': 'Other'},
-                                         column_tootip])
+            data['steps']['columns'].append('Runtime')
+        data['steps']['columns'].extend(['DataLoader', 'CPU Exec', 'Other'])
 
         data['steps']['rows'] = []
         for i in range(len(self.profile_data.steps_costs)):
             costs = self.profile_data.steps_costs[i]
             step_name = self.profile_data.steps_names[i]
-            row = [step_name]
+            row = [{'value': step_name}]
             if show_gpu:
-                row.extend([costs.costs[ProfileRole.Kernel],
-                            build_part_time_str(costs.costs[ProfileRole.Kernel], 'Kernel'),
-                            costs.costs[ProfileRole.Memcpy],
-                            build_part_time_str(costs.costs[ProfileRole.Memcpy], 'Memcpy'),
-                            costs.costs[ProfileRole.Memset],
-                            build_part_time_str(costs.costs[ProfileRole.Memset], 'Memset')])
+                row.extend([{'value': costs.costs[ProfileRole.Kernel],
+                             'tooltip': build_part_time_str(costs.costs[ProfileRole.Kernel], 'Kernel')},
+                            {'value': costs.costs[ProfileRole.Memcpy],
+                             'tooltip': build_part_time_str(costs.costs[ProfileRole.Memcpy], 'Memcpy')},
+                            {'value': costs.costs[ProfileRole.Memset],
+                             'tooltip': build_part_time_str(costs.costs[ProfileRole.Memset], 'Memset')}])
             if self.profile_data.has_communication:
-                row.extend([costs.costs[ProfileRole.Communication],
-                            build_part_time_str(costs.costs[ProfileRole.Communication], 'Communication')])
+                row.append({'value': costs.costs[ProfileRole.Communication],
+                            'tooltip': build_part_time_str(costs.costs[ProfileRole.Communication], 'Communication')})
             if show_gpu:
-                row.extend([costs.costs[ProfileRole.Runtime],
-                            build_part_time_str(costs.costs[ProfileRole.Runtime], 'Runtime')])
-            row.extend([costs.costs[ProfileRole.DataLoader],
-                        build_part_time_str(costs.costs[ProfileRole.DataLoader], 'DataLoader'),
-                        costs.costs[ProfileRole.CpuOp],
-                        build_part_time_str(costs.costs[ProfileRole.CpuOp], 'CPU Exec'),
-                        costs.costs[ProfileRole.Other],
-                        build_part_time_str(costs.costs[ProfileRole.Other], 'Other')])
+                row.append({'value': costs.costs[ProfileRole.Runtime],
+                            'tooltip': build_part_time_str(costs.costs[ProfileRole.Runtime], 'Runtime')})
+            row.extend([{'value': costs.costs[ProfileRole.DataLoader],
+                         'tooltip': build_part_time_str(costs.costs[ProfileRole.DataLoader], 'DataLoader')},
+                        {'value': costs.costs[ProfileRole.CpuOp],
+                         'tooltip': build_part_time_str(costs.costs[ProfileRole.CpuOp], 'CPU Exec')},
+                        {'value': costs.costs[ProfileRole.Other],
+                         'tooltip': build_part_time_str(costs.costs[ProfileRole.Other], 'Other')}])
             data['steps']['rows'].append(row)
 
         avg_costs = []
@@ -1016,7 +1030,7 @@ class RunGenerator(object):
     @staticmethod
     def _get_csv_data(path: str):
         if path is None:
-            return
+            return []
         datas = []
         with open(path, encoding='utf-8-sig') as f:
             for row in csv.reader(f, skipinitialspace=True):
@@ -1146,13 +1160,13 @@ class DistributedRunGenerator(object):
             steps_to_overlap['all'][data.worker] = [0, 0, 0, 0]
             step_number = len(data.steps_names)
             if step_number <= 0:
-                return
+                return None
             if self.device_target != 'Ascend':
                 DistributedRunGenerator._get_gpu_overlap_data(data, steps_to_overlap)
             else:
                 DistributedRunGenerator._get_npu_overlap_data(data, steps_to_overlap)
 
-            steps_to_overlap['all'][data.worker] = [x / step_number for x in steps_to_overlap['all'][data.worker]]
+            steps_to_overlap['all'][data.worker] = [int(x / step_number) for x in steps_to_overlap['all'][data.worker]]
         for k, v in steps_to_overlap.items():
             steps_to_overlap[k] = OrderedDict(sorted(v.items()))
         result['data'] = steps_to_overlap
@@ -1164,10 +1178,10 @@ class DistributedRunGenerator(object):
             steps_to_overlap.setdefault(step_name, OrderedDict())
             costs = data.comm_overlap_costs[i]
             steps_to_overlap[step_name][data.worker] = [
-                costs.computation - costs.overlap,
-                costs.overlap,
-                costs.communication - costs.overlap,
-                costs.other
+                round(costs.computation - costs.overlap, 3),
+                round(costs.overlap, 3),
+                round(costs.communication - costs.overlap, 3),
+                round(costs.other, 3)
             ]
             steps_to_overlap['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_overlap['all'][data.worker], steps_to_overlap[step_name][data.worker])]
@@ -1179,7 +1193,8 @@ class DistributedRunGenerator(object):
             steps_to_overlap.setdefault(k, OrderedDict())
             # v: computation / overlap / communication_not_overlap / free time
             # steps_to_overlap: computation_not_overlap / overlap / communication_not_overlap / other
-            steps_to_overlap[k][data.worker] = list([v[0] - v[1], v[1], v[2], v[3]])
+            steps_to_overlap[k][data.worker] = list(
+                [round(v[0] - v[1], 3), round(v[1], 3), round(v[2], 3), round(v[3], 3)])
             steps_to_overlap['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_overlap['all'][data.worker], steps_to_overlap[k][data.worker])]
 
@@ -1192,8 +1207,8 @@ class DistributedRunGenerator(object):
         for k, v in steps.items():
             steps_to_wait.setdefault(k, OrderedDict())
 
-            trans = v.get('trans') * 1000  # 1ms = 1000us
-            wait = v.get('Synchronize') * 1000  # 1ms = 1000us
+            trans = round(v.get('trans') * 1000, 3)  # 1ms = 1000us
+            wait = round(v.get('Synchronize') * 1000, 3)  # 1ms = 1000us
             steps_to_wait[k][data.worker] = list([trans, wait])
             steps_to_wait['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[k][data.worker])]
@@ -1206,12 +1221,12 @@ class DistributedRunGenerator(object):
             return
         for step, comm_stats in data.step_comm_stats.items():
             steps_to_wait.setdefault(step, OrderedDict())[data.worker] = [
-                comm_stats[1],
-                comm_stats[0] - comm_stats[1]
+                round(comm_stats[1], 3),
+                round(comm_stats[0] - comm_stats[1], 3)
             ]
             steps_to_wait['all'][data.worker] = [
                 sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[step][data.worker])]
-        steps_to_wait['all'][data.worker] = [x / step_number for x in steps_to_wait['all'][data.worker]]
+        steps_to_wait['all'][data.worker] = [int(x / step_number) for x in steps_to_wait['all'][data.worker]]
 
     def _generate_wait_graph(self):
         result = dict()
@@ -1269,12 +1284,12 @@ class DistributedRunGenerator(object):
             row = [
                 op,
                 stats[0],
-                stats[1] * 1024 * 1024,
-                round(stats[1] * 1024 * 1024 / stats[0]),  # 1MB = 1024 * 1024 bytes
-                stats[2] * 1000,
-                round(stats[2] * 1000 / stats[0]),  # 1ms = 1000us
-                stats[3] * 1000,
-                round(stats[3] * 1000 / stats[0])  # 1ms = 1000us
+                round(stats[1] * 1024 * 1024, 3),
+                round(stats[1] * 1024 * 1024 / stats[0] if stats != 0 else 0),  # 1MB = 1024 * 1024 bytes
+                round(stats[2] * 1000, 3),
+                round(stats[2] * 1000 / stats[0] if stats != 0 else 0),  # 1ms = 1000us
+                round(stats[3] * 1000, 3),
+                round(stats[3] * 1000 / stats[0] if stats != 0 else 0)  # 1ms = 1000us
             ]
             table['rows'].append(row)
 
@@ -1297,11 +1312,11 @@ class DistributedRunGenerator(object):
             row = [
                 op,
                 stats[0],
-                stats[1],
-                round(stats[1] / stats[0]),
-                stats[2],
-                round(stats[2] / stats[0]),
-                stats[3],
-                round(stats[3] / stats[0])
+                round(stats[1], 3),
+                round(stats[1] / stats[0] if stats != 0 else 0),
+                round(stats[2], 3),
+                round(stats[2] / stats[0] if stats != 0 else 0),
+                round(stats[3], 3),
+                round(stats[3] / stats[0] if stats != 0 else 0)
             ]
             table['rows'].append(row)
