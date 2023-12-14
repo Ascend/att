@@ -39,6 +39,12 @@ CSV_COLUMN_NAME = [CompareConst.NPU_NAME,
                    CompareConst.BENCH_DTYPE,
                    CompareConst.NPU_SHAPE, 
                    CompareConst.BENCH_SHAPE,
+                   CompareConst.NPU_MAX,
+                   CompareConst.NPU_MIN,
+                   CompareConst.NPU_MEAN,
+                   CompareConst.BENCH_MAX,
+                   CompareConst.BENCH_MIN,
+                   CompareConst.BENCH_MEAN,
                    CompareConst.COSINE, 
                    CompareConst.MAX_ABS_ERR, 
                    CompareConst.MAX_RELATIVE_ERR,
@@ -78,7 +84,7 @@ def data_to_cpu(data, deep, data_cpu):
             tensor_copy = data.clone().detach()
         else:
             tensor_copy = data.cpu().detach()
-        if tensor_copy.dtype in [torch.float16, torch.half]:
+        if tensor_copy.dtype in [torch.float16, torch.half, torch.bfloat16]:
             tensor_copy = tensor_copy.float()
         
         if deep == 0:
