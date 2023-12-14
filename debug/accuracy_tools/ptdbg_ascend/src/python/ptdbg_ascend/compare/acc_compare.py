@@ -305,7 +305,12 @@ def get_accuracy(result, n_dict, b_dict, summary_compare=False):
             n_struct = n_dict[key][index]
             b_struct = b_dict[key][index]
             err_msg = ""
-            result_item = [n_name, b_name, n_struct[0], b_struct[0], n_struct[1], b_struct[1], " ", " ", " ", " ", " "]
+            if summary_compare:
+                result_item = [n_name, b_name, n_struct[0], b_struct[0], n_struct[1], b_struct[1],
+                               " ", " ", " ", " "]
+            else:
+                result_item = [n_name, b_name, n_struct[0], b_struct[0], n_struct[1], b_struct[1],
+                               " ", " ", " ", " ", " "]
 
             npu_summery_data = n_dict.get("summery")[n_start + index]
             result_item.extend(npu_summery_data)
@@ -314,8 +319,11 @@ def get_accuracy(result, n_dict, b_dict, summary_compare=False):
 
             if summary_compare:
                 start_idx = CompareConst.SUMMARY_COMPARE_RESULT_HEADER.index(CompareConst.MAX_DIFF)
-                end_idx = CompareConst.SUMMARY_COMPARE_RESULT_HEADER.index(CompareConst.MEAN_DIFF) + 1
-                result_item[start_idx:end_idx] = [val[0] - val[1] for val in zip(npu_summery_data, bench_summery_data)]
+                for i, val in enumerate(zip(npu_summery_data, bench_summery_data)):
+                    if isinstance(val[0], (float, int)) and isinstance(val[1], (float, int)):
+                        result_item[start_idx + i] = val[0] - val[1]
+                    else:
+                        result_item[start_idx + i] = "Nan"
 
             result_item.append(CompareConst.ACCURACY_CHECK_YES)
             result_item.append(err_msg)
