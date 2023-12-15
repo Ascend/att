@@ -14,15 +14,11 @@ Ascend Training Tools，昇腾训练工具链
 
         **GPU与NPU性能比较工具**：提供NPU与GPU性能拆解功能以及算子、通信、内存性能的比较功能。
 
-    b. [distribute_tools](https://gitee.com/ascend/att/tree/master/profiler/distribute_tools)
-
-        **集群场景脚本集合**：提供集群场景数据一键汇聚功能。
-
-    c. [merge_profiling_timeline](https://gitee.com/ascend/att/tree/master/profiler/merge_profiling_timeline)
+    b. [merge_profiling_timeline](https://gitee.com/ascend/att/tree/master/profiler/merge_profiling_timeline)
 
         **合并大json工具**：融合多个profiling的timeline在一个json文件中的功能。
 
-    d. [cluster_analyse](https://gitee.com/ascend/att/tree/master/profiler/cluster_analyse)
+    c. [cluster_analyse](https://gitee.com/ascend/att/tree/master/profiler/cluster_analyse)
 
         **集群分析工具**：提供多机多卡的集群分析能力（基于通信域的通信分析和迭代耗时分析）, 当前需要配合Ascend Insight的集群分析功能使用。
 
@@ -50,7 +46,6 @@ Ascend Training Tools，昇腾训练工具链
 
         **自动迁移能力**：自动迁移只需在训练脚本中导入库代码即可完成模型脚本迁移，使用方式较简单，且修改内容最少
 
-    
 4.  tensorboard支持npu可视化插件[tb-plugin](https://gitee.com/ascend/att/tree/master/plugins/tensorboard-plugins/tb_plugin)
 
     **PyTorch profiling数据可视化的TensorBoard的插件**： 它支持将Ascend平台采集、解析的Pytorch Profiling数据可视化呈现，也兼容GPU数据采集、解析可视化。
