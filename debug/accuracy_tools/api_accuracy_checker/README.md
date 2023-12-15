@@ -43,21 +43,22 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
       Exception: Model pretest: exit after iteration 1.
       ```
 
-      若报错信息不一致，可能是由于服务器的其他错误信息覆盖导致，可以尝试查找报错信息中的Exception。
+   - 若报错信息不一致，可能是由于服务器的其他错误信息覆盖导致，可以尝试查找报错信息中的Exception。
 
    - 若训练脚本中的代码不是通过torch.utils.data.dataloader来加载数据或在部分流水并行、张量并行场景下，工具的开关无法在每张卡上自动打开，导致多卡训练dump结果只有一组json，那么需要在训练代码中添加打开工具开关的调用：
 
       ```Python
       import api_accuracy_checker.dump as DP
-      DP.dump.set_dump_switch("ON")
+      DP.dump.start()    # 必选，开启工具dump模块，可以在代码中的不同位置多次添加，选择需要dump的内容
       
       ...
       
-      DP.dump.set_dump_switch("OFF")    # 可选，未配置"OFF"参数时表示dump从DP.dump.set_dump_switch("ON")开始的所有数据
+      DP.dump.stop()    # 可选，未配置该函数时，表示dump从DP.dump.start()开始的所有数据；配置该函数时，仅结束dump操作不结束训练进程，用户需要手动结束训练进程
+      DP.dump.step()    # 在最后一个DP.dump.stop()后加入DP.dump.step()即可指定需要dump的step
       ```
-
-      DP.dump.set_dump_switch：开启工具dump模块，该接口取值为"ON"和"OFF"，配置OFF时，仅结束dump操作不结束训练进程，用户需要手动结束训练进程。
-
+      
+      可以通过将att/debug/accuracy_tools/api_accuracy_checker目录下config.yaml文件的enable_dataloader参数值修改为False，关闭torch.utils.data.dataloader加载数据。
+      
       上述代码要添加在迭代前向的代码段中，或者说是遍历数据集循环的代码段中。如对于GPT-3可以添加在pretrain_gpt.py 的forward_step函数中。之后工具会适配这个场景开关的自动打开。
 
    dump信息默认会存盘到“./step1”路径下（相对于启动训练的路径），包括：
@@ -87,7 +88,6 @@ Ascend模型精度预检工具能在昇腾NPU上扫描用户训练模型中所�
    | -o或--out_path                   | 指指定run_ut执行结果存盘路径，默认“./”（相对于run_ut的路径）。 | 否       |
    | -j或--jit_compile                | 开启jit编译。                                                | 否       |
    | -d或--device                     | 指定Device ID，选择UT代码运行所在的卡，默认值为0。           | 否       |
-   | -csv_path或--result_csv_path     | 指定本次运行中断时生成的`accuracy_checking_result_{timestamp}.csv`文件路径，执行run_ut中断时，若想从中断处继续执行，配置此参数即可。 | 否       |
 
    run_ut执行结果包括`accuracy_checking_result_{timestamp}.csv`和`accuracy_checking_details_{timestamp}.csv`两个文件。`accuracy_checking_result_{timestamp}.csv`是API粒度的，标明每个API是否通过测试。建议用户先查看`accuracy_checking_result_{timestamp}.csv`文件，对于其中没有通过测试的或者特定感兴趣的API，根据其API name字段在`accuracy_checking_details_{timestamp}.csv`中查询其各个输出的达标情况以及比较指标。详细介绍请参见“**预检结果**”。
 
@@ -161,24 +161,24 @@ msCheckerConfig.update_config(dump_path="./", real_data=False, target_iter=[1], 
 
 ## 预检结果
 
-精度预检生成的`accuracy_checking_result_{timestamp}.csv`和`accuracy_checking_details_{timestamp}.csv`文件示例如下：
+精度预检生成的`accuracy_checking_result_{timestamp}.csv`和`accuracy_checking_result_{timestamp}.csv`文件示例如下：
 
-可以通过先查看`accuracy_checking_result_{timestamp}.csv`文件的Forward Test Success和Backward Test Success，判断是否存在未通过测试的API，再查看`accuracy_checking_details_{timestamp}.csv`文件的API详细达标情况，API达标情况介绍请参见“**API预检指标**”。
+可以通过先查看`accuracy_checking_result_{timestamp}.csv`文件的Forward Test Success和Backward Test Success，判断是否存在未通过测试的API，再查看`accuracy_checking_result_{timestamp}.csv`文件的API详细达标情况，API达标情况介绍请参见“**API预检指标**”。
 
 `accuracy_checking_result_{timestamp}.csv`
 
-![891a3bd8_12631423](img/accuracy_checking_result.png)
+![891a3bd8_12631423](img/891a3bd8_12631423.png)
 
 | 字段                  | 含义                                                         |
 | --------------------- | ------------------------------------------------------------ |
 | API name              | API名称。                                                    |
-| Forward Test Success  | 前向API是否通过测试，TRUE为通过，FALSE为不通过。             |
-| Backward Test Success | 反向API是否通过测试，TRUE为通过，FALSE为不通过，N/A表示该API没有反向。 |
+| Forward Test Success  | 前向API是否通过测试，TRUE为通过，FALSE为不通过，N/A表示该行非前向API。 |
+| Backward Test Success | 反向API是否通过测试，TRUE为通过，FALSE为不通过，N/A表示该行非反向API。 |
 | Message               | 备注信息。                                                   |
 
 `accuracy_checking_details_{timestamp}.csv`
 
-![f07237b1_12631423](img/accuracy_checking_details.png)
+![f07237b1_12631423](img/f07237b1_12631423.png)
 
 | 字段                                  | 含义                                                         |
 | ------------------------------------- | ------------------------------------------------------------ |
@@ -192,7 +192,7 @@ msCheckerConfig.update_config(dump_path="./", real_data=False, target_iter=[1], 
 | Relative  Error (dual thousandth)     | 双千精度指标。                                               |
 | Relative  Error (dual ten thousandth) | 双万精度指标。                                               |
 | Error Rate                            | 误差率。                                                     |
-| Status                                | 通过状态，pass表示通过测试，error表示未通过，warning表示存在双千或双万精度指标未通过测试。 |
+| Status                                | 通过状态，pass表示通过测试，error表示未通过，waring表示存在双千或双万精度指标未通过测试。 |
 
 ## API预检指标
 
@@ -232,8 +232,6 @@ API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件�
 
 2. 执行溢出API解析操作
 
-   **forward_info_0.json为[ptdbg_ascend精度工具功能说明](https://gitee.com/ascend/att/tree/master/debug/accuracy_tools/ptdbg_ascend/doc)中的"溢出检测场景"执行溢出检测dump时生成，而不是精度预检工具生成。**
-
    ```bash
    cd $ATT_HOME/debug/accuracy_tools/api_accuracy_checker/run_ut
    python run_overflow_check.py -forward ./forward_info_0.json
@@ -244,7 +242,7 @@ API预检通过测试，则在`accuracy_checking_details_{timestamp}.csv`文件�
    | -forward或--forward_input_file | 指定前向API信息文件forward_info_{pid}.json。       | 是       |
    | -j或--jit_compile              | 开启jit编译。                                      | 否       |
    | -d或--device                   | 指定Device ID，选择UT代码运行所在的卡，默认值为0。 | 否       |
-
+   
    反向过程溢出的API暂不支持该功能。
 
 
